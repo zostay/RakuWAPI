@@ -53,13 +53,13 @@ Application developer A **application developer** is a developer who writes a *P
 A P6SGI application is a Perl 6 [Routine](Routine) that is implemented similar to the following stub
 
     subset P6SGIResponse of Mu where {
-        where Positional { 
+        when Positional { 
                .elems == 3
             && .[0] ~~ Int && .[0] >= 100
             && .[1] ~~ Positional && [&&] .[1].flatmap(* ~~ Pair)
             && .[2] ~~ Iterable|Channel
         }
-        where Promise { True }
+        when Promise { True }
         default { die "invalid response" }
     };
     method app(%env) returns P6SGIResponse { ... }
