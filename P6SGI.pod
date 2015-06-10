@@ -2,6 +2,10 @@
 
 =begin pod
 
+=head1 STATUS
+
+This is a Proposed Draft. Given Version 0.1.Draft so that it has some kind of initial designation.
+
 =head1 # INTRODUCTION
 
 This document standardizes the interface to be implemented by web application developers in Perl 6. It provides a standard protocol by which application servers may communicate with web applications.
