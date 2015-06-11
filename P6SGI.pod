@@ -26,25 +26,19 @@ This document is strongly related to the PSGI pecification for Perl 5. Within a 
 
 =head1 # TERMINOLOGY
 
-=defn P6SGI application
-A B<P6SGI application> is a Perl 6 subroutine that expects to receive an environment form a I<application server> and returns a response each time it is called to be processed by that server.
+A D<P6SGI application> is a Perl 6 subroutine that expects to receive an environment form a I<application server> and returns a response each time it is called to be processed by that server.
 
-=defn Web server
-A B<Web Server> is an application that processes requests and responses according to the HTTP protocol.
+A D<Web Server> is an application that processes requests and responses according to the HTTP protocol.
 
-=defn Application server
-An B<application server> is a program that is able to provide an environment to a I<P6SGI application> and process the value returned from such such an application.
+An D<application server> is a program that is able to provide an environment to a I<P6SGI application> and process the value returned from such such an application.
 
 The I<application server> might be associated with a I<web server>, might itself be a I<web server>, might process a protocol used to communicat with a I<web server> (such as CGI or FastCGI), or may be something else entirely not related to a I<web server> (such as a tool for testing I<P6SGI applications>). 
 
-=defn Middleware
-B<Middleware> is a I<P6SGI application> that wraps another I<P6SGI application> for the purpose of performing some auxiliary task such as preprocessing request environments, logging, postprocessing responses, etc.
+D<Middleware> is a I<P6SGI application> that wraps another I<P6SGI application> for the purpose of performing some auxiliary task such as preprocessing request environments, logging, postprocessing responses, etc.
 
-=defn Framework developer
-A B<framework developer> is a developer who writes an I<application server>.
+A D<framework developer> is a developer who writes an I<application server>.
 
-=defn Application developer
-A B<application developer> is a developer who writes a I<P6SGI application>.
+An D<application developer> is a developer who writes a I<P6SGI application>.
 
 =head1 # SPECIFICATION
 
