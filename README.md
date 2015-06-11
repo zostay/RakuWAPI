@@ -179,7 +179,8 @@ This list is primarily adopted from [PSGI](PSGI).
     <td>The error stream for logging.</td>
   </tr>
   <tr>
-    <td>C&lt;psgi.errors.buffered&gt;| C&lt;&lt; Bool:D &gt;&gt;</td>
+    <td>C&lt;psgi.errors.buffered&gt;</td>
+    <td>C&lt;&lt; Bool:D &gt;&gt;</td>
     <td>True if the error stream is buffered.</td>
   </tr>
   <tr>
@@ -201,6 +202,11 @@ This list is primarily adopted from [PSGI](PSGI).
     <td>C&lt;psgi.streaming&gt;</td>
     <td>C&lt;&lt; Bool:D &gt;&gt;</td>
     <td>True if the server supports deplayed response and streaming interfaces.</td>
+  </tr>
+  <tr>
+    <td>C&lt;psgi.encoding&gt;</td>
+    <td>C&lt;&lt; Str:D &gt;&gt;</td>
+    <td>Name of the encoding the server will use for any strings it is sent.</td>
   </tr>
 </table>
 
@@ -306,7 +312,7 @@ The response body MUST take one of two forms. Either it is provided as an [Itera
 
 ##### # Iterable Body
 
-Application servers MUST implement this interface. An [Iterable](Iterable) body is the simplest and most common case. The elements contained within the Iterable MUST be [Blob](Blob)s. The elements within the iterable MUST NOT be [Str](Str)s.
+Application servers MUST implement this interface. An [Iterable](Iterable) body is the simplest and most common case. The elements contained within the Iterable SHOULD be [Blob](Blob)s. The elements returned by the iterable object MAY be [Str](Str)s. See [#Encoding](#Encoding) for details on how each [Str](Str) is to be handled.
 
 The application server SHOULD write each [Blob](Blob) found in the returned body as-is to the client. It SHOULD NOT care what the contents are.
 
@@ -317,7 +323,7 @@ Here are some example bodies:
     my $body = [ "/path/to/file".IO.slurp(:bin) ];
 
     my $h = open "/path/to/file", :r;
-    my $body = $h.lines.map: *.encode;
+    my $body = $h.lines;
 
     my $h = open "/path/to/file", :r;
     my $body = gather loop { take $h.read(4096) or last };
@@ -326,7 +332,7 @@ Here are some example bodies:
 
 This interface SHOULD be implemented by application servers. This interface MUST be implemented if `psgi.streaming` is True in the environment.
 
-The P6SGI application uses the given [Channel](Channel) to send a series of [Blob](Blob) objects to the server. The application server receives these [Blob](Blob) objects and SHOULD write each one to the client as-is.
+The P6SGI application uses the given [Channel](Channel) to send a series of [Blob](Blob) or [Str](Str) objects to the server. The application SHOULD use Blobs whenever possible, but may use Strs. The application server receives these Blob objects and SHOULD write each one to the client as-is. See [#Encoding](#Encoding) for details on how each [Str](Str) is to be handled.
 
 For example, here is an application that feeds events tapped from a [Supply](Supply) to the server via a returned [Channel](Channel).
 
@@ -349,6 +355,14 @@ For example, here is an application that feeds events tapped from a [Supply](Sup
     };
 
 The application server closes the response when the [Channel](Channel) is closed.
+
+##### # Encoding
+
+It is permissable for applications to return elements of the body using [Str](Str)s. However, if strings are used rather than [Blob](Blob) buffers, you are placing the server in charge of encoding your data. The server MUST provide a `psgi.encoding` in the environment. This names the encoding the server will use to encode strings encountered in the body. 
+
+In addition to this, the server SHOULD attempt to read the `charset` value in the `Content-Type` header to select an encoding. It will fallback to `psgi.encoding` if no `charset` is detected or it is unable to understand it.
+
+Application developers are adviced to encode their own data, however. A P6SGI application SHOULD use [Blob](Blob)s instead of [Str](Str)s.
 
 ### # Promise Response
 
