@@ -30,19 +30,19 @@ This document is strongly related to the PSGI pecification for Perl 5. Within a 
 # TERMINOLOGY
 =============
 
-P6SGI application A **P6SGI application** is a Perl 6 subroutine that expects to receive an environment form a *application server* and returns a response each time it is called to be processed by that server.
+A P6SGI application is a Perl 6 subroutine that expects to receive an environment form a *application server* and returns a response each time it is called to be processed by that server.
 
-Web server A **Web Server** is an application that processes requests and responses according to the HTTP protocol.
+A Web Server is an application that processes requests and responses according to the HTTP protocol.
 
-Application server An **application server** is a program that is able to provide an environment to a *P6SGI application* and process the value returned from such such an application.
+An application server is a program that is able to provide an environment to a *P6SGI application* and process the value returned from such such an application.
 
 The *application server* might be associated with a *web server*, might itself be a *web server*, might process a protocol used to communicat with a *web server* (such as CGI or FastCGI), or may be something else entirely not related to a *web server* (such as a tool for testing *P6SGI applications*). 
 
-Middleware **Middleware** is a *P6SGI application* that wraps another *P6SGI application* for the purpose of performing some auxiliary task such as preprocessing request environments, logging, postprocessing responses, etc.
+Middleware is a *P6SGI application* that wraps another *P6SGI application* for the purpose of performing some auxiliary task such as preprocessing request environments, logging, postprocessing responses, etc.
 
-Framework developer A **framework developer** is a developer who writes an *application server*.
+A framework developer is a developer who writes an *application server*.
 
-Application developer A **application developer** is a developer who writes a *P6SGI application*.
+An application developer is a developer who writes a *P6SGI application*.
 
 # SPECIFICATION
 ===============
@@ -206,6 +206,8 @@ This list is primarily adopted from [PSGI](PSGI).
 
 In the environment, either `SCRIPT_NAME` or `PATH_INFO` must be set to a non-empty string. When `REQUEST_URI` is "/", the `PATH_INFO` SHOULD be "/" and `SCRIPT_NAME` SHOULD be the empty string. `SCRIPT_NAME` MUST NOT be set to "/".
 
+For those familiar with Perl 5 PSGI, you may want to take care when working with some of these values. A few look very similar, but are subtly different. For example, the setting called "psgix.input.buffered" in that standard is called "psgi.input.buffered" here.
+
 The server or the application may store its own data in the environment as well. These keys MUST contain at least one dot, SHOULD be prefixed uniquely.
 
 The following prefixes are reserved for use by this standard:
@@ -300,7 +302,7 @@ In any other case, the application server MAY calculate the content length by ex
 
 #### # Body
 
-The response body MUST take one of two forms. Either it is provided as an [Iterable](Iterable) object or as a [Promise](Promise).
+The response body MUST take one of two forms. Either it is provided as an [Iterable](Iterable) object or as a [Channel](Channel).
 
 ##### # Iterable Body
 
@@ -388,17 +390,17 @@ A middleware component is a P6SGI application that wraps another P6SGI applicati
 For example, here is one that adds a custom header:
 
     my &app = sub (%env) {
-        return (
+        (
             200,
             [ Content-Type => 'text/plain' ],
             [ 'Hello World'.encode ],
         );
     }
 
-    my &middleware = sub (%env) {
+    my &mw = sub (%env) {
         my @res = app(%env);
-        @res[1].push: X-PSGI-Used => 'True';
-        return @res;
-    }
+        @res[1].push: (X-PSGI-Used => 'True');
+        @res;
+    };
 
 Middleware MUST adhere to the requirements of a P6SGI application. Middleware MAY support streaming bodies, but SHOULD leave any parts of the original application output it does not understand alone, passing it through to the calling application server (which may itself be another middleware component).

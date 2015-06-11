@@ -378,18 +378,18 @@ A middleware component is a P6SGI application that wraps another P6SGI applicati
 For example, here is one that adds a custom header:
 
     my &app = sub (%env) {
-        return (
+        (
             200,
             [ Content-Type => 'text/plain' ],
             [ 'Hello World'.encode ],
         );
     }
 
-    my &middleware = sub (%env) {
+    my &mw = sub (%env) {
         my @res = app(%env);
-        @res[1].push: X-PSGI-Used => 'True';
-        return @res;
-    }
+        @res[1].push: (X-PSGI-Used => 'True');
+        @res;
+    };
 
 Middleware MUST adhere to the requirements of a P6SGI application. Middleware MAY support streaming bodies, but SHOULD leave any parts of the original application output it does not understand alone, passing it through to the calling application server (which may itself be another middleware component).
 
