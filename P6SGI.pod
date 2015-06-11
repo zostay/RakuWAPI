@@ -177,6 +177,8 @@ This list is primarily adopted from L<PSGI|https://metacpan.com/pod/PSGI>.
 =end table
 
 In the environment, either C<SCRIPT_NAME> or C<PATH_INFO> must be set to a non-empty string. When C<REQUEST_URI> is "/", the C<PATH_INFO> SHOULD be "/" and C<SCRIPT_NAME> SHOULD be the empty string. C<SCRIPT_NAME> MUST NOT be set to "/".
+
+For those familiar with Perl 5 PSGI, you may want to take care when working with some of these values. A few look very similar, but are subtly different. For example, the setting called "psgix.input.buffered" in that standard is called "psgi.input.buffered" here.
     
 The server or the application may store its own data in the environment as well. These keys MUST contain at least one dot, SHOULD be prefixed uniquely.
 
