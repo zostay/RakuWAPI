@@ -291,7 +291,7 @@ In any other case, the application server MAY calculate the content length by ex
 
 =head4 # Body
 
-The response body MUST take one of two forms. Either it is provided as an L<Iterable> object or as a L<Promise>.
+The response body MUST take one of two forms. Either it is provided as an L<Iterable> object or as a L<Channel>.
 
 =head5 # Iterable Body
 
