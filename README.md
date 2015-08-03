@@ -62,7 +62,7 @@ A P6SGI application is a Perl 6 [Routine](Routine) that is implemented similar t
         when Promise { True }
         default { die "invalid response" }
     };
-    method app(%env) returns P6SGIResponse { ... }
+    sub app(%env) returns P6SGIResponse { ... }
 
 However, the `P6SGIResponse` subset is not actually defined anywhere, but is useful for showing many of the requirements placed on the return value. 
 
