@@ -30,11 +30,11 @@ This document is strongly related to the PSGI pecification for Perl 5. Within a 
 # TERMINOLOGY
 =============
 
-A P6SGI application is a Perl 6 subroutine that expects to receive an environment form a *application server* and returns a response each time it is called to be processed by that server.
+A P6SGI application is a Perl 6 subroutine that expects to receive an environment from an *application server* and returns a response each time it is called to be processed by that server.
 
 A Web Server is an application that processes requests and responses according to the HTTP protocol.
 
-An application server is a program that is able to provide an environment to a *P6SGI application* and process the value returned from such such an application.
+An application server is a program that is able to provide an environment to a *P6SGI application* and process the value returned from such an application.
 
 The *application server* might be associated with a *web server*, might itself be a *web server*, might process a protocol used to communicat with a *web server* (such as CGI or FastCGI), or may be something else entirely not related to a *web server* (such as a tool for testing *P6SGI applications*). 
 
