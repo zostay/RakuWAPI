@@ -32,7 +32,7 @@ A D<Web Server> is an application that processes requests and responses accordin
 
 An D<application server> is a program that is able to provide an environment to a I<P6SGI application> and process the value returned from such such an application.
 
-The I<application server> might be associated with a I<web server>, might itself be a I<web server>, might process a protocol used to communicat with a I<web server> (such as CGI or FastCGI), or may be something else entirely not related to a I<web server> (such as a tool for testing I<P6SGI applications>). 
+The I<application server> might be associated with a I<web server>, might itself be a I<web server>, might process a protocol used to communicate with a I<web server> (such as CGI or FastCGI), or may be something else entirely not related to a I<web server> (such as a tool for testing I<P6SGI applications>).
 
 D<Middleware> is a I<P6SGI application> that wraps another I<P6SGI application> for the purpose of performing some auxiliary task such as preprocessing request environments, logging, postprocessing responses, etc.
 
@@ -47,7 +47,7 @@ An D<application developer> is a developer who writes a I<P6SGI application>.
 A P6SGI application is a Perl 6 L<Routine> that is implemented similar to the following stub
 
     subset P6SGIResponse of Mu where {
-        when Positional { 
+        when Positional {
                .elems == 3
             && .[0] ~~ Int && .[0] >= 100
             && .[1] ~~ Positional && [&&] .[1].flatmap(* ~~ Pair)
@@ -58,7 +58,7 @@ A P6SGI application is a Perl 6 L<Routine> that is implemented similar to the fo
     };
     method app(%env) returns P6SGIResponse { ... }
 
-However, the C<P6SGIResponse> subset is not actually defined anywhere, but is useful for showing many of the requirements placed on the return value. 
+However, the C<P6SGIResponse> subset is not actually defined anywhere, but is useful for showing many of the requirements placed on the return value.
 
 That is, a trivial P6SGI application could be implemented like this:
 
@@ -72,7 +72,7 @@ That is, a trivial P6SGI application could be implemented like this:
 
 =head2 # Environment
 
-The environment MUST be an L<Associative> that includes a number of values adopted from the old Common Gateway Interface as well as a number of additional P6SGI-specific values. The application server MUST provide each key as the type given. 
+The environment MUST be an L<Associative> that includes a number of values adopted from the old Common Gateway Interface as well as a number of additional P6SGI-specific values. The application server MUST provide each key as the type given.
 
 =head3 # CGI and PSGI Environment
 
@@ -82,68 +82,68 @@ This list is primarily adopted from L<PSGI|https://metacpan.com/pod/PSGI>.
 
     Variable                 | Constraint                             | Description
     =========================|========================================|======================================
-    C<REQUEST_METHOD>        | C<< Str:D where *.chars > 0 >>         | The HTTP request method, such as 
+    C<REQUEST_METHOD>        | C<< Str:D where *.chars > 0 >>         | The HTTP request method, such as
                              |                                        | "GET" or "POST".
 
-    C<SCRIPT_NAME>           | C<< Str:D where any('', m{ ^ "/" }) >> | This is the initial prtion of the 
-                             |                                        | URL path that refers to the 
+    C<SCRIPT_NAME>           | C<< Str:D where any('', m{ ^ "/" }) >> | This is the initial prtion of the
+                             |                                        | URL path that refers to the
                              |                                        | application.
 
-    C<PATH_INFO>             | C<< Str:D where any('', m{ ^ "/" }) >> | This is the remainder of the request 
-                             |                                        | URL path within the application. 
-                             |                                        | This value SHOULD be URI decoded by 
-                             |                                        | the application server according to 
+    C<PATH_INFO>             | C<< Str:D where any('', m{ ^ "/" }) >> | This is the remainder of the request
+                             |                                        | URL path within the application.
+                             |                                        | This value SHOULD be URI decoded by
+                             |                                        | the application server according to
                              |                                        | L<RFC 3875|http://www.ietf.org/rfc/rfc3875>
 
-    C<REQUEST_URI>           | C<< Str:D >>                           | This is the exact URL sent by the 
-                             |                                        | client in the request line of the 
-                             |                                        | HTTP request. The application server 
-                             |                                        | SHOULD NOT perform any decoding on 
+    C<REQUEST_URI>           | C<< Str:D >>                           | This is the exact URL sent by the
+                             |                                        | client in the request line of the
+                             |                                        | HTTP request. The application server
+                             |                                        | SHOULD NOT perform any decoding on
                              |                                        | it.
 
-    C<QUERY_STRING>          | C<< Str:D >>                           | This is the portion of the requested 
+    C<QUERY_STRING>          | C<< Str:D >>                           | This is the portion of the requested
                              |                                        | URL following the C<?>, if any.
 
-    C<SERVER_NAME>           | C<< Str:D where *.chars > 0 >>         | This is the server name of the web 
+    C<SERVER_NAME>           | C<< Str:D where *.chars > 0 >>         | This is the server name of the web
                              |                                        | server.
 
-    C<SERVER_PORT>           | C<< Int:D where * > 0 >>               | This is the server port of the web 
+    C<SERVER_PORT>           | C<< Int:D where * > 0 >>               | This is the server port of the web
                              |                                        | server.
 
-    C<SERVER_PROTOCOL>       | C<< Str:D where *.chars > 0 >>         | This is the server protocol sent by 
-                             |                                        | the client. Typically set to 
+    C<SERVER_PROTOCOL>       | C<< Str:D where *.chars > 0 >>         | This is the server protocol sent by
+                             |                                        | the client. Typically set to
                              |                                        | "HTTP/1.1" or a similar value.
 
-    C<CONTENT_LENGTH>        | C<< Int:_ >>                           | This corresponds to the 
-                             |                                        | Content-Length header sent by the 
-                             |                                        | client. If no such header was sent 
-                             |                                        | the application server SHOULD set 
+    C<CONTENT_LENGTH>        | C<< Int:_ >>                           | This corresponds to the
+                             |                                        | Content-Length header sent by the
+                             |                                        | client. If no such header was sent
+                             |                                        | the application server SHOULD set
                              |                                        | this key to the L<Int> type value.
 
-    C<CONTENT_TYPE>          | C<< Str:_ >>                           | This corresponds to the Content-Type 
+    C<CONTENT_TYPE>          | C<< Str:_ >>                           | This corresponds to the Content-Type
                              |                                        | header sent by the cilent. If no
-                             |                                        | such header was sent the application 
-                             |                                        | server SHOULD set this key to the 
+                             |                                        | such header was sent the application
+                             |                                        | server SHOULD set this key to the
                              |                                        | L<Str> type value.
 
-    C<HTTP_*>                | C<< Str:_ >>                           | The remaining request headers are 
-                             |                                        | placed here. The names are prefixed 
-                             |                                        | with C<HTTP_>, in ALL CAPS with the 
-                             |                                        | hyphens ("-") turned to underscores 
-                             |                                        | ("_"). Multiple incoming headers 
-                             |                                        | with the same name should be joined 
-                             |                                        | with a comma (", ") as described in 
-                             |                                        | L<RFC 2616|http://www.ietf.org/rfc/rfc2616>. 
-                             |                                        | The C<HTTP_CONTENT_LENGTH> and 
-                             |                                        | C<HTTP_CONTENT_TYPE> headers MUST 
+    C<HTTP_*>                | C<< Str:_ >>                           | The remaining request headers are
+                             |                                        | placed here. The names are prefixed
+                             |                                        | with C<HTTP_>, in ALL CAPS with the
+                             |                                        | hyphens ("-") turned to underscores
+                             |                                        | ("_"). Multiple incoming headers
+                             |                                        | with the same name should be joined
+                             |                                        | with a comma (", ") as described in
+                             |                                        | L<RFC 2616|http://www.ietf.org/rfc/rfc2616>.
+                             |                                        | The C<HTTP_CONTENT_LENGTH> and
+                             |                                        | C<HTTP_CONTENT_TYPE> headers MUST
                              |                                        | NOT be set.
 
-    Other CGI Keys           | C<< Str:_ >>                           | The server SHOULD attempt to provide 
-                             |                                        | as many other CGI variables as 
-                             |                                        | possible, but no others are required 
+    Other CGI Keys           | C<< Str:_ >>                           | The server SHOULD attempt to provide
+                             |                                        | as many other CGI variables as
+                             |                                        | possible, but no others are required
                              |                                        | or formally specified.
 
-    C<psgi.version>          | C<< Version:D >>                       | This is the version of this 
+    C<psgi.version>          | C<< Version:D >>                       | This is the version of this
                              |                                        | specification, C<v0.1.DRAFT>.
 
     C<psgi.url-scheme>       | C<< Str:D >>                           | Either "http" or "https".
@@ -158,20 +158,20 @@ This list is primarily adopted from L<PSGI|https://metacpan.com/pod/PSGI>.
 
     C<psgi.errors.buffered>  | C<< Bool:D >>                          | True if the error stream is buffered.
 
-    C<psgi.multithread>      | C<< Bool:D >>                          | True if the app may be 
-                             |                                        | simultaneously invoked in another 
-                             |                                        | thread in the same 
+    C<psgi.multithread>      | C<< Bool:D >>                          | True if the app may be
+                             |                                        | simultaneously invoked in another
+                             |                                        | thread in the same
                              |                                        | process.
 
     C<psgi.multiprocess>     | C<< Bool:D >>                          | True if the app may be simultaneously
                              |                                        | invoked in another process.
 
-    C<psgi.run-once>         | C<< Bool:D >>                          | True if the server expects the app 
-                             |                                        | to be invoked only once during the 
-                             |                                        | life of the process. This is not a 
+    C<psgi.run-once>         | C<< Bool:D >>                          | True if the server expects the app
+                             |                                        | to be invoked only once during the
+                             |                                        | life of the process. This is not a
                              |                                        | guarantee.
 
-    C<psgi.streaming>        | C<< Bool:D >>                          | True if the server supports deplayed 
+    C<psgi.streaming>        | C<< Bool:D >>                          | True if the server supports deplayed
                              |                                        | response and streaming interfaces.
 
     C<psgi.encoding>         | C<< Str:D >>                           | Name of the encoding the server will
@@ -182,7 +182,7 @@ This list is primarily adopted from L<PSGI|https://metacpan.com/pod/PSGI>.
 In the environment, either C<SCRIPT_NAME> or C<PATH_INFO> must be set to a non-empty string. When C<REQUEST_URI> is "/", the C<PATH_INFO> SHOULD be "/" and C<SCRIPT_NAME> SHOULD be the empty string. C<SCRIPT_NAME> MUST NOT be set to "/".
 
 For those familiar with Perl 5 PSGI, you may want to take care when working with some of these values. A few look very similar, but are subtly different. For example, the setting called "psgix.input.buffered" in that standard is called "psgi.input.buffered" here.
-    
+
 The server or the application may store its own data in the environment as well. These keys MUST contain at least one dot, SHOULD be prefixed uniquely.
 
 The following prefixes are reserved for use by this standard:
@@ -193,7 +193,7 @@ The following prefixes are reserved for use by this standard:
 
 =head3 # The Input Stream
 
-The input stream is set in the C<psgi.input> key of the environment. It is provided as an object that provides some of the methods of L<IO::Handle>. Most servers will probably just use an L<IO::Handle> object, but this is not required. 
+The input stream is set in the C<psgi.input> key of the environment. It is provided as an object that provides some of the methods of L<IO::Handle>. Most servers will probably just use an L<IO::Handle> object, but this is not required.
 
 The input stream object provided by the server is defined with the following methods:
 
@@ -231,11 +231,11 @@ The application SHOULD NOT check to see if the input stream is an L<IO::Handle>,
 
 =head3 # The Error Stream
 
-The error stream in C<psgi.errors> is also an L<IO::Handle>-like object, used to log application errors. The server SHOULD write these errors to an appropriate log, console, etc. 
+The error stream in C<psgi.errors> is also an L<IO::Handle>-like object, used to log application errors. The server SHOULD write these errors to an appropriate log, console, etc.
 
 The error stream implements the following methods:
 
-=begin item 
+=begin item
 
 print
 
@@ -248,7 +248,7 @@ Both variants return True on success.
 
 =end item
 
-=begin item 
+=begin item
 
 flush
 
@@ -270,13 +270,13 @@ This interface MUST be implemented by application servers. When the application 
 
 The elements are as follows:
 
-=head4 # Status 
+=head4 # Status
 
 The first element is the HTTP status code. It MUST be an L<Int> greater than or equal to 100. It SHOULD be an HTTP status code documented in L<RFC 2616|http://www.w3.org/Protocols/rfc2616>.
 
 =head4 # Headers
 
-The headers MUST be provided as a L<Positional> of L<Pair>. It MUST NOT be provided as an L<Associative>. 
+The headers MUST be provided as a L<Positional> of L<Pair>. It MUST NOT be provided as an L<Associative>.
 
 All keys MUST consist only of letters, digits, underscores ("_"), and hyphens ("-"). All keys MUST start with a letter. The headers SHOULD contain only ASCII compatible characters.
 
@@ -324,8 +324,8 @@ For example, here is an application that feeds events tapped from a L<Supply> to
 
     my &app = sub (%env) {
         my $events = Supply.new;
-        $*SCHEDULER.cue: { 
-            loop { 
+        $*SCHEDULER.cue: {
+            loop {
                 given event-reader() {
                     when Event { $events.emit(.to-json) }
                     when Fin   { $events.done }
@@ -333,9 +333,9 @@ For example, here is an application that feeds events tapped from a L<Supply> to
             }
         };
 
-        return ( 
-            200, 
-            [ Content-Type => 'application/json' ], 
+        return (
+            200,
+            [ Content-Type => 'application/json' ],
             $events.Channel
         );
     };
@@ -344,7 +344,7 @@ The application server closes the response when the L<Channel> is closed.
 
 =head5 # Encoding
 
-It is permissable for applications to return elements of the body using L<Str>s. However, if strings are used rather than L<Blob> buffers, you are placing the server in charge of encoding your data. The server MUST provide a C<psgi.encoding> in the environment. This names the encoding the server will use to encode strings encountered in the body. 
+It is permissable for applications to return elements of the body using L<Str>s. However, if strings are used rather than L<Blob> buffers, you are placing the server in charge of encoding your data. The server MUST provide a C<psgi.encoding> in the environment. This names the encoding the server will use to encode strings encountered in the body.
 
 In addition to this, the server SHOULD attempt to read the C<charset> value in the C<Content-Type> header to select an encoding. It will fallback to C<psgi.encoding> if no C<charset> is detected or it is unable to understand it.
 
@@ -359,7 +359,7 @@ The P6SGI application may return a L<Promise>. This L<Promise> will be kept with
 This allows the P6SGI application to delay the reponse to be returned at a later time. For example,
 
     my &app = sub (%env) {
-        start { 
+        Promise.start({
             my $result = long-running-process();
             if $result.success {
                 (
@@ -375,10 +375,10 @@ This allows the P6SGI application to delay the reponse to be returned at a later
                     [ 'Bad Stuff'.encode ],
                 )
             }
-        }
-    }        
+        });
+    }
 
-The C<start> call will return a L<Promise> that is kept as required.
+The C<start> method constructs a L<Promise> that is kept as required.
 
 The applicaiton server MUST await the keeping of the Promise for some period of time and send the client the response as required in the sections above.
 
@@ -405,5 +405,3 @@ For example, here is one that adds a custom header:
 Middleware MUST adhere to the requirements of a P6SGI application. Middleware MAY support streaming bodies, but SHOULD leave any parts of the original application output it does not understand alone, passing it through to the calling application server (which may itself be another middleware component).
 
 =end pod
-
-
