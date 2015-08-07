@@ -26,11 +26,11 @@ This document is strongly related to the PSGI pecification for Perl 5. Within a 
 
 =head1 # TERMINOLOGY
 
-A D<P6SGI application> is a Perl 6 subroutine that expects to receive an environment form a I<application server> and returns a response each time it is called to be processed by that server.
+A D<P6SGI application> is a Perl 6 subroutine that expects to receive an environment form an I<application server> and returns a response each time it is called to be processed by that server.
 
 A D<Web Server> is an application that processes requests and responses according to the HTTP protocol.
 
-An D<application server> is a program that is able to provide an environment to a I<P6SGI application> and process the value returned from such such an application.
+An D<application server> is a program that is able to provide an environment to a I<P6SGI application> and process the value returned from such an application.
 
 The I<application server> might be associated with a I<web server>, might itself be a I<web server>, might process a protocol used to communicate with a I<web server> (such as CGI or FastCGI), or may be something else entirely not related to a I<web server> (such as a tool for testing I<P6SGI applications>).
 
@@ -56,7 +56,7 @@ A P6SGI application is a Perl 6 L<Routine> that is implemented similar to the fo
         when Promise { True }
         default { die "invalid response" }
     };
-    method app(%env) returns P6SGIResponse { ... }
+    sub app(%env) returns P6SGIResponse { ... }
 
 However, the C<P6SGIResponse> subset is not actually defined anywhere, but is useful for showing many of the requirements placed on the return value.
 

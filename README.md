@@ -30,13 +30,13 @@ This document is strongly related to the PSGI pecification for Perl 5. Within a 
 # TERMINOLOGY
 =============
 
-A P6SGI application is a Perl 6 subroutine that expects to receive an environment from an *application server* and returns a response each time it is called to be processed by that server.
+A P6SGI application is a Perl 6 subroutine that expects to receive an environment form an *application server* and returns a response each time it is called to be processed by that server.
 
 A Web Server is an application that processes requests and responses according to the HTTP protocol.
 
 An application server is a program that is able to provide an environment to a *P6SGI application* and process the value returned from such an application.
 
-The *application server* might be associated with a *web server*, might itself be a *web server*, might process a protocol used to communicat with a *web server* (such as CGI or FastCGI), or may be something else entirely not related to a *web server* (such as a tool for testing *P6SGI applications*). 
+The *application server* might be associated with a *web server*, might itself be a *web server*, might process a protocol used to communicate with a *web server* (such as CGI or FastCGI), or may be something else entirely not related to a *web server* (such as a tool for testing *P6SGI applications*).
 
 Middleware is a *P6SGI application* that wraps another *P6SGI application* for the purpose of performing some auxiliary task such as preprocessing request environments, logging, postprocessing responses, etc.
 
@@ -53,7 +53,7 @@ An application developer is a developer who writes a *P6SGI application*.
 A P6SGI application is a Perl 6 [Routine](Routine) that is implemented similar to the following stub
 
     subset P6SGIResponse of Mu where {
-        when Positional { 
+        when Positional {
                .elems == 3
             && .[0] ~~ Int && .[0] >= 100
             && .[1] ~~ Positional && [&&] .[1].flatmap(* ~~ Pair)
@@ -64,7 +64,7 @@ A P6SGI application is a Perl 6 [Routine](Routine) that is implemented similar t
     };
     sub app(%env) returns P6SGIResponse { ... }
 
-However, the `P6SGIResponse` subset is not actually defined anywhere, but is useful for showing many of the requirements placed on the return value. 
+However, the `P6SGIResponse` subset is not actually defined anywhere, but is useful for showing many of the requirements placed on the return value.
 
 That is, a trivial P6SGI application could be implemented like this:
 
@@ -79,7 +79,7 @@ That is, a trivial P6SGI application could be implemented like this:
 # Environment
 -------------
 
-The environment MUST be an [Associative](Associative) that includes a number of values adopted from the old Common Gateway Interface as well as a number of additional P6SGI-specific values. The application server MUST provide each key as the type given. 
+The environment MUST be an [Associative](Associative) that includes a number of values adopted from the old Common Gateway Interface as well as a number of additional P6SGI-specific values. The application server MUST provide each key as the type given.
 
 ### # CGI and PSGI Environment
 
@@ -224,7 +224,7 @@ The following prefixes are reserved for use by this standard:
 
 ### # The Input Stream
 
-The input stream is set in the `psgi.input` key of the environment. It is provided as an object that provides some of the methods of [IO::Handle](IO::Handle). Most servers will probably just use an [IO::Handle](IO::Handle) object, but this is not required. 
+The input stream is set in the `psgi.input` key of the environment. It is provided as an object that provides some of the methods of [IO::Handle](IO::Handle). Most servers will probably just use an [IO::Handle](IO::Handle) object, but this is not required.
 
 The input stream object provided by the server is defined with the following methods:
 
@@ -252,7 +252,7 @@ The application SHOULD NOT check to see if the input stream is an [IO::Handle](I
 
 ### # The Error Stream
 
-The error stream in `psgi.errors` is also an [IO::Handle](IO::Handle)-like object, used to log application errors. The server SHOULD write these errors to an appropriate log, console, etc. 
+The error stream in `psgi.errors` is also an [IO::Handle](IO::Handle)-like object, used to log application errors. The server SHOULD write these errors to an appropriate log, console, etc.
 
 The error stream implements the following methods:
 
@@ -284,13 +284,13 @@ This interface MUST be implemented by application servers. When the application 
 
 The elements are as follows:
 
-#### # Status 
+#### # Status
 
 The first element is the HTTP status code. It MUST be an [Int](Int) greater than or equal to 100. It SHOULD be an HTTP status code documented in [RFC 2616](RFC 2616).
 
 #### # Headers
 
-The headers MUST be provided as a [Positional](Positional) of [Pair](Pair). It MUST NOT be provided as an [Associative](Associative). 
+The headers MUST be provided as a [Positional](Positional) of [Pair](Pair). It MUST NOT be provided as an [Associative](Associative).
 
 All keys MUST consist only of letters, digits, underscores ("_"), and hyphens ("-"). All keys MUST start with a letter. The headers SHOULD contain only ASCII compatible characters.
 
@@ -338,8 +338,8 @@ For example, here is an application that feeds events tapped from a [Supply](Sup
 
     my &app = sub (%env) {
         my $events = Supply.new;
-        $*SCHEDULER.cue: { 
-            loop { 
+        $*SCHEDULER.cue: {
+            loop {
                 given event-reader() {
                     when Event { $events.emit(.to-json) }
                     when Fin   { $events.done }
@@ -347,9 +347,9 @@ For example, here is an application that feeds events tapped from a [Supply](Sup
             }
         };
 
-        return ( 
-            200, 
-            [ Content-Type => 'application/json' ], 
+        return (
+            200,
+            [ Content-Type => 'application/json' ],
             $events.Channel
         );
     };
@@ -358,7 +358,7 @@ The application server closes the response when the [Channel](Channel) is closed
 
 ##### # Encoding
 
-It is permissable for applications to return elements of the body using [Str](Str)s. However, if strings are used rather than [Blob](Blob) buffers, you are placing the server in charge of encoding your data. The server MUST provide a `psgi.encoding` in the environment. This names the encoding the server will use to encode strings encountered in the body. 
+It is permissable for applications to return elements of the body using [Str](Str)s. However, if strings are used rather than [Blob](Blob) buffers, you are placing the server in charge of encoding your data. The server MUST provide a `psgi.encoding` in the environment. This names the encoding the server will use to encode strings encountered in the body.
 
 In addition to this, the server SHOULD attempt to read the `charset` value in the `Content-Type` header to select an encoding. It will fallback to `psgi.encoding` if no `charset` is detected or it is unable to understand it.
 
@@ -373,7 +373,7 @@ The P6SGI application may return a [Promise](Promise). This [Promise](Promise) w
 This allows the P6SGI application to delay the reponse to be returned at a later time. For example,
 
     my &app = sub (%env) {
-        start { 
+        Promise.start({
             my $result = long-running-process();
             if $result.success {
                 (
@@ -389,10 +389,10 @@ This allows the P6SGI application to delay the reponse to be returned at a later
                     [ 'Bad Stuff'.encode ],
                 )
             }
-        }
+        });
     }
 
-The `start` call will return a [Promise](Promise) that is kept as required.
+The `start` method constructs a [Promise](Promise) that is kept as required.
 
 The applicaiton server MUST await the keeping of the Promise for some period of time and send the client the response as required in the sections above.
 
