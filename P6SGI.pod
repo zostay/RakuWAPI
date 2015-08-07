@@ -44,30 +44,22 @@ An D<application developer> is a developer who writes a I<P6SGI application>.
 
 =head2 # Application
 
-A P6SGI application is a Perl 6 L<Routine> that is implemented similar to the following stub
+A P6SGI application is a Perl 6 L<Routine> that returns a L<Promise>. This Promise is kept by returning an iterable with three elements:
 
-    subset P6SGIResponse of Mu where {
-        when Positional {
-               .elems == 3
-            && .[0] ~~ Int && .[0] >= 100
-            && .[1] ~~ Positional && [&&] .[1].flatmap(* ~~ Pair)
-            && .[2] ~~ Iterable|Channel
-        }
-        when Promise { True }
-        default { die "invalid response" }
-    };
-    sub app(%env) returns P6SGIResponse { ... }
+=item B<Status Code>. This is a standard HTTP status code.
 
-However, the C<P6SGIResponse> subset is not actually defined anywhere, but is useful for showing many of the requirements placed on the return value.
+=item B<Positional>. This is an ordered list of L<Pair>s naming the headers the application wishes to put into the response.
 
-That is, a trivial P6SGI application could be implemented like this:
+=item B<Iterable> or B<Channel>. This is a series of Blobs or Strings to be sent as the content of the response.
+
+A trivial P6SGI application could be implemented like this:
 
     sub app(%env) {
-        return (
+        Promise.start({
             200,
             [ Content-Type => 'text/plain' ],
             [ "Hello World" ],
-        );
+        });
     }
 
 =head2 # Environment
@@ -262,11 +254,11 @@ The application SHOULD NOT check to see if the errors stream is an L<IO::Handle>
 
 =head2 # The Response
 
-The return value from a P6SGI applicaiton MUST be a three element L<Positional> or a L<Channel>.
+The return value from a P6SGI applicaiton MUST be a L<Promise>. That L<Promise> MUST be kept with a 3-element L<Positional>.
 
-=head3 # Positional Response
+=head3 # Promised Response
 
-This interface MUST be implemented by application servers. When the application provides a L<Positional> response, it MUST have exactly 3 elements. Because of this, a L<Parcel> is a common L<Positional> implementation to use. However, the server MUST NOT check what type of L<Positional> it is and depend upon the usual C<< postcircumfix:<[ ]> >> operator to find the 3 required elements.
+This is the base interface and MUST be implemented by application servers. The application returns a L<Promise>, which is kept with a 3-element L<Positional>. Because of this, a L<Parcel> is a common L<Positional> implementation to use, but a L<List> or L<Array> will also work fine. The server MUST NOT check what type of L<Positional> it is and depend upon the usual C<< postcircumfix:<[ ]> >> operator to find the 3 required elements.
 
 The elements are as follows:
 
@@ -333,11 +325,11 @@ For example, here is an application that feeds events tapped from a L<Supply> to
             }
         };
 
-        return (
+        Promise.start({
             200,
             [ Content-Type => 'application/json' ],
             $events.Channel
-        );
+        });
     };
 
 The application server closes the response when the L<Channel> is closed.
@@ -350,13 +342,11 @@ In addition to this, the server SHOULD attempt to read the C<charset> value in t
 
 Application developers are adviced to encode their own data, however. A P6SGI application SHOULD use L<Blob>s instead of L<Str>s.
 
-=head3 # Promise Response
+=head3 # Long Running Response
 
-This interface SHOULD be implemented by application servers. This interface MUST be implemented if C<psgi.streaming> is True in the environment.
+With a L<Promise>, the application may return a response immediately or after a long delay. The server will wait and process the Promise once it is kept. The application server MUST handle a broken Promise as appropriate, usually by returning some sort of Internal Server Error response.
 
-The P6SGI application may return a L<Promise>. This L<Promise> will be kept with a L<Positional> as described in L<#Positional_Response>, either with a L<Iterable> body or with a L<Channel> body.
-
-This allows the P6SGI application to delay the reponse to be returned at a later time. For example,
+By using a Promise, the P6SGI application to may delay the reponse to be returned at a later time. For example,
 
     my &app = sub (%env) {
         Promise.start({
@@ -380,8 +370,6 @@ This allows the P6SGI application to delay the reponse to be returned at a later
 
 The C<start> method constructs a L<Promise> that is kept as required.
 
-The applicaiton server MUST await the keeping of the Promise for some period of time and send the client the response as required in the sections above.
-
 =head2 # Middleware
 
 A middleware component is a P6SGI application that wraps another P6SGI application. As such it acts both as application server and application. In the process, it may preprocess the environment, postprocess the response, perform logging, validation, security enhancements, debugging tools, or just about anything else someone might imagine adding onto an application.
@@ -389,17 +377,19 @@ A middleware component is a P6SGI application that wraps another P6SGI applicati
 For example, here is one that adds a custom header:
 
     my &app = sub (%env) {
-        (
+        Promise.start({
             200,
             [ Content-Type => 'text/plain' ],
             [ 'Hello World'.encode ],
-        );
+        });
     }
 
     my &mw = sub (%env) {
-        my @res = app(%env);
-        @res[1].push: (X-PSGI-Used => 'True');
-        @res;
+        Promise.start({
+            my @res = await app(%env);
+            @res[1].push: (X-PSGI-Used => 'True');
+            @res;
+        });
     };
 
 Middleware MUST adhere to the requirements of a P6SGI application. Middleware MAY support streaming bodies, but SHOULD leave any parts of the original application output it does not understand alone, passing it through to the calling application server (which may itself be another middleware component).

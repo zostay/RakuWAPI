@@ -50,30 +50,22 @@ An application developer is a developer who writes a *P6SGI application*.
 # Application
 -------------
 
-A P6SGI application is a Perl 6 [Routine](Routine) that is implemented similar to the following stub
+A P6SGI application is a Perl 6 [Routine](Routine) that returns a [Promise](Promise). This Promise is kept by returning an iterable with three elements:
 
-    subset P6SGIResponse of Mu where {
-        when Positional {
-               .elems == 3
-            && .[0] ~~ Int && .[0] >= 100
-            && .[1] ~~ Positional && [&&] .[1].flatmap(* ~~ Pair)
-            && .[2] ~~ Iterable|Channel
-        }
-        when Promise { True }
-        default { die "invalid response" }
-    };
-    sub app(%env) returns P6SGIResponse { ... }
+  * **Status Code**. This is a standard HTTP status code.
 
-However, the `P6SGIResponse` subset is not actually defined anywhere, but is useful for showing many of the requirements placed on the return value.
+  * **Positional**. This is an ordered list of [Pair](Pair)s naming the headers the application wishes to put into the response.
 
-That is, a trivial P6SGI application could be implemented like this:
+  * **Iterable** or **Channel**. This is a series of Blobs or Strings to be sent as the content of the response.
+
+A trivial P6SGI application could be implemented like this:
 
     sub app(%env) {
-        return (
+        Promise.start({
             200,
             [ Content-Type => 'text/plain' ],
             [ "Hello World" ],
-        );
+        });
     }
 
 # Environment
@@ -276,11 +268,11 @@ The application SHOULD NOT check to see if the errors stream is an [IO::Handle](
 # The Response
 --------------
 
-The return value from a P6SGI applicaiton MUST be a three element [Positional](Positional) or a [Channel](Channel).
+The return value from a P6SGI applicaiton MUST be a [Promise](Promise). That [Promise](Promise) MUST be kept with a 3-element [Positional](Positional).
 
-### # Positional Response
+### # Promised Response
 
-This interface MUST be implemented by application servers. When the application provides a [Positional](Positional) response, it MUST have exactly 3 elements. Because of this, a [Parcel](Parcel) is a common [Positional](Positional) implementation to use. However, the server MUST NOT check what type of [Positional](Positional) it is and depend upon the usual `postcircumfix:<[ ]> ` operator to find the 3 required elements.
+This is the base interface and MUST be implemented by application servers. The application returns a [Promise](Promise), which is kept with a 3-element [Positional](Positional). Because of this, a [Parcel](Parcel) is a common [Positional](Positional) implementation to use, but a [List](List) or [Array](Array) will also work fine. The server MUST NOT check what type of [Positional](Positional) it is and depend upon the usual `postcircumfix:<[ ]> ` operator to find the 3 required elements.
 
 The elements are as follows:
 
@@ -347,11 +339,11 @@ For example, here is an application that feeds events tapped from a [Supply](Sup
             }
         };
 
-        return (
+        Promise.start({
             200,
             [ Content-Type => 'application/json' ],
             $events.Channel
-        );
+        });
     };
 
 The application server closes the response when the [Channel](Channel) is closed.
@@ -364,13 +356,11 @@ In addition to this, the server SHOULD attempt to read the `charset` value in th
 
 Application developers are adviced to encode their own data, however. A P6SGI application SHOULD use [Blob](Blob)s instead of [Str](Str)s.
 
-### # Promise Response
+### # Long Running Response
 
-This interface SHOULD be implemented by application servers. This interface MUST be implemented if `psgi.streaming` is True in the environment.
+With a [Promise](Promise), the application may return a response immediately or after a long delay. The server will wait and process the Promise once it is kept. The application server MUST handle a broken Promise as appropriate, usually by returning some sort of Internal Server Error response.
 
-The P6SGI application may return a [Promise](Promise). This [Promise](Promise) will be kept with a [Positional](Positional) as described in [#Positional_Response](#Positional_Response), either with a [Iterable](Iterable) body or with a [Channel](Channel) body.
-
-This allows the P6SGI application to delay the reponse to be returned at a later time. For example,
+By using a Promise, the P6SGI application to may delay the reponse to be returned at a later time. For example,
 
     my &app = sub (%env) {
         Promise.start({
@@ -394,8 +384,6 @@ This allows the P6SGI application to delay the reponse to be returned at a later
 
 The `start` method constructs a [Promise](Promise) that is kept as required.
 
-The applicaiton server MUST await the keeping of the Promise for some period of time and send the client the response as required in the sections above.
-
 # Middleware
 ------------
 
@@ -404,17 +392,19 @@ A middleware component is a P6SGI application that wraps another P6SGI applicati
 For example, here is one that adds a custom header:
 
     my &app = sub (%env) {
-        (
+        Promise.start({
             200,
             [ Content-Type => 'text/plain' ],
             [ 'Hello World'.encode ],
-        );
+        });
     }
 
     my &mw = sub (%env) {
-        my @res = app(%env);
-        @res[1].push: (X-PSGI-Used => 'True');
-        @res;
+        Promise.start({
+            my @res = await app(%env);
+            @res[1].push: (X-PSGI-Used => 'True');
+            @res;
+        });
     };
 
 Middleware MUST adhere to the requirements of a P6SGI application. Middleware MAY support streaming bodies, but SHOULD leave any parts of the original application output it does not understand alone, passing it through to the calling application server (which may itself be another middleware component).
