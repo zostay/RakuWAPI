@@ -4,7 +4,7 @@
 
 =head1 STATUS
 
-This is a Proposed Draft. Given Version 0.1.Draft so that it has some kind of initial designation.
+This is a Proposed Draft. Given Version 0.2.Draft so that it has some kind of initial designation.
 
 =head1 # INTRODUCTION
 

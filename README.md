@@ -6,7 +6,7 @@ P6SGI - Perl 6 Web Server Gateway Interface Specification
 STATUS
 ======
 
-This is a Proposed Draft. Given Version 0.1.Draft so that it has some kind of initial designation.
+This is a Proposed Draft. Given Version 0.2.Draft so that it has some kind of initial designation.
 
 # INTRODUCTION
 ==============
