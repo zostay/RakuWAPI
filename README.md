@@ -384,6 +384,26 @@ By using a Promise, the P6SGI application to may delay the reponse to be returne
 
 The `start` method constructs a [Promise](Promise) that is kept as required.
 
+### Extensible Response Types
+
+In addition to responses implemented with a [Promise](Promise) other kinds of responses might be implemented. Servers are not restricted to supporting only this response. Any other kind of response may be supported, so long as there is an orderly and obvious way to distinguish between the standard responses required and the responses a server implements.
+
+### Legacy Response
+
+One such response type extension that servers and middleware SHOULD consider is the legacy response. Applications ported from Perl 5 or using pre-P6SGI standards based on the way PSGI in Perl 5 works, would be returned using a [List](List) or [Array](Array) or some other type of [Positional](Positional). Even early drafts of this standard provided them as the most basic standard response. It is recommended that servers and middleware support these responses:
+
+For example,
+
+    sub app(%env) {
+        (200, [ Content-Type => 'text/plain' ], [ 'Hello World' ]
+    }
+
+Applications, however, SHOULD NOT provide these responses. If at all possible, they SHOULD employ some middleware around such existing applications to use a Promise, such as the following:
+
+    sub legacy-wrapper(%env) {
+        Promise.start({ app(%env) });
+    }
+
 # Middleware
 ------------
 

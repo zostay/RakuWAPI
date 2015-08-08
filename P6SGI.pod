@@ -370,6 +370,26 @@ By using a Promise, the P6SGI application to may delay the reponse to be returne
 
 The C<start> method constructs a L<Promise> that is kept as required.
 
+=head3 Extensible Response Types
+
+In addition to responses implemented with a L<Promise> other kinds of responses might be implemented. Servers are not restricted to supporting only this response. Any other kind of response may be supported, so long as there is an orderly and obvious way to distinguish between the standard responses required and the responses a server implements.
+
+=head3 Legacy Response
+
+One such response type extension that servers and middleware SHOULD consider is the legacy response. Applications ported from Perl 5 or using pre-P6SGI standards based on the way PSGI in Perl 5 works, would be returned using a L<List> or L<Array> or some other type of L<Positional>. Even early drafts of this standard provided them as the most basic standard response. It is recommended that servers and middleware support these responses:
+
+For example,
+
+    sub app(%env) {
+        (200, [ Content-Type => 'text/plain' ], [ 'Hello World' ]
+    }
+
+Applications, however, SHOULD NOT provide these responses. If at all possible, they SHOULD employ some middleware around such existing applications to use a Promise, such as the following:
+
+    sub legacy-wrapper(%env) {
+        Promise.start({ app(%env) });
+    }
+
 =head2 # Middleware
 
 A middleware component is a P6SGI application that wraps another P6SGI application. As such it acts both as application server and application. In the process, it may preprocess the environment, postprocess the response, perform logging, validation, security enhancements, debugging tools, or just about anything else someone might imagine adding onto an application.
