@@ -404,7 +404,7 @@ Applications, however, SHOULD NOT provide these responses. If at all possible, t
         Promise.start({ app(%env) });
     }
 
-It is possible to go even further supporting both deferred and streaming response types of PSGI. This specification stops short of recommending support for that but does hope that someone will at least produce middleware capable of mapping any PSGI request into a standard P6SGI request.
+It is possible to go even further supporting both deferred and streaming response types of PSGI. This specification stops short of recommending support for that but does hope that someone will at least produce middleware capable of mapping any PSGI request/response into a standard P6SGI request/response.
 
 # Middleware
 ------------
