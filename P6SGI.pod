@@ -14,13 +14,15 @@ This standard has the following goals:
 
 =item Standardize the interface between server and application so that web developers may focus on application development rather than the nuances of supporting each of several server platforms.
 
-=item Keep the interface simple so that a web application requires no additional tools or libraries other than what exists in a standard Perl 6 environment.
+=item Keep the interface simple so that a web application or middleware requires no additional tools or libraries other than what exists in a standard Perl 6 environment.
 
-=item Keep the interface simple so that servers are simple to implement.
+=item Keep the interface simple so that servers and middleware are simple to implement.
 
 =item Allow the interface to flexible enough to accomodate a variety of common use-cases and simple optimzations.
 
 =item Provide flexibility so that unanticipated use-cases may be implemented and so that the interface may be extended by servers wishing to do so.
+
+Aside from that is the underlying assumption that this is a simple interface and ought to at least somewhat resemble work in the standards it is derived from, including Rack, WSGI, PSGI, and others.
 
 This document is strongly related to the PSGI pecification for Perl 5. Within a Perl 6 environment, it is perfectly acceptable to refer to this standard as "PSGI" with the "6" in "P6SGI" being implied. However, for clarity, P6SGI and PSGI from Perl 5 are quite different because Perl 6 provides a number of built-in tools that greatly simplify several aspects of this specification.
 
