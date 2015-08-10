@@ -88,118 +88,118 @@ This list is primarily adopted from [PSGI](PSGI).
     </tr>
   </thead>
   <tr>
-    <td><code>REQUEST_METHOD</code></td>
-    <td><code>Str:D where *.chars </code> 0</code></td>
+    <td>C<REQUEST_METHOD></td>
+    <td>C<< Str:D where *.chars > 0 >></td>
     <td>The HTTP request method, such as "GET" or "POST".</td>
   </tr>
   <tr>
-    <td><code>SCRIPT_NAME</code></td>
-    <td><code>Str:D where any('', rx{ ^ "/" })</code></td>
+    <td>C<SCRIPT_NAME></td>
+    <td>C<< Str:D where any('', m{ ^ "/" }) >></td>
     <td>This is the initial prtion of the URL path that refers to the application.</td>
   </tr>
   <tr>
-    <td><code>PATH_INFO</code></td>
-    <td><code>Str:D where any('', rx{ ^ "/" })</code></td>
-    <td>This is the remainder of the request URL path within the application. This value SHOULD be URI decoded by the application server according to <a href="http://www.ietf.org/rfc/rfc3875">RFC 3875</a></td>
+    <td>C<PATH_INFO></td>
+    <td>C<< Str:D where any('', m{ ^ "/" }) >></td>
+    <td>This is the remainder of the request URL path within the application. This value SHOULD be URI decoded by the application server according to L<RFC 3875|http://www.ietf.org/rfc/rfc3875></td>
   </tr>
   <tr>
-    <td><code>REQUEST_URI</code></td>
-    <td><code>Str:D</code></td>
+    <td>C<REQUEST_URI></td>
+    <td>C<< Str:D >></td>
     <td>This is the exact URL sent by the client in the request line of the HTTP request. The application server SHOULD NOT perform any decoding on it.</td>
   </tr>
   <tr>
-    <td><code>QUERY_STRING</code></td>
-    <td><code>Str:D</code></td>
-    <td>This is the portion of the requested URL following the <code>?</code>, if any.</td>
+    <td>C<QUERY_STRING></td>
+    <td>C<< Str:D >></td>
+    <td>This is the portion of the requested URL following the C<?>, if any.</td>
   </tr>
   <tr>
-    <td><code>SERVER_NAME</code></td>
-    <td><code>Str:D where *.chars </code> 0</code></td>
+    <td>C<SERVER_NAME></td>
+    <td>C<< Str:D where *.chars > 0 >></td>
     <td>This is the server name of the web server.</td>
   </tr>
   <tr>
-    <td><code>SERVER_PORT</code></td>
-    <td><code>Int:D where * &gt; 0</code></td>
+    <td>C<SERVER_PORT></td>
+    <td>C<< Int:D where * > 0 >></td>
     <td>This is the server port of the web server.</td>
   </tr>
   <tr>
-    <td><code>SERVER_PROTOCOL</code></td>
-    <td><code>Str:D where *.chars &gt; 0</code></td>
+    <td>C<SERVER_PROTOCOL></td>
+    <td>C<< Str:D where *.chars > 0 >></td>
     <td>This is the server protocol sent by the client. Typically set to "HTTP/1.1" or a similar value.</td>
   </tr>
   <tr>
-    <td><code>CONTENT_LENGTH</code></td>
-    <td><code>Int:_</code></td>
-    <td>This corresponds to the Content-Length header sent by the client. If no such header was sent the application server SHOULD set this key to the L&lt;Int</code> type value.</td>
+    <td>C<CONTENT_LENGTH></td>
+    <td>C<< Int:_ >></td>
+    <td>This corresponds to the Content-Length header sent by the client. If no such header was sent the application server SHOULD set this key to the L<Int> type value.</td>
   </tr>
   <tr>
-    <td><code>CONTENT_TYPE</code></td>
-    <td><code>Str:_</code></td>
-    <td>This corresponds to the Content-Type header sent by the cilent. If no such header was sent the application server SHOULD set this key to the L&lt;Str</code> type value.</td>
+    <td>C<CONTENT_TYPE></td>
+    <td>C<< Str:_ >></td>
+    <td>This corresponds to the Content-Type header sent by the cilent. If no such header was sent the application server SHOULD set this key to the L<Str> type value.</td>
   </tr>
   <tr>
-    <td><code>HTTP_*</code></td>
-    <td><code>Str:_</code></td>
-    <td>The remaining request headers are placed here. The names are prefixed with <code>HTTP_</code>, in ALL CAPS with the hyphens ("-") turned to underscores ("_"). Multiple incoming headers with the same name should be joined with a comma (", ") as described in <a href="http://www.ietf.org/rfc/rfc2616">RFC 2616</a>. The <code>HTTP_CONTENT_LENGTH</code> and <code>HTTP_CONTENT_TYPE</code> headers MUST NOT be set.</td>
+    <td>C<HTTP_*></td>
+    <td>C<< Str:_ >></td>
+    <td>The remaining request headers are placed here. The names are prefixed with C<HTTP_>, in ALL CAPS with the hyphens ("-") turned to underscores ("_"). Multiple incoming headers with the same name should be joined with a comma (", ") as described in L<RFC 2616|http://www.ietf.org/rfc/rfc2616>. The C<HTTP_CONTENT_LENGTH> and C<HTTP_CONTENT_TYPE> headers MUST NOT be set.</td>
   </tr>
   <tr>
     <td>Other CGI Keys</td>
-    <td><code>Str:_</code></td>
+    <td>C<< Str:_ >></td>
     <td>The server SHOULD attempt to provide as many other CGI variables as possible, but no others are required or formally specified.</td>
   </tr>
   <tr>
-    <td><code>psgi.version</code></td>
-    <td><code>Version:D</code></td>
-    <td>This is the version of this specification, <code>v0.1.DRAFT</code>.</td>
+    <td>C<psgi.version></td>
+    <td>C<< Version:D >></td>
+    <td>This is the version of this specification, C<v0.1.DRAFT>.</td>
   </tr>
   <tr>
-    <td><code>psgi.url-scheme</code></td>
-    <td><code>Str:D</code></td>
+    <td>C<psgi.url-scheme></td>
+    <td>C<< Str:D >></td>
     <td>Either "http" or "https".</td>
   </tr>
   <tr>
-    <td><code>psgi.input</code></td>
-    <td>Like <code>IO::Handle:_</code></td>
+    <td>C<psgi.input></td>
+    <td>Like C<< IO::Handle:_ >></td>
     <td>The input stream for reading the body of the request, if any.</td>
   </tr>
   <tr>
-    <td><code>psgi.input.buffered</code></td>
-    <td><code>Bool:D</code></td>
+    <td>C<psgi.input.buffered></td>
+    <td>C<< Bool:D >></td>
     <td>True if the input stream is buffered and seekable.</td>
   </tr>
   <tr>
-    <td><code>psgi.errors</code></td>
-    <td>Like <code>IO::Handle:D</code></td>
+    <td>C<psgi.errors></td>
+    <td>Like C<< IO::Handle:D >></td>
     <td>The error stream for logging.</td>
   </tr>
   <tr>
-    <td><code>psgi.errors.buffered</code></td>
-    <td><code>Bool:D</code></td>
+    <td>C<psgi.errors.buffered></td>
+    <td>C<< Bool:D >></td>
     <td>True if the error stream is buffered.</td>
   </tr>
   <tr>
-    <td><code>psgi.multithread</code></td>
-    <td><code>Bool:D</code></td>
+    <td>C<psgi.multithread></td>
+    <td>C<< Bool:D >></td>
     <td>True if the app may be simultaneously invoked in another thread in the same process.</td>
   </tr>
   <tr>
-    <td><code>psgi.multiprocess</code></td>
-    <td><code>Bool:D</code></td>
+    <td>C<psgi.multiprocess></td>
+    <td>C<< Bool:D >></td>
     <td>True if the app may be simultaneously invoked in another process.</td>
   </tr>
   <tr>
-    <td><code>psgi.run-once</code></td>
-    <td><code>Bool:D</code></td>
+    <td>C<psgi.run-once></td>
+    <td>C<< Bool:D >></td>
     <td>True if the server expects the app to be invoked only once during the life of the process. This is not a guarantee.</td>
   </tr>
   <tr>
-    <td><code>psgi.streaming</code></td>
-    <td><code>Bool:D</code></td>
+    <td>C<psgi.streaming></td>
+    <td>C<< Bool:D >></td>
     <td>True if the server supports deplayed response and streaming interfaces.</td>
   </tr>
   <tr>
-    <td><code>psgi.encoding</code></td>
-    <td><code>Str:D</code></td>
+    <td>C<psgi.encoding></td>
+    <td>C<< Str:D >></td>
     <td>Name of the encoding the server will use for any strings it is sent.</td>
   </tr>
 </table>
