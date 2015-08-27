@@ -4,7 +4,9 @@
 
 =head1 STATUS
 
-This is a Proposed Draft. Given Version 0.3.Draft so that it has some kind of initial designation.
+This is a Proposed Draft.
+
+Version 0.3.Draft
 
 =head1 0 INTRODUCTION
 
@@ -14,7 +16,7 @@ This standard has the following goals:
 
 =item Standardize the interface between server and application so that web developers may focus on application development rather than the nuances of supporting each of several server platforms.
 
-=item Keep the interface simple so that a web application or middleware requires no additional tools or libraries other than what exists in a standard Perl 6 environment.
+=item Keep the interface simple so that a web application or middleware requires no additional tools or libraries other than what exists in a standard Perl 6 environment, no module installations are required.
 
 =item Keep the interface simple so that servers and middleware are simple to implement.
 
@@ -22,13 +24,15 @@ This standard has the following goals:
 
 =item Provide flexibility so that unanticipated use-cases may be implemented and so that the interface may be extended by servers wishing to do so.
 
-Aside from that is the underlying assumption that this is a simple interface and ought to at least somewhat resemble work in the standards it is derived from, including Rack, WSGI, PSGI, and others.
+=item Allow for backwards compatibility to PSGI applications.
 
-This document is strongly related to the PSGI pecification for Perl 5. Within a Perl 6 environment, it is perfectly acceptable to refer to this standard as "PSGI" with the "6" in "P6SGI" being implied. However, for clarity, P6SGI and PSGI from Perl 5 are quite different because Perl 6 provides a number of built-in tools that greatly simplify several aspects of this specification.
+Aside from that is the underlying assumption that this is a simple interface and ought to at least somewhat resemble work in the standards it is derived from, including Rack, WSGI, PSGI, CGI, and others.
+
+This document is strongly related to the PSGI pecification for Perl 5. Within a Perl 6 environment, it is acceptable to refer to this standard as "PSGI" with the "6" in "P6SGI" being implied. However, for clarity, P6SGI and PSGI from Perl 5 are different. This is possible because Perl 6 provides a number of built-in tools, e.g., reactive and concurrent programming tools, that simplify several aspects of this specification.
 
 =head1 1 TERMINOLOGY
 
-A D<P6SGI application> is a Perl 6 subroutine that expects to receive an environment form an I<application server> and returns a response each time it is called to be processed by that server.
+A D<P6SGI application> is a Perl 6 routine that expects to receive an environment from an I<application server> and returns a response each time it is called by the server.
 
 A D<Web Server> is an application that processes requests and responses according to the HTTP protocol.
 
@@ -54,16 +58,16 @@ A P6SGI application server is a program capable of running P6SGI applications as
 
 This aspect of the specification is deliberately vague and left up to the implementation. No requirements are made here.
 
-However, it is recommended that the server be able to load applications found in P6SGI script files. These are Perl 6 code files that end with the definition of a block to be used as the application routine. For example:
+It is recommended, however, that the server be able to load applications found in P6SGI script files. These are Perl 6 code files that end with the definition of a block to be used as the application routine. For example:
 
     use v6;
     sub app(%env) { 200, [ Content-Type => 'text/plain' ], [ 'Hello World!' ] }
 
-These files typically have an extension of F<.p6w> (Perl 6 Web application files).
+This specification suggests adopting a file name suffix of F<.p6w> (Perl 6 Web application files) to identify these files when an extension is appropriate.
 
 =head3 2.0.1 The Environment
 
-The environment MUST be an L<Associative>. The keys of this map are mostly derived the old Common Gateway Interface (CGI) as well as a number of additional P6SGI-specific values. The application server MUST provide each key as the type given.
+The environment MUST be an L<Associative>. The keys of this map are mostly derived the old Common Gateway Interface (CGI) as well as a number of additional P6SGI-specific values. The application server MUST provide each key as the type given. All variables given in the table below MUST be supported, except for those with the C<p6sgix.> prefix.
 
 This list is primarily adopted from L<PSGI|https://metacpan.com/pod/PSGI>.
 
@@ -132,41 +136,38 @@ This list is primarily adopted from L<PSGI|https://metacpan.com/pod/PSGI>.
                              |                                        | possible, but no others are required
                              |                                        | or formally specified.
 
-    C<psgi.version>          | C<< Version:D >>                       | This is the version of this
+    C<p6sgi.version>         | C<< Version:D >>                       | This is the version of this
                              |                                        | specification, C<v0.3.Draft>.
 
-    C<psgi.url-scheme>       | C<< Str:D >>                           | Either "http" or "https".
+    C<p6sgi.url-scheme>      | C<< Str:D >>                           | Either "http" or "https".
 
-    C<psgi.input>            | Like C<< IO::Handle:_ >>               | The input stream for reading the
+    C<p6sgi.input>           | Like C<< IO::Handle:_ >>               | The input stream for reading the
                              |                                        | body of the request, if any.
 
-    C<psgi.input.buffered>   | C<< Bool:D >>                          | True if the input stream is buffered
+    C<p6sgi.input.buffered>  | C<< Bool:D >>                          | True if the input stream is buffered
                              |                                        | and seekable.
 
-    C<psgi.errors>           | Like C<< IO::Handle:D >>               | The error stream for logging.
+    C<p6sgi.errors>          | Like C<< IO::Handle:D >>               | The error stream for logging.
 
-    C<psgi.errors.buffered>  | C<< Bool:D >>                          | True if the error stream is buffered.
+    C<p6sgi.errors.buffered> | C<< Bool:D >>                          | True if the error stream is buffered.
 
-    C<psgi.multithread>      | C<< Bool:D >>                          | True if the app may be
+    C<p6sgi.multithread>     | C<< Bool:D >>                          | True if the app may be
                              |                                        | simultaneously invoked in another
                              |                                        | thread in the same
                              |                                        | process.
 
-    C<psgi.multiprocess>     | C<< Bool:D >>                          | True if the app may be simultaneously
+    C<p6sgi.multiprocess>    | C<< Bool:D >>                          | True if the app may be simultaneously
                              |                                        | invoked in another process.
 
-    C<psgi.run-once>         | C<< Bool:D >>                          | True if the server expects the app
+    C<p6sgi.run-once>        | C<< Bool:D >>                          | True if the server expects the app
                              |                                        | to be invoked only once during the
                              |                                        | life of the process. This is not a
                              |                                        | guarantee.
 
-    C<psgi.streaming>        | C<< Bool:D >>                          | True if the server supports deplayed
-                             |                                        | response and streaming interfaces.
-
-    C<psgi.encoding>         | C<< Str:D >>                           | Name of the encoding the server will
+    C<p6sgi.encoding>        | C<< Str:D >>                           | Name of the encoding the server will
                              |                                        | use for any strings it is sent.
 
-    C<psgi.output.sent>      | C<< Promise:D >>                       | A vowed Promise that is kept by the
+    C<p6sgix.output.sent>    | C<< Promise:D >>                       | A vowed Promise that is kept by the
                              |                                        | server when the server is done
                              |                                        | processing the response. It will
                              |                                        | be broken if the server terminates
@@ -176,21 +177,23 @@ This list is primarily adopted from L<PSGI|https://metacpan.com/pod/PSGI>.
 
 In the environment, either C<SCRIPT_NAME> or C<PATH_INFO> must be set to a non-empty string. When C<REQUEST_URI> is "/", the C<PATH_INFO> SHOULD be "/" and C<SCRIPT_NAME> SHOULD be the empty string. C<SCRIPT_NAME> MUST NOT be set to "/".
 
-One thing to note is that the P6SGI keys in the environment have the prefix C<psgi.>, NOT C<p6sgi.>. This nuance is intended to save typing and makes it easier to maintain backwards compatibility to Perl 5 PSGI-style applications. Adding the "6" does not really gain anything.
+For those familiar with Perl 5 PSGI, you may want to take care when working with some of these values. A few look very similar, but are subtly different. For example, the setting called "psgix.input.buffered" in that standard is called "p6sgi.input.buffered" here and is not considered an extension. A server MAY choose to supply all of the PSGI equivalents as well and MUST if it wishes to provide PSGI backwards-compatibility.
 
-For those familiar with Perl 5 PSGI, you may want to take care when working with some of these values. A few look very similar, but are subtly different. For example, the setting called "psgix.input.buffered" in that standard is called "psgi.input.buffered" here. A server supporting legacy response types from PSGI MUST provide duplicate keys in the environment for such differences.
-
-The server or the application may store its own data in the environment as well. These keys MUST contain at least one dot, SHOULD be prefixed uniquely.
+The server or the application may store its own data in the environment as well. These keys MUST contain at least one dot, SHOULD be prefixed uniquely. The server MUST allow the application and middleware to store keys here and MAY choose to enforce the namespacing requirements in the object implementing the environment.
 
 The following prefixes are reserved for use by this standard:
 
-=item C<psgi.> is for P6SGI core standard environment.
+=item C<p6sgi.> is for P6SGI core standard environment.
 
-=item C<psgix.> is for P6SGI standard extensions to the environment.
+=item C<p6sgix.> is for P6SGI standard extensions to the environment.
+
+=item C<psgi.> is for PSGI legacy standard environment.
+
+=item C<psgix.> is for PSGI legacy extensions to the environment.
 
 =head3 2.0.2 The Input Stream
 
-The input stream is set in the C<psgi.input> key of the environment. The server MUST provide an object that implements a subset of the methods of L<IO::Handle>. It MAY choose to provide an L<IO::Handle>.
+The input stream is set in the C<p6sgi.input> key of the environment. The server MUST provide an object that implements a subset of the methods of L<IO::Handle>. It MAY provide an L<IO::Handle>.
 
 The input stream object provided by the server MUST provide the following methods:
 
@@ -212,7 +215,7 @@ seek
 
     method seek(Int:D $offset, Int:D $whence where 0 >= * >= 2) returns Bool { ... }
 
-This method MAY be provided in all cases, but MUST be provided if C<psgi.input.buffered> is set in the environment. Calling this moves the read cursor to byte position C<$offset> relative to C<$whence>, which is one of the following integers:
+This method MAY be provided in all cases, but MUST be provided if C<p6sgi.input.buffered> is set in the environment. Calling this moves the read cursor to byte position C<$offset> relative to C<$whence>, which is one of the following integers:
 
 =item2 C<0>: Seek from the start of the file.
 
@@ -220,13 +223,13 @@ This method MAY be provided in all cases, but MUST be provided if C<psgi.input.b
 
 =item2 C<2>: Seek from the end of the file.
 
-This method returns True on successful seek.
+This method returns C<True> on successful seek.
 
 =end item
 
 =head3 2.0.3 The Error Stream
 
-The error stream MUST be given in the environment via C<psgi.errors>. It is also an L<IO::Handle>-like object, used to log application errors. The server SHOULD write these errors to an appropriate log, console, etc. The error stream MAY be an L<IO::Handle>.
+The error stream MUST be given in the environment via C<p6sgi.errors>. It is also an L<IO::Handle>-like object, used to log application errors. The server SHOULD write these errors to an appropriate log, console, etc. The error stream MAY be an L<IO::Handle>.
 
 The error stream MUST implement the following methods:
 
@@ -239,7 +242,7 @@ print
 
 Both multi variants MUST be provided. The slurpy version using C<@error> will concatenate the stringified version of each value given for recording.
 
-Both variants return True on success.
+Both variants return C<True> on success.
 
 =end item
 
@@ -249,151 +252,173 @@ flush
 
     method flush() returns Bool:D { ... }
 
-This method MUST be provided. It MAY be a no-op, particularly if C<psgi.errors.buffered> is False. It SHOULD flush the error stream buffer. It returns True on success.
+This method MUST be provided. It MAY be a no-op, particularly if C<p6sgi.errors.buffered> is False. It SHOULD flush the error stream buffer. It returns C<True> on success.
 
 =end item
 
 =head3 2.0.4 Application Response
 
-P6SGI applications may respond to the environment in a variety of ways. A P6SGI server MUST be able to process one of these ways. Other variations SHOULD be processed by a P6SGI server. It MAY do so by using the P6SGI Web Application Adapter library. This library can automatically detect the type of response returned by the application and translate it into the canonical form all P6SGI servers support.
+P6SGI applications may respond to the environment in a variety of forms. A P6SGI server MUST be able to process all of the forms described in this specification.
 
-Before going into the canonical form and the standard variations, we need to explain the components of an application response. Each application response is parsed in four parts. Here are the parts, with an example from the canonical form given with each.
+As supporting a variety of response forms could be an obstacle to application server and, more importantly, middleware development, the P6SGI standard ships with a small compilation unit to help. It contains middleware applications able to convert these various forms into the form that is most flexible. This way an application server or middleware only has to suport one form.
 
-=item B<Component A: Overall Delivery>. This describes the overall delivery of the response. For example, the A components of the canonical response is that the response must be returned as a L<Promise> that is kept with a 3-element L<Positional> containing Component B: Status Code, Component C: Message Headers, and Component D: Message Body in indexes 0, 1, and 2, respectively. All A components of response variants MUST describe how these three components are delivered.
+The form an application response takes may vary in any number of ways. The way the standard forms may vary, those described by this specification, can be described in four or five components. To help understand what is possible, let us examine each of these components: wrapper, container, status code, headers, and body.
 
-=item B<Component B: Status Code>. This describes the delivery of the Status Code. The B component of the canonical response is to handle these as an L<Int> directly representing the code. However the B component varies, it must define a mapping back to the HTTP standard status codes.
+=item B<Wrapper Component>. The wrapper component is the only optional part. It describes how the container component is delivered with the remaining parts. For example, an application may return a L<Promise> that is kept with the container component or it may be omitted and the container returned directly by the application.
 
-=item B<Component C: Message Headers>. This component handles the delivery of HTTP message headers. The C component of the canonical response is to handle these as ordered L<Pair>s mapping header name to header value.
+=item B<Container Component>. The container component may be returned directly or may be returned within a wrapper component. It supplies the remaining three parts: status code, headers, and body. For example, a 3-element L<Positional> is the container component with the elements referring to the status code, headers, and body, respectively.
 
-=item B<Component D: Message Body>. This component handles the delivery of the HTTP message body. The D component of the canonical response is a L<Supply> which emits one or more L<Str> or L<Blob> objects containing the message body.
+=item B<Status Code Component>. The status code component declares the HTTP status code the application is returning. For example, the status code is returned as an integer for status codes, like 200.
 
-These components may vary independent of one another. For example, one A component variation is to return an ordered list (i.e., a L<Positional>) containing the 3 components directly, rather than doing so by keep a L<Promise>. This variation only describes that change and does not restrain how the B, C, and D components may be varied. That said, it is permissible for such a restriction to be made, but that such must be explained. The standard variations do not make any such restrictions.
+=item B<Header Component>. The header component defines the headers the application intens to return to the client. For example, the header component is typically returned as a L<List> of L<Pair>s, with each key naming a header and each value being the value to set for that header.
 
-Any variation to any of these components SHOULD be distinct from the canonical form and a test SHOULD be defined for detecting such. Any custom variations SHOULD be distinct from the other variations as well.
+=item B<Body Component>. The body component defines the content of the message body. For example, the body component may be returned as a L<Supply> that emits a series of L<Str>s and L<Blob>s.
 
-B<Note:> In the following sections, the components will be formally described using the variables C<$response> to represent the object returned from the P6SGI application and C<$B>, C<$C>, and C<$D> to represent the B, C, and D components. (The C<$response> is the A component if the test given for the variation being described passes.)
+These components may vary independent of one another. For example, the body component might be returned as L<Supply> or as an iterable list of L<Str>s and L<Blob>s instead and the body may be returned by a container directly or a container kept by a L<Promise>. Furthermore, framework and application developers may wish to experiment with variations not described here. This is permitted, but such variations SHOULD be easy to distinguish from the standard forms and SHOULD also be easy to distinguish from each other. Such extensions can be universally supported by providing middleware to convert these response forms into the standard forms supported by all P6SGI servers and middleware.
 
-=head4 2.0.4.0 Canonical Application Response
+=head4 2.0.4.0 Wrapper Components
 
-This describes the canonical application response that all P6SGI servers MUST be able to process.
+The wrapper component is an optional component wrapping the container component. The wrapper component determines the overall protocol to be used when handling the response. It may also be that the wrapper requires its own particular kind of container to work.
 
-The canonical application response is a L<Promise>. In canonical form, the Promise is kept by returning a L<Positional> containing 3 elements. The Position will contain 3 elements, respectively,
+=head5 2.0.4.0.0 No Wrapper
 
-=item B<Status Code>. This is a standard HTTP status code reported as an integer.
+Rather than using a wrapper, the application MAY respond with the container directly.
 
-=item B<Positional>. This is an ordered list of L<Pair>s naming the headers the application wishes to put into the response.
+The application should assume that the response is the container directly if the response does not test as being any of the standard wrapper forms.
 
-=item B<Supply>. This is a L<Supply> object that the application will use to emit the content of the body as L<Str> and L<Blob> objects.o
+=head5 2.0.4.0.1 Promise
 
-=head5 2.0.4.0.0 Component A: Promised Positional
+When the application response is a Promise, the server SHOULD NOT assume that the Promise will always be kept and SHOULD handle a broken Promise as appropriate. The server SHOULD assume the Promise has been vowed a MUST NOT try to keep or break the Promise itself.
 
-The canonical A form is a L<Promise> that is kept with a L<Positional>. The server SHOULD NOT assume that the Promise will always be kept and SHOULD handle a broken Promise as appropriate.
+The test to identify this wrapper component is:
 
-The test to identify the A component of the canoncial form is:
+    $response ~~ Promise
 
-    $response ~~ Promise && $response.result ~~ Positional
+The mechanism for receiving the container is:
 
-The code for finding the remaining components is:
+    $response.then({
+        given $response.status {
+            when Kept { $container = $response }
+            default   { #{ handle error } }
+        }
+    });
 
-    ($B, $C, $D) = $response.result.list;
+=head5 2.0.4.0.2 Callback (Legacy)
 
-=head4 2.0.4.0.1 Component B: Status Code
+This is a PSGI legacy wrapper form and a server is NOT REQUIRED to support it.
 
-The application is required to set this to a valid HTTP status code as an integer. The application server MAY attempt to verify the validity of the status code and that the rest of the response is sane.
+When the appliation resopnse is a L<Callable>, the legacy supporting server MUST call the returned code and pass in a single parameter, which is itself a callback. This second callback will be called by the application with the container component or part of the container component. (In this legacy form, the container is defined as part of the wrapper.)
 
-The test for the canonical B component is:
+If all three elements of the container are provided to the second callback, the response is complete. If, however, the application passes only two elements, the legacy supporting server MUST return a writer object, which will be used by the application to return the message body.
 
-    $B ~~ Int
+The test for this wrapper is:
 
-=head4 2.0.4.0.2 Component C: Message Header
+    $response ~~ Callable
 
-The canonical C component is given as a L<List> of L<Pair>s, each Pair maps a header name to a header value.
+The code for acquiring the container from the response is similar to as follows:
 
-The server SHOULD attempt to pass on all given headers, at least those that are correctly formatted according to relevant HTTP standards. Any additional headers should also be honored, if possible and security allows, etc. The order of headers with different names MAY be preserved, but the order of multiple headers with the same name, relative to one another, MUST be preserved.
+    my $container-promise = Promise.new;
+    sub server-callback (@app-response) {
+        my @container = @app-response;
+        if @container.elems == 2 {
+            Promise.start({
+                @container.push: $p.result
+                $container-promise.keep(@container);
+            });
+            return class {
+                has @.body;
+                multi method write(Str $s) { @.body.push($s) }
+                multi method write(Blob $b) { @.body.push($b) }
+                method close() { $p.keep(@.body) }
+            }.new;
+        }
+        else {
+            $container-promise.keep(@container);
+        }
+    }
 
-If the application is missing headers that are required for the Status Code given or provides headers that are forbidden, the application server SHOULD treat that as a server error.
+    $response.(&server-callback)
+    @container = $container-promise.result;
 
-The server SHOULD examine the L<Content-Type> header for the C<charset> setting. This SHOULD be used to aid in encoding any L<Str> encountered in the Message Body. If the application does not provide a C<charset>, the server MAY choose to add this header itself using the encoding provided in C<psgi.encoding> in the environment.
+=head4 2.0.4.1 Container
 
-The server SHOULD consider the L<Content-Length> header. It MAY choose to stop emitting characters to the HTTP client after that many bytes has been written.
-
-The test for the canonical C component is:
-
-    $C ~~ List && $C.all ~~ Pair
-
-=head4 2.0.4.0.3 Component D: Message Body
-
-The canonical D component is given as a L<Supply> that emits L<Blob> and L<Str> objects.
-
-The server should not concern itself with whether the L<Supply> given is on demand or live. If given, it MUST tap the Supply and process each emitted L<Blob> or L<Str>, at least until the L<Content-Length> number of bytes has been reached (if such a header has been given by the application).
-
-The application server SHOULD continue processing emitted values until the Supply is done. The server SHOULD then end the response. If the Supply is quit instead, the server should attempt to handle the error as well as it can. As the header is probably already sent at this point in the processing, this may just mean logging the error for troubleshooting.
-
-When the Supply is done, the server MUST end processing of the message body. At that point, it MUST keep the Promise given to the application in L<psgi.output.sent>.
-
-The application server MAY choose to stop tapping the message body early because the content is longer than the Content-Length header or because the time between messages being emitted is too great or because the overall time processing the message body is too great or for any other reason. When the server stops tapping the Supply, it MUST break the Promise given to the application in L<psgi.output.sent>.
-
-The server SHOULD attempt to pas on the message body when given, unless the request is one identified by the relavant HTTP standards as not having a body. In such a case, the application should not provide a body. If it does, the application server SHOULD treat that as an error.
-
-The test for the canonical D component is:
-
-    $D ~~ Supply
-
-=head4 2.0.4.1 Component A Variations
-
-This specification includes only two variations within the A component, one is the canonical form and the other is a convenient for many applications.
-
-=head5 2.0.4.1.0 Promised Positional (Canonical)
-
-The canonical form is described above.
+This container component simply defines how the server retrieves the components. It may be returned directly by the application or wrapped in a wrapper component.
 
 =head5 2.0.4.1.1 Positional
 
-Rather than return the components as a L<Promise>, a L<Positional> is returned directly in this form.
+Only a single container component form is defined here. The container is given as a L<Positional> with exactly three elements.
 
 The test for this is:
 
-    $response ~~ Positional
+    $container ~~ Positional && $container.elems == 3
 
-To find the B, C, and D components, the following code is used:
+Extracting the other components is handled like so:
 
-    ($B, $C, $D) = $response.list;
+    ($status, $headers, $body) = $container.list;
 
-=head4 2.0.4.2 Component B Variations
+=head4 2.0.4.2 Status
 
-No additional variations aside from the canonical form are included in this specification.
+The status code MUST map to an HTTP status code.
 
-=head5 2.0.4.2.0 Int (Canonical)
+=head5 2.0.4.2.1 Int
 
-The canonical form is described above.
+The application is required to set this to a valid HTTP status code as an integer. The application server MAY attempt to verify the validity of the status code and that the rest of the response is sane according to the HTTP standards.
 
-=head4 2.0.4.3 Component C Variations
+The test for this component form is:
 
-Only the canonical variation is specified her.
+    $status ~~ Int
 
-=head5 2.0.4.3.0 List of Pairs (Canonical)
+=head4 2.0.4.3 Header
 
-The canonical form is described above.
+The header component declares the HTTP headers the application intends to return. It may also define the order the application prefers the headers be returned in.
 
-=head4 2.0.4.4 Component D Variations
+=head5 2.0.4.3.0 List of Pairs
 
-There are two variations in this specification, including the canonical form and a second convenient form.
+The headers are returned as a L<List> of L<Pair>s, each Pair maps a header name to a header value.
 
-=head5 2.0.4.4.0 Supply of Str and Blob (Canonical)
+The server SHOULD attempt to pass on all given headers. The application server MAY perform any validation necessary and MAY deal with errors as appropriate. Any custom headers SHOULD be honored, if possible and security allows, etc. The order of multiple headers with the same name, relative to one another, MUST be preserved.
 
-The canoncial form is described above.
+If the application is missing headers that are required for the Status Code given or provides headers that are forbidden, the application server SHOULD treat that as a server error.
 
-=head5 2.0.4.4.1 List of Str and Blob
+The server SHOULD examine the L<Content-Type> header for the C<charset> setting. This SHOULD be used to aid in encoding any L<Str> encountered when processing the Message Body. If the application does not provide a C<charset>, the server MAY choose to add this header itself using the encoding provided in C<p6sgi.encoding> in the environment.
 
-This variation may be treated the same as the L<Supply> form by using C<from-list> to generate a Supply from this List.
+The server SHOULD examine the L<Content-Length> header, if given. It MAY choose to stop consuming the Message Body once the number of bytes given has been read.
+
+The test for this component is:
+
+    $header ~~ List && $header.all ~~ Pair
+
+=head4 2.0.4.4 Message Body
+
+The message body may be given in one of the following two forms.
+
+=head5 2.0.4.4.0 Supply of Str and Blob
+
+The best and most flexible form, but not necessarily the most straightforward, is to use a L<Supply>. This L<Supply> will emit L<Blob> and L<Str> objects.
+
+The server SHOULD NOT concern itself with whether the L<Supply> given is on demand or live. The application server MUST tap the Supply and process each emitted L<Blob> or L<Str>, until the the either the Supply is done or the server decides to quit tapping the stream for some reason.
+
+The application server SHOULD continue processing emitted values until the Supply is done or until L<Content-Length> bytes have been emitted. The server MAY stop tapping the Supply for various other reasons as well, such as timeouts or because the client has closed the socket, etc.
+
+If the Supply is quit instead of being done, the server SHOULD attempt to handle the error as appropriate.
+
+The server SHOULD attempt to pass on the message body as given, unless the request is one identified by the relevant HTTP standards as not having a body. If the applicaiton provides a non-empty message body, the application server SHOULD treat that as an error.
+
+The test for this component is:
+
+    $body ~~ Supply
+
+=head5 2.0.4.4.1 Iterable of Str and Blob
+
+This variation may be treated the same as the L<Supply> form by using C<from-list> to generate a Supply from this List. All the specifications for such bodies apply here.
 
 The test for this form is:
 
-    $D ~~ List
+    $body ~~ Iterable
 
 =head3 2.0.5 Encoding
 
-It is up to the server how to handle encoded characters given by the client within the headers.
+It is up to the server how to handle encoded characters given by the application within the headers.
 
 Within the body, however, any L<Str> emitted from the L<Supply> MUST be encoded. If the application has specified a C<charset> with the L<Content-Type> header, the server SHOULD honor that character encoding. If none is given or the server does not honor the L<Content-Type> header, it MUST encode any L<Str> with the encoding named in C<psgi.encoding>.
 
@@ -423,7 +448,7 @@ For example, in the following snippet C<&mw> is a simple middleware application 
 
     &app.wrap(&mw);
 
-As with servers, middleware MUST support the canonical application response types and SHOULD support the standard variations. To aid middleware authors in supporting the standard forms, middleware may use the P6SGI Web Application Adapter library.
+As with servers, middleware MUST support the standard application response forms. As supporting all these standard forms would be onerous to most middleware developers, the P6SGI standard ships with a small compilation unit that may be used to assist in this support.
 
 =head3 2.1.0 Middleware Application
 
@@ -431,11 +456,11 @@ The way middleware is applied to an application varies. There are two basic mech
 
 =head4 2.1.0.0 Wrap Method
 
-This is the method demonstrated in the example above. Perl 6 provides a handy C<wrap> method which may be used to apply another subroutine as an aspect of the subroutine being wrapped. In this case, the original applicaiton is called using C<callsame> or C<callwith>.
+This is the method demonstrated in the example above. Perl 6 provides a handy C<wrap> method which may be used to apply another subroutine as an aspect of the subroutine being wrapped. In this case, the original application may be called using C<callsame> or C<callwith>.
 
 =head2 2.1.0.1 Closure Method
 
-This method resembles that which would normally be used in PSGI, which is to define the middleware using a closure that wraps the application. The downside is that you must make sure that the middleware is treated as the top level application:
+This method resembles that which would normally be used in PSGI, which is to define the middleware using a closure that wraps the application.
 
     my &mw = sub (%env) {
         Promise.start({
@@ -446,11 +471,11 @@ This method resembles that which would normally be used in PSGI, which is to def
     };
     &app = &mw;
 
-This example is functionality identical to the example above.
+This example is functionality identical to the previous example.
 
 =head3 2.1.1 Environment
 
-Middleware applications SHOULD pass on the complete environment, only modifying the bits required to do their job. Middlware applications MAY add new keys to the environment as a side-effect.
+Middleware applications SHOULD pass on the complete environment, only modifying the bits required to perform their purpose. Middlware applications MAY add new keys to the environment as a side-effect. These additional keys MUST contain a period and SHOULD use a unique namespace.
 
 =head3 2.1.2 The Input Stream
 
@@ -462,21 +487,19 @@ See section 2.2.3.
 
 =head3 2.1.4 Application Response
 
-As with an application, middleware MUST return a valid P6SGI response to the server. Middleware that is shared and intended to be used with many apps SHOULD strongly consider using canonical form.
+As with an application, middleware MUST return a valid P6SGI response to the server. Middleware developers SHOULD write design their middleware to return the best, most flexible form available. This is the form that returns a L<Promise> wrapper around a L<Positional> container containing an L<Int> status, L<List> of L<Pair>s header, and a L<Supply> of L<Str> and L<Blob> message body.
 
-Middlware developers need to be aware that the application may not return a canonical form response. It MUST be able to process canonical form and SHOULD process standard varations.
-
-See 2.2.4 for information on the canonical form and the standard variations.
+See 2.2.4 for information on the response forms.
 
 =head3 2.1.5 Encoding
 
 All the encoding issues in 2.2.5 need to be considered.
 
-In addition, the middleware application SHOULD pass through the message body unchanged when it does not need to work with it. If the middlware application does need to work with the message body, it SHOULD NOT modify the encoding of the body unless necessary. Whenever possible, it SHOULD manipulate L<Str> as L<Str> and L<Blob> as L<Blob>.
+In addition, the middleware application SHOULD pass through the message body unchanged when it does not need to work with it. If the middlware application does need to work with the message body, it SHOULD NOT modify the encoding of the body unless necessary. Whenever possible, it SHOULD maintain L<Str> as L<Str> and L<Blob> as L<Blob>.
 
 =head2 2.2 Layer 2: Application
 
-A P6SGI application is a Perl 6 routine that receives a P6SGI environment and responds to it by returning a response. A P6SGI application may return a response in a number of various forms, one of which is considered the best form (called the "canonical form").
+A P6SGI application is a Perl 6 routine that receives a P6SGI environment and responds to it by returning a response. A P6SGI application may return a response in a number of various forms, one of which is considered the best form.
 
 A simple Hello World P6SGI application may be implemented as follows:
 
@@ -484,7 +507,7 @@ A simple Hello World P6SGI application may be implemented as follows:
         200, [ Content-Type => 'text/plain' ], [ 'Hello World' ]
     }
 
-A canonical Hello World P6SGI application for the same might be done like this:
+However, the best form for Hello World P6SGI application for the same might be done like this:
 
     sub app(%env) {
         Promise.start({
@@ -494,13 +517,13 @@ A canonical Hello World P6SGI application for the same might be done like this:
         })
     }
 
-A P6SGI server is only required to support the canonical form. To allow the simple form to be used on any server, an application may use the P6SGI Web Application Adapter library to convert the application into canonical form very easily, while keeping your code clean and simple.
+All P6SGI middleware and servers are required to support all standard forms, but the best form is the easiest for servers and middleware to work with and generally performs the best.
 
 =head3 2.2.0 Defining an Application
 
 The way an application is defined and used by a P6SGI server may vary by server. The specification does not tell servers how to locate an application to run it, so you will need to see the server's documentation for a description of how to do that.
 
-In general, the application is defined in a script file that defines the application subroutine as the final statement in the file (or includes a reference to the application as the final line of the file).
+Typically, however, the application is defined in a script file that defines the application subroutine as the final statement in the file (or includes a reference to the application as the final line of the file).
 
 For example, such a file might look like this:
 
@@ -508,42 +531,49 @@ For example, such a file might look like this:
     use MyApp;
     use MyApp::Middleware;
     sub app(%env) {
-        200, [ Content-Type => 'text/plain' ], [ 'App' ]
+        my $app = MayApp.new;
+        my @body = $app.run;
+
+        200, [ Content-Type => 'text/plain' ], @body.item
     }
     &app.wrap(&my-middleware);
     &app;
 
 Here we load some libraries from our main application, we define a simple P6SGI app, we apply some middleware, and then end with the reference to our application. This is the typical method by which an application server will load an application.
 
+It is recommended that such files identify themselves with the suffix F<.p6w> when a file suffix is useful.
+
 =head3 2.2.1 The Environment
 
 The one and only argument passed to the application is an L<Associative> containing the environment. The environment variables that MUST be set are defined in section 2.0.1. Additional variables are probably defined by your application server, so please see its documentation for details.
 
+The application MAY store additional values in the environment as it sees fit. This allows the application to communicate with a server or middleware or just to store information useful for the duration of the request. If the application modifies the environment, the variables set MUST contain a period and SHOULD start with a unique name that is not one of: C<psgi.>, C<psgix.>, C<p6sgi.>, or C<p6sgix.> as these are reserved.
+
 =head3 2.2.2 The Input Stream
 
-During a POST or PUT operation, the client may send along a message body to your application. The application MAY choose to read the body using the input stream provided in the C<psgi.input> key of the environment.
+During a POST, PUT, or other operation, the client may send along a message body to your application. The application MAY choose to read the body using the input stream provided in the C<p6sgi.input> key of the environment.
 
 This is an L<IO::Handle>-like object, but might not be an IO::Handle. The application SHOULD NOT check what kind of object it is and just use the object's C<read> and C<seek> methods as needed. These are defined in more detail in section 2.0.2.
 
 =head3 2.2.3 The Error Stream
 
-The application server is required to provide a L<psgi.errors> key with an L<IO::Handle>-like object capable of logging application errors. The application MAY choose to log errors here (or it MAY choose to log them wherever else it likes).
+The application server is required to provide a L<p6sgi.errors> key with an L<IO::Handle>-like object capable of logging application errors. The application MAY choose to log errors here (or it MAY choose to log them wherever else it likes).
 
 As with the input stream, the server is not required to provide an IO::Handle and the application SHOULD NOT check what kind of object it is, but just use the C<print> and C<flush> methods as defined in section 2.0.3.
 
 =head3 2.2.4 Application Response
 
-The application MUST return a valid P6SGI response to the server. The application SHOULD be sure that response is in canonical form if it wants to be compatible with all P6SGI-compliant servers.
+The application MUST return a valid P6SGI response to the server. Any serious application SHOULD prefer to use the best, most flexible response form.
 
-The canonical form response is a L<Promise> that is kept with a 3-element L<Positional> with the following indexes, respectively:
+The best response form is a L<Promise> that is kept with a 3-element L<Positional> with the following indexes, respectively:
 
 =item B<Status Code>. This is a standard HTTP status code.
 
-=item B<Message Headers>. This is an ordered list of L<Pair>s naming the headers the application wishes to put into the response.
+=item B<Message Headers>. This is a L<List> of L<Pair>s naming the headers the application wishes to put into the response.
 
 =item B<Message Body>. This is a L<Supply> which emits L<Blob> and L<Str> objects to be sent as the content of the response.
 
-A trivial P6SGI application could be implemented like this in canonical form:
+A trivial P6SGI application could be implemented like this in this best form:
 
     sub app(%env) {
         Promise.start({
@@ -553,36 +583,54 @@ A trivial P6SGI application could be implemented like this in canonical form:
         });
     }
 
-In addition to this form, other variations are permitted. These variations are described in the following sections.
+However, to display the power of this form, here is a more interesting version:
 
-=head4 2.2.4.0 Direct Positional
+    sub app(%env) {
+        Promise.start({
+            my $n = %env<QUERY_STRING>.Int;
+            200,
+            [ Content-Type => 'text/plain' ],
+            Supply.on-demand(-> $content {
+                my $acc = 1.FatRat;
+                for 1..$n {
+                    $content.emit("{$acc *= $n}\n");
+                }
+                $content.done;
+            });
+        });
+    }
+
+This application will print out all the values of factorial from 1 to N where N is given as the query string. The header is returned immediately, but the lines of the body are returned as the values of factorial are calculated.
+
+In addition to this form, the application MAY return the response in other forms. These variations are described in the following sections. These other forms are provided for convenience and legacy support.
+
+=head4 2.2.4.0 Direct Response
 
 Rather than returning a L<Promise> that is kept with a L<Positional>, a P6SGI application MAY return that L<Positional> directly. The rest of the form is the same.
 
-=head4 2.2.4.1 Message Body as List
+=head4 2.2.4.1 Message Body as a List
 
-A second variation that an application MAY provide is a message body as a L<List> of L<Str> and L<Blob> rather than as a L<Supply>. This is slightly shorter than using a L<Supply> and is provided for convenience.
+A second variation that an application MAY provide is a message body as a L<List> of L<Str> and L<Blob> rather than as a L<Supply>. This is slightly shorter than using a L<Supply> and is provided for convenience. Actually, any L<Iterable> object is supported.
 
 =head3 2.2.5 Encoding
 
 When sending the message body to the server, the application SHOULD prefer to use L<Blob> objects. This allows the application to fully control the encoding of any text being sent.
 
-The application MAY use L<Str>, but this puts the server in charge of encoding the application's text. The server is only required to encode the data according to the encoding specified in the C<psgi.encoding> key of the environment. It may choose to examine the C<charset> of the Content-Type header returned by the application, but it is not required to do so.
+The application MAY use L<Str>, but this puts the server in charge of encoding the response. The server is only required to encode the data according to the encoding specified in the C<p6sgi.encoding> key of the environment. Application servers are recommended to examine the C<charset> of the Content-Type header returned by the application, but are not required to do so.
 
-Applications SHOULD avoid characters that require text encoding in HTTP headers.
+Applications SHOULD avoid characters that require encoding in HTTP headers.
 
 =head1 Changes
 
 =head2 0.3.Draft
 
  * Splitting the standard formally into layers: Application, Server, and Middleware.
- * Creating a single unified response type required to implement the Server Layer to be a complete P6SGI server.
- * The other response types are put into the category of P6SGIx extensions.
+ * Bringing back the legacy standards and bringing back the variety of standard response forms.
  * Middleware is given a higher priority in this revision and more explanation.
- * The notion of Adapters is added as a kind of Middleware that permits an application implementing any of the P6SGIx extensions to run on any standard P6SGI server.
- * The notion of a Universal Adapter is added to allow an otherwise ignorant P6SGI standard to implement any future P6SGIx extension interface.
- * Section number is added.
+ * Adding the P6SGI compiliation unit to provide basic tools that allow middleware and possibly servers to easily process all standard response forms.
+ * Section numbering has been added.
  * Added the Changes section.
+ * Use C<p6sgi.> prefixes in the environment rather than C<psgi.>
 
 =head2 0.2.Draft
 
