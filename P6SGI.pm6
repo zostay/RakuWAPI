@@ -1,10 +1,10 @@
 unit module P6SGI;
 
 sub handle-container($con) {
-    given ($con) {
+    given $con {
         when Positional {
             my ($status, $header, $body) = $con.list;
-            given ($body) {
+            given $body {
                 when Supply {
                     return $status, $header, $body;
                 }
@@ -27,7 +27,7 @@ sub handle-container($con) {
 #   &app.wrap(&p6sgi-best-form);
 
 sub as-best-form(%env) is export {
-    given (my $res = callsame) {
+    given my $res = callsame {
         when Promise {
             await $res.then({ handle-container($res.result) })
         }

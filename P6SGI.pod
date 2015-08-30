@@ -450,6 +450,8 @@ For example, in the following snippet C<&mw> is a simple middleware application 
 
 As with servers, middleware MUST support the standard application response forms. As supporting all these standard forms would be onerous to most middleware developers, the P6SGI standard ships with a small compilation unit that may be used to assist in this support.
 
+B<Note:> For those familiar with PSGI and Plack should take careful notice that Perl 6 C<wrap> has the invocant and argument swapped from the way Plack::Middlware operates. In P6SGI, the C<wrap> method is always called on the I<app> not the I<middleware>.
+
 =head3 2.1.0 Middleware Application
 
 The way middleware is applied to an application varies. There are two basic mechanisms that may be used: the C<wrap> method and the closure method.
