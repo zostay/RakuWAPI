@@ -320,11 +320,11 @@ For example, in the following snippet C<&mw> is a simple middleware application 
     }
 
     my &mw = sub (%env) {
-        start {
-            my @res = callsame.result;
-            @res[1].push: (X-P6SGI-Used => 'True');
+        callsame().then(-> $p {
+            my @res = $p.result;
+            @res[1].push: X-P6SGI-Used => 'True';
             @res;
-        };
+        });
     };
 
     &app.wrap(&mw);
@@ -344,11 +344,11 @@ This is the method demonstrated in the example above. Perl 6 provides a handy C<
 This method resembles that which would normally be used in PSGI, which is to define the middleware using a closure that wraps the application.
 
     my &mw = sub (%env) {
-        start {
-            my @res = app(%env).result;
-            @res[1].push: (X-P6SGI-Used => 'True');
+        app(%env).then(-> $p {
+            my @res = $p.result;
+            @res[1].push: X-P6SGI-Used => 'True';
             @res;
-        };
+        });
     };
     &app = &mw;
 
