@@ -495,12 +495,28 @@ Changes
 0.4.Draft
 ---------
 
-* Cutting back on some more verbose or unnecessary statements in the standard, trying to stick with just what is important and nothing more. * The application response has been completely restructured in a form that is both easy on applications and easy on middleware, mainly taking advantage of the fact that a List easily coerces into a Supply. * Eliminating the P6SGI compilation unit again as it is no longer necessary.
+  * Cutting back on some more verbose or unnecessary statements in the standard, trying to stick with just what is important and nothing more.
+
+  * The application response has been completely restructured in a form that is both easy on applications and easy on middleware, mainly taking advantage of the fact that a List easily coerces into a Supply.
+
+  * Eliminating the P6SGI compilation unit again as it is no longer necessary.
 
 0.3.Draft
 ---------
 
-* Splitting the standard formally into layers: Application, Server, and Middleware. * Bringing back the legacy standards and bringing back the variety of standard response forms. * Middleware is given a higher priority in this revision and more explanation. * Adding the P6SGI compiliation unit to provide basic tools that allow middleware and possibly servers to easily process all standard response forms. * Section numbering has been added. * Added the Changes section. * Use `p6sgi.` prefixes in the environment rather than `psgi.`
+  * Splitting the standard formally into layers: Application, Server, and Middleware.
+
+  * Bringing back the legacy standards and bringing back the variety of standard response forms.
+
+  * Middleware is given a higher priority in this revision and more explanation.
+
+  * Adding the P6SGI compiliation unit to provide basic tools that allow middleware and possibly servers to easily process all standard response forms.
+
+  * Section numbering has been added.
+
+  * Added the Changes section.
+
+  * Use `p6sgi.` prefixes in the environment rather than `psgi.`
 
 0.2.Draft
 ---------
