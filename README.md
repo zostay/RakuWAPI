@@ -66,9 +66,9 @@ It SHOULD be able to load applications found in P6SGI script files. These are Pe
 
     use v6;
     sub app(%env) {
-        Promise.start({
+        start {
             200, [ Content-Type => 'text/plain' ], [ 'Hello World!' ]
-        })
+        }
     }
 
 ### 2.0.1 The Environment
@@ -274,9 +274,9 @@ A P6SGI application typically returns a [Promise](Promise). This Promise is kept
 Here's an example of such a typical application:
 
     sub app(%env) {
-        Promise.start({
+        start {
             200, [ Content-Type => 'text/plain' ], Supply.from-list([ 'Hello World' ])
-        });
+        };
     }
 
 Aside from the typical response, applications are permitted to return any part of the response with a different type of object so long as that object provides a coercion to the required type. Here is another application that is functionally equivalent to the typical example just given:
@@ -322,17 +322,17 @@ P6SGI middleware is a P6SGI application that wraps another P6SGI application. Mi
 For example, in the following snippet `&mw` is a simple middleware application that adds a custom header:
 
     my &app = sub (%env) {
-        Promise.start({
+        start {
             200,
             [ Content-Type => 'text/plain' ],
             Supply.from-list([ 'Hello World' ])
-        });
+        };
     }
 
     my &mw = sub (%env) {
-        Promise.start({
-            my @res = callsame.result;
-            @res[1].push: (X-P6SGI-Used => 'True');
+        callsame().then(-> $p {
+            my @res = $p.result;
+            @res[1].push: X-P6SGI-Used => 'True';
             @res;
         });
     };
@@ -354,9 +354,9 @@ This is the method demonstrated in the example above. Perl 6 provides a handy `w
 This method resembles that which would normally be used in PSGI, which is to define the middleware using a closure that wraps the application.
 
     my &mw = sub (%env) {
-        Promise.start({
-            my @res = app(%env).result;
-            @res[1].push: (X-P6SGI-Used => 'True');
+        app(%env).then(-> $p {
+            my @res = $p.result;
+            @res[1].push: X-P6SGI-Used => 'True';
             @res;
         });
     };
@@ -392,9 +392,9 @@ A P6SGI application is a Perl 6 routine that receives a P6SGI environment and re
 A simple Hello World P6SGI application may be implemented as follows:
 
     sub app(%env) {
-        Promise.start({
+        start {
             200, [ Content-Type => 'text/plain' ], [ 'Hello World' ]
-        });
+        };
     }
 
 ### 2.2.0 Defining an Application
@@ -446,11 +446,11 @@ The application MUST return a valid P6SGI response to the server.
 A trivial P6SGI application could be implemented like this:
 
     sub app(%env) {
-        Promise.start({
+        start {
             200,
             [ Content-Type => 'text/plain' ],
             [ "Hello World" ],
-        });
+        };
     }
 
 In detail, an application MUST return a [Promise](Promise) or an object that may coerce into a Promise (i.e., it has a `Promise` method that takes no arguments and returns a Promise object). This Promise MUST be kept with a Capture or object that coerces into a Capture (e.g., a [List](List) or an [Array](Array)). It MUST contain 3 positional arguments, which are, respectively, the status code, the list of headers, and the message body. These are each defined as follows:
@@ -464,7 +464,7 @@ In detail, an application MUST return a [Promise](Promise) or an object that may
 For example, here is another example that demonstrates the flexibility possible in the application response:
 
     sub app(%env) {
-        Promise.start({
+        start {
             my $n = %env<QUERY_STRING>.Int;
             200,
             [ Content-Type => 'text/plain' ],
@@ -475,7 +475,7 @@ For example, here is another example that demonstrates the flexibility possible 
                 }
                 $content.done;
             });
-        });
+        };
     }
 
 This application will print out all the values of factorial from 1 to N where N is given as the query string. The header is returned immediately, but the lines of the body are returned as the values of factorial are calculated.
