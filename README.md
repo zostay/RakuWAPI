@@ -349,8 +349,7 @@ The way middleware is applied to an application varies. There are two basic mech
 
 This is the method demonstrated in the example above. Perl 6 provides a handy `wrap` method which may be used to apply another subroutine as an aspect of the subroutine being wrapped. In this case, the original application may be called using `callsame` or `callwith`.
 
-2.1.0.1 Closure Method
-----------------------
+#### 2.1.0.1 Closure Method
 
 This method resembles that which would normally be used in PSGI, which is to define the middleware using a closure that wraps the application.
 
