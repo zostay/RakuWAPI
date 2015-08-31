@@ -8,7 +8,7 @@ STATUS
 
 This is a Proposed Draft.
 
-Version 0.3.Draft
+Version 0.4.Draft
 
 0 INTRODUCTION
 ==============
@@ -30,8 +30,6 @@ This standard has the following goals:
   * Allow for backwards compatibility to PSGI applications.
 
 Aside from that is the underlying assumption that this is a simple interface and ought to at least somewhat resemble work in the standards it is derived from, including Rack, WSGI, PSGI, CGI, and others.
-
-This document is strongly related to the PSGI pecification for Perl 5. Within a Perl 6 environment, it is acceptable to refer to this standard as "PSGI" with the "6" in "P6SGI" being implied. However, for clarity, P6SGI and PSGI from Perl 5 are different. This is possible because Perl 6 provides a number of built-in tools, e.g., reactive and concurrent programming tools, that simplify several aspects of this specification.
 
 1 TERMINOLOGY
 =============
@@ -62,14 +60,16 @@ A P6SGI application server is a program capable of running P6SGI applications as
 
 ### 2.0.0 Locating Applications
 
-This aspect of the specification is deliberately vague and left up to the implementation. No requirements are made here.
+The server MUST be able to find applications somehow.
 
-It is recommended, however, that the server be able to load applications found in P6SGI script files. These are Perl 6 code files that end with the definition of a block to be used as the application routine. For example:
+It SHOULD be able to load applications found in P6SGI script files. These are Perl 6 code files that end with the definition of a block to be used as the application routine. For example:
 
     use v6;
-    sub app(%env) { 200, [ Content-Type => 'text/plain' ], [ 'Hello World!' ] }
-
-This specification suggests adopting a file name suffix of .p6w (Perl 6 Web application files) to identify these files when an extension is appropriate.
+    sub app(%env) {
+        Promise.start({
+            200, [ Content-Type => 'text/plain' ], [ 'Hello World!' ]
+        })
+    }
 
 ### 2.0.1 The Environment
 
@@ -87,17 +87,17 @@ This list is primarily adopted from [PSGI](PSGI).
   </thead>
   <tr>
     <td><code>REQUEST_METHOD</code></td>
-    <td>C<< Str:D where *.chars > 0 >></td>
+    <td><code>Str:D where *.chars > 0</code></td>
     <td>The HTTP request method, such as "GET" or "POST".</td>
   </tr>
   <tr>
     <td><code>SCRIPT_NAME</code></td>
-    <td>C<< Str:D where any('', m{ ^ "/" }) >></td>
+    <td><code>Str:D where any('', m{ ^ "/" })</code></td>
     <td>This is the initial prtion of the URL path that refers to the application.</td>
   </tr>
   <tr>
     <td><code>PATH_INFO</code></td>
-    <td>C<< Str:D where any('', m{ ^ "/" }) >></td>
+    <td><code>Str:D where any('', m{ ^ "/" })</code></td>
     <td>This is the remainder of the request URL path within the application. This value SHOULD be URI decoded by the application server according to L<RFC 3875|http://www.ietf.org/rfc/rfc3875></td>
   </tr>
   <tr>
@@ -112,17 +112,17 @@ This list is primarily adopted from [PSGI](PSGI).
   </tr>
   <tr>
     <td><code>SERVER_NAME</code></td>
-    <td>C<< Str:D where *.chars > 0 >></td>
+    <td><code>Str:D where *.chars > 0</code></td>
     <td>This is the server name of the web server.</td>
   </tr>
   <tr>
     <td><code>SERVER_PORT</code></td>
-    <td>C<< Int:D where * > 0 >></td>
+    <td><code>Int:D where * > 0</code></td>
     <td>This is the server port of the web server.</td>
   </tr>
   <tr>
     <td><code>SERVER_PROTOCOL</code></td>
-    <td>C<< Str:D where *.chars > 0 >></td>
+    <td><code>Str:D where *.chars > 0</code></td>
     <td>This is the server protocol sent by the client. Typically set to "HTTP/1.1" or a similar value.</td>
   </tr>
   <tr>
@@ -204,9 +204,9 @@ This list is primarily adopted from [PSGI](PSGI).
 
 In the environment, either `SCRIPT_NAME` or `PATH_INFO` must be set to a non-empty string. When `REQUEST_URI` is "/", the `PATH_INFO` SHOULD be "/" and `SCRIPT_NAME` SHOULD be the empty string. `SCRIPT_NAME` MUST NOT be set to "/".
 
-For those familiar with Perl 5 PSGI, you may want to take care when working with some of these values. A few look very similar, but are subtly different. For example, the setting called "psgix.input.buffered" in that standard is called "p6sgi.input.buffered" here and is not considered an extension. A server MAY choose to supply all of the PSGI equivalents as well and MUST if it wishes to provide PSGI backwards-compatibility.
+For those familiar with Perl 5 PSGI, you may want to take care when working with some of these values. A few look very similar, but are subtly different.
 
-The server or the application may store its own data in the environment as well. These keys MUST contain at least one dot, SHOULD be prefixed uniquely. The server MUST allow the application and middleware to store keys here and MAY choose to enforce the namespacing requirements in the object implementing the environment.
+The server or middleware or the application may store its own data in the environment as well. These keys MUST contain at least one dot, SHOULD be prefixed with a unique name.
 
 The following prefixes are reserved for use by this standard:
 
@@ -214,13 +214,9 @@ The following prefixes are reserved for use by this standard:
 
   * `p6sgix.` is for P6SGI standard extensions to the environment.
 
-  * `psgi.` is for PSGI legacy standard environment.
-
-  * `psgix.` is for PSGI legacy extensions to the environment.
-
 ### 2.0.2 The Input Stream
 
-The input stream is set in the `p6sgi.input` key of the environment. The server MUST provide an object that implements a subset of the methods of [IO::Handle](IO::Handle). It MAY provide an [IO::Handle](IO::Handle).
+The input stream is set in the `p6sgi.input` key of the environment. The server MUST provide an object that implements the subset of the methods of [IO::Handle](IO::Handle) described here. It MAY provide an [IO::Handle](IO::Handle).
 
 The input stream object provided by the server MUST provide the following methods:
 
@@ -267,163 +263,48 @@ The error stream MUST implement the following methods:
 
 ### 2.0.4 Application Response
 
-P6SGI applications may respond to the environment in a variety of forms. A P6SGI server MUST be able to process all of the forms described in this specification.
+A P6SGI application typically returns a [Promise](Promise). This Promise is kept with a [Capture](Capture) which contains 3 positional arguments: the status code, the headers, and the message body, respectively.
 
-As supporting a variety of response forms could be an obstacle to application server and, more importantly, middleware development, the P6SGI standard ships with a small compilation unit to help. It contains middleware applications able to convert these various forms into the form that is most flexible. This way an application server or middleware only has to suport one form.
+  * The status code is returned as an integer matching one of the standard HTTP status codes (e.g., 200 for success, 500 for error, 404 for not found, etc.).
 
-The form an application response takes may vary in any number of ways. The way the standard forms may vary, those described by this specification, can be described in four or five components. To help understand what is possible, let us examine each of these components: wrapper, container, status code, headers, and body.
+  * The headers are returned as a List of Pairs mapping header names to header values.
 
-  * **Wrapper Component**. The wrapper component is the only optional part. It describes how the container component is delivered with the remaining parts. For example, an application may return a [Promise](Promise) that is kept with the container component or it may be omitted and the container returned directly by the application.
+  * The message body is typically returned as a [Supply](Supply) that emits zero or more [Str](Str) and [Blob](Blob) objects that are encoded, if necessary, and concatenated together to form the finished message body.
 
-  * **Container Component**. The container component may be returned directly or may be returned within a wrapper component. It supplies the remaining three parts: status code, headers, and body. For example, a 3-element [Positional](Positional) is the container component with the elements referring to the status code, headers, and body, respectively.
+Here's an example of such a typical application:
 
-  * **Status Code Component**. The status code component declares the HTTP status code the application is returning. For example, the status code is returned as an integer for status codes, like 200.
-
-  * **Header Component**. The header component defines the headers the application intens to return to the client. For example, the header component is typically returned as a [List](List) of [Pair](Pair)s, with each key naming a header and each value being the value to set for that header.
-
-  * **Body Component**. The body component defines the content of the message body. For example, the body component may be returned as a [Supply](Supply) that emits a series of [Str](Str)s and [Blob](Blob)s.
-
-These components may vary independent of one another. For example, the body component might be returned as [Supply](Supply) or as an iterable list of [Str](Str)s and [Blob](Blob)s instead and the body may be returned by a container directly or a container kept by a [Promise](Promise). Furthermore, framework and application developers may wish to experiment with variations not described here. This is permitted, but such variations SHOULD be easy to distinguish from the standard forms and SHOULD also be easy to distinguish from each other. Such extensions can be universally supported by providing middleware to convert these response forms into the standard forms supported by all P6SGI servers and middleware.
-
-#### 2.0.4.0 Wrapper Components
-
-The wrapper component is an optional component wrapping the container component. The wrapper component determines the overall protocol to be used when handling the response. It may also be that the wrapper requires its own particular kind of container to work.
-
-##### 2.0.4.0.0 No Wrapper
-
-Rather than using a wrapper, the application MAY respond with the container directly.
-
-The application should assume that the response is the container directly if the response does not test as being any of the standard wrapper forms.
-
-##### 2.0.4.0.1 Promise
-
-When the application response is a Promise, the server SHOULD NOT assume that the Promise will always be kept and SHOULD handle a broken Promise as appropriate. The server SHOULD assume the Promise has been vowed a MUST NOT try to keep or break the Promise itself.
-
-The test to identify this wrapper component is:
-
-    $response ~~ Promise
-
-The mechanism for receiving the container is:
-
-    $response.then({
-        given $response.status {
-            when Kept { $container = $response }
-            default   { #{ handle error } }
-        }
-    });
-
-##### 2.0.4.0.2 Callback (Legacy)
-
-This is a PSGI legacy wrapper form and a server is NOT REQUIRED to support it.
-
-When the appliation resopnse is a [Callable](Callable), the legacy supporting server MUST call the returned code and pass in a single parameter, which is itself a callback. This second callback will be called by the application with the container component or part of the container component. (In this legacy form, the container is defined as part of the wrapper.)
-
-If all three elements of the container are provided to the second callback, the response is complete. If, however, the application passes only two elements, the legacy supporting server MUST return a writer object, which will be used by the application to return the message body.
-
-The test for this wrapper is:
-
-    $response ~~ Callable
-
-The code for acquiring the container from the response is similar to as follows:
-
-    my $container-promise = Promise.new;
-    sub server-callback (@app-response) {
-        my @container = @app-response;
-        if @container.elems == 2 {
-            Promise.start({
-                @container.push: $p.result
-                $container-promise.keep(@container);
-            });
-            return class {
-                has @.body;
-                multi method write(Str $s) { @.body.push($s) }
-                multi method write(Blob $b) { @.body.push($b) }
-                method close() { $p.keep(@.body) }
-            }.new;
-        }
-        else {
-            $container-promise.keep(@container);
-        }
+    sub app(%env) {
+        Promise.start({
+            200, [ Content-Type => 'text/plain' ], Supply.from-list([ 'Hello World' ])
+        });
     }
 
-    $response.(&server-callback)
-    @container = $container-promise.result;
+Aside from the typical response, applications are permitted to return any part of the response with a different type of object so long as that object provides a coercion to the required type. Here is another application that is functionally equivalent to the typical example just given:
 
-#### 2.0.4.1 Container
+    sub app(%env) {
+        Supply.on-demand(-> $s {
+            $s.emit([ 200, [ Content-Type => 'text/plain' ], [ 'Hello World' ]);
+            $s.done;
+        });
+    }
 
-This container component simply defines how the server retrieves the components. It may be returned directly by the application or wrapped in a wrapper component.
+Calling `Promise` on the returned object returns a Promise that is kept with the required Capture. The first two elements are what are normally expected, but the third is just a list. A [List](List), however, coerces to Supply as required.
 
-##### 2.0.4.1.1 Positional
+The server SHOULD NOT assume that the Promise will always be kept and SHOULD handle a broken Promise as appropriate. The server SHOULD assume the Promise has been vowed a MUST NOT try to keep or break the Promise itself.
 
-Only a single container component form is defined here. The container is given as a [Positional](Positional) with exactly three elements.
-
-The test for this is:
-
-    $container ~~ Positional && $container.elems == 3
-
-Extracting the other components is handled like so:
-
-    ($status, $headers, $body) = $container.list;
-
-#### 2.0.4.2 Status
-
-The status code MUST map to an HTTP status code.
-
-##### 2.0.4.2.1 Int
-
-The application is required to set this to a valid HTTP status code as an integer. The application server MAY attempt to verify the validity of the status code and that the rest of the response is sane according to the HTTP standards.
-
-The test for this component form is:
-
-    $status ~~ Int
-
-#### 2.0.4.3 Header
-
-The header component declares the HTTP headers the application intends to return. It may also define the order the application prefers the headers be returned in.
-
-##### 2.0.4.3.0 List of Pairs
-
-The headers are returned as a [List](List) of [Pair](Pair)s, each Pair maps a header name to a header value.
-
-The server SHOULD attempt to pass on all given headers. The application server MAY perform any validation necessary and MAY deal with errors as appropriate. Any custom headers SHOULD be honored, if possible and security allows, etc. The order of multiple headers with the same name, relative to one another, MUST be preserved.
+Each [Pair](Pair) in the list of headers maps a header name to a header value. The application may return the same header name multiple times. The order of multiple headers with the same name SHOULD be preserved.
 
 If the application is missing headers that are required for the Status Code given or provides headers that are forbidden, the application server SHOULD treat that as a server error.
 
-The server SHOULD examine the [Content-Type](Content-Type) header for the `charset` setting. This SHOULD be used to aid in encoding any [Str](Str) encountered when processing the Message Body. If the application does not provide a `charset`, the server MAY choose to add this header itself using the encoding provided in `p6sgi.encoding` in the environment.
+The server SHOULD examine the `Content-Type` header for the `charset` setting. This SHOULD be used to aid in encoding any [Str](Str) encountered when processing the Message Body. If the application does not provide a `charset`, the server MAY choose to add this header itself using the encoding provided in `p6sgi.encoding` in the environment.
 
-The server SHOULD examine the [Content-Length](Content-Length) header, if given. It MAY choose to stop consuming the Message Body once the number of bytes given has been read.
+The server SHOULD examine the `Content-Length` header, if given. It MAY choose to stop consuming the Message Body once the number of bytes given has been read. It SHOULD guarantee that the body length is the same as described in the `Content-Length`.
 
-The test for this component is:
+Unless the status code is one that is not permitted to have a message body, the application server MUST tap the Supply and process each emitted [Blob](Blob) or [Str](Str), until the the either the Supply is done or the server decides to quit tapping the stream for some reason.
 
-    $header ~~ List && $header.all ~~ Pair
-
-#### 2.0.4.4 Message Body
-
-The message body may be given in one of the following two forms.
-
-##### 2.0.4.4.0 Supply of Str and Blob
-
-The best and most flexible form, but not necessarily the most straightforward, is to use a [Supply](Supply). This [Supply](Supply) will emit [Blob](Blob) and [Str](Str) objects.
-
-The server SHOULD NOT concern itself with whether the [Supply](Supply) given is on demand or live. The application server MUST tap the Supply and process each emitted [Blob](Blob) or [Str](Str), until the the either the Supply is done or the server decides to quit tapping the stream for some reason.
-
-The application server SHOULD continue processing emitted values until the Supply is done or until [Content-Length](Content-Length) bytes have been emitted. The server MAY stop tapping the Supply for various other reasons as well, such as timeouts or because the client has closed the socket, etc.
+The application server SHOULD continue processing emitted values until the Supply is done or until `Content-Length` bytes have been emitted. The server MAY stop tapping the Supply for various other reasons as well, such as timeouts or because the client has closed the socket, etc.
 
 If the Supply is quit instead of being done, the server SHOULD attempt to handle the error as appropriate.
-
-The server SHOULD attempt to pass on the message body as given, unless the request is one identified by the relevant HTTP standards as not having a body. If the applicaiton provides a non-empty message body, the application server SHOULD treat that as an error.
-
-The test for this component is:
-
-    $body ~~ Supply
-
-##### 2.0.4.4.1 Iterable of Str and Blob
-
-This variation may be treated the same as the [Supply](Supply) form by using `from-list` to generate a Supply from this List. All the specifications for such bodies apply here.
-
-The test for this form is:
-
-    $body ~~ Iterable
 
 ### 2.0.5 Encoding
 
@@ -436,7 +317,7 @@ Any [Blob](Blob) encountered in the body SHOULD be sent on as is, treating the d
 2.1 Layer 1: Middleware
 -----------------------
 
-P6SGI middleware is a P6SGI application that wraps another P6SGI application. In some ways it may act as a server, in other ways it may act as an application. Middleware is used to perform any kind of pre-processing, post-processing, or side-effects that might be added onto an application. Possible uses include logging, encoding, validation, security, debugging, routing, interface adaptation, and header manipulation.
+P6SGI middleware is a P6SGI application that wraps another P6SGI application. Middleware is used to perform any kind of pre-processing, post-processing, or side-effects that might be added onto an application. Possible uses include logging, encoding, validation, security, debugging, routing, interface adaptation, and header manipulation.
 
 For example, in the following snippet `&mw` is a simple middleware application that adds a custom header:
 
@@ -458,11 +339,11 @@ For example, in the following snippet `&mw` is a simple middleware application t
 
     &app.wrap(&mw);
 
-As with servers, middleware MUST support the standard application response forms. As supporting all these standard forms would be onerous to most middleware developers, the P6SGI standard ships with a small compilation unit that may be used to assist in this support.
+**Note:** For those familiar with PSGI and Plack should take careful notice that Perl 6 `wrap` has the invocant and argument swapped from the way Plack::Middlware operates. In P6SGI, the `wrap` method is always called on the *app* not the *middleware*.
 
 ### 2.1.0 Middleware Application
 
-The way middleware is applied to an application varies. There are two basic mechanisms that may be used: the `wrap` method and the closure method.
+The way middleware is applied to an application varies. There are two basic mechanisms that may be used: the `wrap` method and the closure method. This is Perl, so there are likely other methods that are possible (since this is Perl 6, some might not be fully implemented yet).
 
 #### 2.1.0.0 Wrap Method
 
@@ -498,38 +379,24 @@ See section 2.2.3.
 
 ### 2.1.4 Application Response
 
-As with an application, middleware MUST return a valid P6SGI response to the server. Middleware developers SHOULD write design their middleware to return the best, most flexible form available. This is the form that returns a [Promise](Promise) wrapper around a [Positional](Positional) container containing an [Int](Int) status, [List](List) of [Pair](Pair)s header, and a [Supply](Supply) of [Str](Str) and [Blob](Blob) message body.
-
-See 2.2.4 for information on the response forms.
+As with an application, middleware MUST return a valid P6SGI response to the server.
 
 ### 2.1.5 Encoding
 
 All the encoding issues in 2.2.5 need to be considered.
 
-In addition, the middleware application SHOULD pass through the message body unchanged when it does not need to work with it. If the middlware application does need to work with the message body, it SHOULD NOT modify the encoding of the body unless necessary. Whenever possible, it SHOULD maintain [Str](Str) as [Str](Str) and [Blob](Blob) as [Blob](Blob).
-
 2.2 Layer 2: Application
 ------------------------
 
-A P6SGI application is a Perl 6 routine that receives a P6SGI environment and responds to it by returning a response. A P6SGI application may return a response in a number of various forms, one of which is considered the best form.
+A P6SGI application is a Perl 6 routine that receives a P6SGI environment and responds to it by returning a response.
 
 A simple Hello World P6SGI application may be implemented as follows:
 
     sub app(%env) {
-        200, [ Content-Type => 'text/plain' ], [ 'Hello World' ]
-    }
-
-However, the best form for Hello World P6SGI application for the same might be done like this:
-
-    sub app(%env) {
         Promise.start({
-            200,
-            [ Content-Type => 'text/plain' ],
-            Supply.from-list([ 'Hello World' ])
-        })
+            200, [ Content-Type => 'text/plain' ], [ 'Hello World' ]
+        });
     }
-
-All P6SGI middleware and servers are required to support all standard forms, but the best form is the easiest for servers and middleware to work with and generally performs the best.
 
 ### 2.2.0 Defining an Application
 
@@ -551,7 +418,7 @@ For example, such a file might look like this:
     &app.wrap(&my-middleware);
     &app;
 
-Here we load some libraries from our main application, we define a simple P6SGI app, we apply some middleware, and then end with the reference to our application. This is the typical method by which an application server will load an application.
+In this example, we load some libraries from our imaginary main application, we define a simple P6SGI app, we apply some middleware (presumably exported from `MyApp::Middleware`), and then end with the reference to our application. This is the typical method by which an application server will load an application.
 
 It is recommended that such files identify themselves with the suffix .p6w when a file suffix is useful.
 
@@ -559,7 +426,7 @@ It is recommended that such files identify themselves with the suffix .p6w when 
 
 The one and only argument passed to the application is an [Associative](Associative) containing the environment. The environment variables that MUST be set are defined in section 2.0.1. Additional variables are probably defined by your application server, so please see its documentation for details.
 
-The application MAY store additional values in the environment as it sees fit. This allows the application to communicate with a server or middleware or just to store information useful for the duration of the request. If the application modifies the environment, the variables set MUST contain a period and SHOULD start with a unique name that is not one of: `psgi.`, `psgix.`, `p6sgi.`, or `p6sgix.` as these are reserved.
+The application MAY store additional values in the environment as it sees fit. This allows the application to communicate with a server or middleware or just to store information useful for the duration of the request. If the application modifies the environment, the variables set MUST contain a period and SHOULD start with a unique name that is not `p6sgi.` or `p6sgix.` as these are reserved.
 
 ### 2.2.2 The Input Stream
 
@@ -569,33 +436,33 @@ This is an [IO::Handle](IO::Handle)-like object, but might not be an IO::Handle.
 
 ### 2.2.3 The Error Stream
 
-The application server is required to provide a [p6sgi.errors](p6sgi.errors) key with an [IO::Handle](IO::Handle)-like object capable of logging application errors. The application MAY choose to log errors here (or it MAY choose to log them wherever else it likes).
+The application server is required to provide a [p6sgi.errors](p6sgi.errors) variable in the environment with an [IO::Handle](IO::Handle)-like object capable of logging application errors. The application MAY choose to log errors here (or it MAY choose to log them wherever else it likes).
 
 As with the input stream, the server is not required to provide an IO::Handle and the application SHOULD NOT check what kind of object it is, but just use the `print` and `flush` methods as defined in section 2.0.3.
 
 ### 2.2.4 Application Response
 
-The application MUST return a valid P6SGI response to the server. Any serious application SHOULD prefer to use the best, most flexible response form.
+The application MUST return a valid P6SGI response to the server.
 
-The best response form is a [Promise](Promise) that is kept with a 3-element [Positional](Positional) with the following indexes, respectively:
-
-  * **Status Code**. This is a standard HTTP status code.
-
-  * **Message Headers**. This is a [List](List) of [Pair](Pair)s naming the headers the application wishes to put into the response.
-
-  * **Message Body**. This is a [Supply](Supply) which emits [Blob](Blob) and [Str](Str) objects to be sent as the content of the response.
-
-A trivial P6SGI application could be implemented like this in this best form:
+A trivial P6SGI application could be implemented like this:
 
     sub app(%env) {
         Promise.start({
             200,
             [ Content-Type => 'text/plain' ],
-            Supply.from-list([ "Hello World" ]),
+            [ "Hello World" ],
         });
     }
 
-However, to display the power of this form, here is a more interesting version:
+In detail, an application MUST return a [Promise](Promise) or an object that may coerce into a Promise (i.e., it has a `Promise` method that takes no arguments and returns a Promise object). This Promise MUST be kept with a Capture or object that coerces into a Capture (e.g., a [List](List) or an [Array](Array)). It MUST contain 3 positional arguments, which are, respectively, the status code, the list of headers, and the message body. These are each defined as follows:
+
+  * The status code MUST be an [Int](Int) or object that coerces to an Int. It MUST be a valid HTTP status code.
+
+  * The headers MUST be a [List](List) of [Pair](Pair)s naming the headers to the application intends to return. The application MAY return the same header name multiple times.
+
+  * The message body MUST be a [Supply](Supply) that emits [Str](Str) and [Blob](Blob) objects or an object that coerces into such a Supply (e.g., a List or an Array).
+
+For example, here is another example that demonstrates the flexibility possible in the application response:
 
     sub app(%env) {
         Promise.start({
@@ -614,16 +481,6 @@ However, to display the power of this form, here is a more interesting version:
 
 This application will print out all the values of factorial from 1 to N where N is given as the query string. The header is returned immediately, but the lines of the body are returned as the values of factorial are calculated.
 
-In addition to this form, the application MAY return the response in other forms. These variations are described in the following sections. These other forms are provided for convenience and legacy support.
-
-#### 2.2.4.0 Direct Response
-
-Rather than returning a [Promise](Promise) that is kept with a [Positional](Positional), a P6SGI application MAY return that [Positional](Positional) directly. The rest of the form is the same.
-
-#### 2.2.4.1 Message Body as a List
-
-A second variation that an application MAY provide is a message body as a [List](List) of [Str](Str) and [Blob](Blob) rather than as a [Supply](Supply). This is slightly shorter than using a [Supply](Supply) and is provided for convenience. Actually, any [Iterable](Iterable) object is supported.
-
 ### 2.2.5 Encoding
 
 When sending the message body to the server, the application SHOULD prefer to use [Blob](Blob) objects. This allows the application to fully control the encoding of any text being sent.
@@ -635,16 +492,15 @@ Applications SHOULD avoid characters that require encoding in HTTP headers.
 Changes
 =======
 
+0.4.Draft
+---------
+
+* Cutting back on some more verbose or unnecessary statements in the standard, trying to stick with just what is important and nothing more. * The application response has been completely restructured in a form that is both easy on applications and easy on middleware, mainly taking advantage of the fact that a List easily coerces into a Supply. * Eliminating the P6SGI compilation unit again as it is no longer necessary.
+
 0.3.Draft
 ---------
 
-    * Splitting the standard formally into layers: Application, Server, and Middleware.
-    * Bringing back the legacy standards and bringing back the variety of standard response forms.
-    * Middleware is given a higher priority in this revision and more explanation.
-    * Adding the P6SGI compiliation unit to provide basic tools that allow middleware and possibly servers to easily process all standard response forms.
-    * Section numbering has been added.
-    * Added the Changes section.
-    * Use <code>p6sgi.</code> prefixes in the environment rather than <code>psgi.</code>
+* Splitting the standard formally into layers: Application, Server, and Middleware. * Bringing back the legacy standards and bringing back the variety of standard response forms. * Middleware is given a higher priority in this revision and more explanation. * Adding the P6SGI compiliation unit to provide basic tools that allow middleware and possibly servers to easily process all standard response forms. * Section numbering has been added. * Added the Changes section. * Use `p6sgi.` prefixes in the environment rather than `psgi.`
 
 0.2.Draft
 ---------
