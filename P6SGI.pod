@@ -260,7 +260,7 @@ A P6SGI application typically returns a L<Promise>. This Promise is kept with a 
 
 =item The headers are returned as a List of Pairs mapping header names to header values.
 
-=item The message body is typically returned as a L<Supply> that emits zero or more L<Str> and L<Blob> objects that are encoded, if necessary, and concatenated together to form the finished message body.
+=item The message body is typically returned as a L<Supply> that emits zero or more objects. The server MUST handle any L<Cool> or L<Blob> that are emitted. Each Cool emitted must be stringified and encoded into a Blob. The Blob objects that result can be concatenated to form the finished message body.
 
 Here's an example of such a typical application:
 
@@ -291,7 +291,7 @@ The server SHOULD examine the C<Content-Type> header for the C<charset> setting.
 
 The server SHOULD examine the C<Content-Length> header, if given. It MAY choose to stop consuming the Message Body once the number of bytes given has been read. It SHOULD guarantee that the body length is the same as described in the C<Content-Length>.
 
-Unless the status code is one that is not permitted to have a message body, the application server MUST tap the Supply and process each emitted L<Blob> or L<Str>, until the the either the Supply is done or the server decides to quit tapping the stream for some reason.
+Unless the status code is one that is not permitted to have a message body, the application server MUST tap the Supply and process each emitted L<Blob> or L<Cool>, until the the either the Supply is done or the server decides to quit tapping the stream for some reason.
 
 The application server SHOULD continue processing emitted values until the Supply is done or until C<Content-Length> bytes have been emitted. The server MAY stop tapping the Supply for various other reasons as well, such as timeouts or because the client has closed the socket, etc.
 
@@ -301,7 +301,7 @@ If the Supply is quit instead of being done, the server SHOULD attempt to handle
 
 It is up to the server how to handle encoded characters given by the application within the headers.
 
-Within the body, however, any L<Str> emitted from the L<Supply> MUST be encoded. If the application has specified a C<charset> with the L<Content-Type> header, the server SHOULD honor that character encoding. If none is given or the server does not honor the L<Content-Type> header, it MUST encode any L<Str> with the encoding named in C<psgi.encoding>.
+Within the body, however, any L<Cool> emitted from the L<Supply> MUST be stringified and then encoded. If the application has specified a C<charset> with the L<Content-Type> header, the server SHOULD honor that character encoding. If none is given or the server does not honor the L<Content-Type> header, it MUST encode any stringified Cool with the encoding named in C<psgi.encoding>.
 
 Any L<Blob> encountered in the body SHOULD be sent on as is, treating the data as plain binary.
 
@@ -448,7 +448,7 @@ In detail, an application MUST return a L<Promise> or an object that may coerce 
 
 =item The headers MUST be a L<List> of L<Pair>s naming the headers to the application intends to return. The application MAY return the same header name multiple times.
 
-=item The message body MUST be a L<Supply> that emits L<Str> and L<Blob> objects or an object that coerces into such a Supply (e.g., a List or an Array).
+=item The message body MUST be a L<Supply> that emits L<Cool> and L<Blob> objects or an object that coerces into such a Supply (e.g., a List or an Array).
 
 For example, here is another example that demonstrates the flexibility possible in the application response:
 
@@ -473,7 +473,7 @@ This application will print out all the values of factorial from 1 to N where N 
 
 When sending the message body to the server, the application SHOULD prefer to use L<Blob> objects. This allows the application to fully control the encoding of any text being sent.
 
-The application MAY use L<Str>, but this puts the server in charge of encoding the response. The server is only required to encode the data according to the encoding specified in the C<p6sgi.encoding> key of the environment. Application servers are recommended to examine the C<charset> of the Content-Type header returned by the application, but are not required to do so.
+It is also possible for the application to use L<Cool> instances, but this puts the server in charge of stringifying and encoding the response. The server is only required to encode the data according to the encoding specified in the C<p6sgi.encoding> key of the environment. Application servers are recommended to examine the C<charset> of the Content-Type header returned by the application, but are not required to do so.
 
 Applications SHOULD avoid characters that require encoding in HTTP headers.
 
@@ -486,6 +486,8 @@ Applications SHOULD avoid characters that require encoding in HTTP headers.
 =item The application response has been completely restructured in a form that is both easy on applications and easy on middleware, mainly taking advantage of the fact that a List easily coerces into a Supply.
 
 =item Eliminating the P6SGI compilation unit again as it is no longer necessary.
+
+=item Change the Supply to emit Cool and Blob rather than just Str and Blob.
 
 =head2 0.3.Draft
 

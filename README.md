@@ -269,7 +269,7 @@ A P6SGI application typically returns a [Promise](Promise). This Promise is kept
 
   * The headers are returned as a List of Pairs mapping header names to header values.
 
-  * The message body is typically returned as a [Supply](Supply) that emits zero or more [Str](Str) and [Blob](Blob) objects that are encoded, if necessary, and concatenated together to form the finished message body.
+  * The message body is typically returned as a [Supply](Supply) that emits zero or more objects. The server MUST handle any [Cool](Cool) or [Blob](Blob) that are emitted. Each Cool emitted must be stringified and encoded into a Blob. The Blob objects that result can be concatenated to form the finished message body.
 
 Here's an example of such a typical application:
 
@@ -300,7 +300,7 @@ The server SHOULD examine the `Content-Type` header for the `charset` setting. T
 
 The server SHOULD examine the `Content-Length` header, if given. It MAY choose to stop consuming the Message Body once the number of bytes given has been read. It SHOULD guarantee that the body length is the same as described in the `Content-Length`.
 
-Unless the status code is one that is not permitted to have a message body, the application server MUST tap the Supply and process each emitted [Blob](Blob) or [Str](Str), until the the either the Supply is done or the server decides to quit tapping the stream for some reason.
+Unless the status code is one that is not permitted to have a message body, the application server MUST tap the Supply and process each emitted [Blob](Blob) or [Cool](Cool), until the the either the Supply is done or the server decides to quit tapping the stream for some reason.
 
 The application server SHOULD continue processing emitted values until the Supply is done or until `Content-Length` bytes have been emitted. The server MAY stop tapping the Supply for various other reasons as well, such as timeouts or because the client has closed the socket, etc.
 
@@ -310,7 +310,7 @@ If the Supply is quit instead of being done, the server SHOULD attempt to handle
 
 It is up to the server how to handle encoded characters given by the application within the headers.
 
-Within the body, however, any [Str](Str) emitted from the [Supply](Supply) MUST be encoded. If the application has specified a `charset` with the [Content-Type](Content-Type) header, the server SHOULD honor that character encoding. If none is given or the server does not honor the [Content-Type](Content-Type) header, it MUST encode any [Str](Str) with the encoding named in `psgi.encoding`.
+Within the body, however, any [Cool](Cool) emitted from the [Supply](Supply) MUST be stringified and then encoded. If the application has specified a `charset` with the [Content-Type](Content-Type) header, the server SHOULD honor that character encoding. If none is given or the server does not honor the [Content-Type](Content-Type) header, it MUST encode any stringified Cool with the encoding named in `psgi.encoding`.
 
 Any [Blob](Blob) encountered in the body SHOULD be sent on as is, treating the data as plain binary.
 
@@ -459,7 +459,7 @@ In detail, an application MUST return a [Promise](Promise) or an object that may
 
   * The headers MUST be a [List](List) of [Pair](Pair)s naming the headers to the application intends to return. The application MAY return the same header name multiple times.
 
-  * The message body MUST be a [Supply](Supply) that emits [Str](Str) and [Blob](Blob) objects or an object that coerces into such a Supply (e.g., a List or an Array).
+  * The message body MUST be a [Supply](Supply) that emits [Cool](Cool) and [Blob](Blob) objects or an object that coerces into such a Supply (e.g., a List or an Array).
 
 For example, here is another example that demonstrates the flexibility possible in the application response:
 
@@ -484,7 +484,7 @@ This application will print out all the values of factorial from 1 to N where N 
 
 When sending the message body to the server, the application SHOULD prefer to use [Blob](Blob) objects. This allows the application to fully control the encoding of any text being sent.
 
-The application MAY use [Str](Str), but this puts the server in charge of encoding the response. The server is only required to encode the data according to the encoding specified in the `p6sgi.encoding` key of the environment. Application servers are recommended to examine the `charset` of the Content-Type header returned by the application, but are not required to do so.
+It is also possible for the application to use [Cool](Cool) instances, but this puts the server in charge of stringifying and encoding the response. The server is only required to encode the data according to the encoding specified in the `p6sgi.encoding` key of the environment. Application servers are recommended to examine the `charset` of the Content-Type header returned by the application, but are not required to do so.
 
 Applications SHOULD avoid characters that require encoding in HTTP headers.
 
@@ -499,6 +499,8 @@ Changes
   * The application response has been completely restructured in a form that is both easy on applications and easy on middleware, mainly taking advantage of the fact that a List easily coerces into a Supply.
 
   * Eliminating the P6SGI compilation unit again as it is no longer necessary.
+
+  * Change the Supply to emit Cool and Blob rather than just Str and Blob.
 
 0.3.Draft
 ---------
