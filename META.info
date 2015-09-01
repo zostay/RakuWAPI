@@ -1,0 +1,11 @@
+{
+    "name" : "P6SGI",
+    "version" : "0.4.Draft",
+    "description" : "Perl 6 Standard Gateway Interface Specification"
+    "author" : "Andrew Sterling Hanenkamp",
+    "provides" : {
+        "P6SGI": "P6SGI.pod"
+    },
+    "depends" : [ ],
+    "source-url" : "git://github.com/zostay/P6SGI.git"
+}
