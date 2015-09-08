@@ -8,7 +8,7 @@ STATUS
 
 This is a Proposed Draft.
 
-Version 0.4.Draft
+Version 0.5.Draft
 
 0 INTRODUCTION
 ==============
@@ -191,14 +191,19 @@ This list is primarily adopted from [PSGI](PSGI).
     <td>True if the server expects the app to be invoked only once during the life of the process. This is not a guarantee.</td>
   </tr>
   <tr>
-    <td><code>p6sgi.encoding</code></td>
+    <td><code>p6sgi.body.encoding</code></td>
     <td><code>Str:D</code></td>
     <td>Name of the encoding the server will use for any strings it is sent.</td>
   </tr>
   <tr>
-    <td><code>p6sgix.output.sent</code></td>
+    <td><code>p6sgix.header.done</code></td>
     <td><code>Promise:D</code></td>
-    <td>A vowed Promise that is kept by the server when the server is done processing the response. It will be broken if the server terminates processing early.</td>
+    <td>A vowed Promise that is kept by the server when the server is done sending or processing the header. It will be broken if the server is unable to send the application header.</td>
+  </tr>
+  <tr>
+    <td><code>p6sgix.body.done</code></td>
+    <td><code>Promise:D</code></td>
+    <td>A vowed Promise that is kept by the server when the server has finished sending or processing the response. It will be broken if the server terminates processing early.</td>
   </tr>
 </table>
 
@@ -296,7 +301,7 @@ Each [Pair](Pair) in the list of headers maps a header name to a header value. T
 
 If the application is missing headers that are required for the Status Code given or provides headers that are forbidden, the application server SHOULD treat that as a server error.
 
-The server SHOULD examine the `Content-Type` header for the `charset` setting. This SHOULD be used to aid in encoding any [Str](Str) encountered when processing the Message Body. If the application does not provide a `charset`, the server MAY choose to add this header itself using the encoding provided in `p6sgi.encoding` in the environment.
+The server SHOULD examine the `Content-Type` header for the `charset` setting. This SHOULD be used to aid in encoding any [Str](Str) encountered when processing the Message Body. If the application does not provide a `charset`, the server MAY choose to add this header itself using the encoding provided in `p6sgi.body.encoding` in the environment.
 
 The server SHOULD examine the `Content-Length` header, if given. It MAY choose to stop consuming the Message Body once the number of bytes given has been read. It SHOULD guarantee that the body length is the same as described in the `Content-Length`.
 
@@ -382,7 +387,17 @@ As with an application, middleware MUST return a valid P6SGI response to the ser
 
 ### 2.1.5 Encoding
 
-All the encoding issues in 2.2.5 need to be considered.
+All the encoding issues in 2.0.5 and 2.2.5 need to be considered.
+
+Special care must be taken when middleware needs to process the application body. In such cases, the middleware must deal with the possibility of needing to encode the characters being supplied. In such cases, middleware MUST do its best to handle encoding as servers are required:
+
+  * Any [Blob](Blob) data SHOULD be passed through as-is.
+
+  * Any non-Blob SHOULD be stringified using [Str](Str) or the unary `~` prefix.
+
+  * Middleware SHOULD examine the charset value of the Content-Type header and prefer that encoding.
+
+  * If no charset is present or the middleware does not implementing charset handling, the middleware MUST encode using the value in `p6sgi.body.encoding`.
 
 2.2 Layer 2: Application
 ------------------------
@@ -484,12 +499,23 @@ This application will print out all the values of factorial from 1 to N where N 
 
 When sending the message body to the server, the application SHOULD prefer to use [Blob](Blob) objects. This allows the application to fully control the encoding of any text being sent.
 
-It is also possible for the application to use [Cool](Cool) instances, but this puts the server in charge of stringifying and encoding the response. The server is only required to encode the data according to the encoding specified in the `p6sgi.encoding` key of the environment. Application servers are recommended to examine the `charset` of the Content-Type header returned by the application, but are not required to do so.
+It is also possible for the application to use [Cool](Cool) instances, but this puts the server in charge of stringifying and encoding the response. The server is only required to encode the data according to the encoding specified in the `p6sgi.body.encoding` key of the environment. Application servers are recommended to examine the `charset` of the Content-Type header returned by the application, but are not required to do so.
 
 Applications SHOULD avoid characters that require encoding in HTTP headers.
 
 Changes
 =======
+
+0.5.Draft
+---------
+
+  * Adding some notes about middleware encoding.
+
+  * Renamed `p6sgi.encoding` to `p6sgi.body.encoding`.
+
+  * Renamed `p6sgix.response.sent` to `p6sgix.body.done`.
+
+  * Added `p6sgix.header.done` as a new P6SGI extension.
 
 0.4.Draft
 ---------

@@ -6,7 +6,7 @@
 
 This is a Proposed Draft.
 
-Version 0.4.Draft
+Version 0.5.Draft
 
 =head1 0 INTRODUCTION
 
@@ -164,14 +164,20 @@ This list is primarily adopted from L<PSGI|https://metacpan.com/pod/PSGI>.
                              |                                        | life of the process. This is not a
                              |                                        | guarantee.
 
-    C<p6sgi.encoding>        | C<< Str:D >>                           | Name of the encoding the server will
+    C<p6sgi.body.encoding>   | C<< Str:D >>                           | Name of the encoding the server will
                              |                                        | use for any strings it is sent.
 
-    C<p6sgix.output.sent>    | C<< Promise:D >>                       | A vowed Promise that is kept by the
+    C<p6sgix.header.done>    | C<< Promise:D >>                       | A vowed Promise that is kept by the
                              |                                        | server when the server is done
-                             |                                        | processing the response. It will
-                             |                                        | be broken if the server terminates
-                             |                                        | processing early.
+                             |                                        | sending or processing the header. It
+                             |                                        | will be broken if the server is unable
+                             |                                        | to send the application header.
+
+    C<p6sgix.body.done>      | C<< Promise:D >>                       | A vowed Promise that is kept by the
+                             |                                        | server when the server has finished
+                             |                                        | sending or processing the response.
+                             |                                        | It will be broken if the server
+                             |                                        | terminates processing early.
 
 =end table
 
@@ -287,7 +293,7 @@ Each L<Pair> in the list of headers maps a header name to a header value. The ap
 
 If the application is missing headers that are required for the Status Code given or provides headers that are forbidden, the application server SHOULD treat that as a server error.
 
-The server SHOULD examine the C<Content-Type> header for the C<charset> setting. This SHOULD be used to aid in encoding any L<Str> encountered when processing the Message Body. If the application does not provide a C<charset>, the server MAY choose to add this header itself using the encoding provided in C<p6sgi.encoding> in the environment.
+The server SHOULD examine the C<Content-Type> header for the C<charset> setting. This SHOULD be used to aid in encoding any L<Str> encountered when processing the Message Body. If the application does not provide a C<charset>, the server MAY choose to add this header itself using the encoding provided in C<p6sgi.body.encoding> in the environment.
 
 The server SHOULD examine the C<Content-Length> header, if given. It MAY choose to stop consuming the Message Body once the number of bytes given has been read. It SHOULD guarantee that the body length is the same as described in the C<Content-Length>.
 
@@ -372,7 +378,17 @@ As with an application, middleware MUST return a valid P6SGI response to the ser
 
 =head3 2.1.5 Encoding
 
-All the encoding issues in 2.2.5 need to be considered.
+All the encoding issues in 2.0.5 and 2.2.5 need to be considered.
+
+Special care must be taken when middleware needs to process the application body. In such cases, the middleware must deal with the possibility of needing to encode the characters being supplied. In such cases, middleware MUST do its best to handle encoding as servers are required:
+
+=item1 Any L<Blob> data SHOULD be passed through as-is.
+
+=item1 Any non-Blob SHOULD be stringified using L<Str> or the unary C<~> prefix.
+
+=item1 Middleware SHOULD examine the charset value of the Content-Type header and prefer that encoding.
+
+=item1 If no charset is present or the middleware does not implementing charset handling, the middleware MUST encode using the value in C<p6sgi.body.encoding>.
 
 =head2 2.2 Layer 2: Application
 
@@ -473,11 +489,21 @@ This application will print out all the values of factorial from 1 to N where N 
 
 When sending the message body to the server, the application SHOULD prefer to use L<Blob> objects. This allows the application to fully control the encoding of any text being sent.
 
-It is also possible for the application to use L<Cool> instances, but this puts the server in charge of stringifying and encoding the response. The server is only required to encode the data according to the encoding specified in the C<p6sgi.encoding> key of the environment. Application servers are recommended to examine the C<charset> of the Content-Type header returned by the application, but are not required to do so.
+It is also possible for the application to use L<Cool> instances, but this puts the server in charge of stringifying and encoding the response. The server is only required to encode the data according to the encoding specified in the C<p6sgi.body.encoding> key of the environment. Application servers are recommended to examine the C<charset> of the Content-Type header returned by the application, but are not required to do so.
 
 Applications SHOULD avoid characters that require encoding in HTTP headers.
 
 =head1 Changes
+
+=head2 0.5.Draft
+
+=item Adding some notes about middleware encoding.
+
+=item Renamed C<p6sgi.encoding> to C<p6sgi.body.encoding>.
+
+=item Renamed C<p6sgix.response.sent> to C<p6sgix.body.done>.
+
+=item Added C<p6sgix.header.done> as a new P6SGI extension.
 
 =head2 0.4.Draft
 
