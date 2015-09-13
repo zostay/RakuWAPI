@@ -10,7 +10,31 @@ use v6;
 #  * Directs class doc links to doc.perl6.org
 #  * Makes the code blocks into github ```perl6``` style code blocks
 
+my Bool $in-html = False;
+my Bool $in-code = False;
+my Int $indent = 0;
 for $*ARGFILES.lines -> $_ is copy {
+
+    $in-html = True  if $_ eq '<table>';
+    $in-html = False if $_ eq '</table>';
+
+    if /^(\s+) "*"/ {
+        $indent = $0.chars;
+    }
+
+    if /^\S/ {
+        $indent = 0;
+    }
+
+    if $in-code && !m/^\s ** {$indent + 4}/ && m/^\s*\S/ {
+        $in-code = False;
+        say "```";
+    }
+
+    if !$in-html && !$in-code && /^\s ** {$indent + 4}/ {
+        $in-code = True;
+        say "```perl6";
+    }
 
     # Fixup unprocessed C<<>> and C<> tags
     .=subst(/ 
