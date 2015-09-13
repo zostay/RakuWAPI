@@ -138,7 +138,7 @@ This list is primarily adopted from [PSGI](PSGI).
   <tr>
     <td><code>HTTP_*</code></td>
     <td><code>Str:_</code></td>
-    <td>The remaining request headers are placed here. The names are prefixed with <code>HTTP_</code>, in ALL CAPS with the hyphens ("-") turned to underscores ("_"). Multiple incoming headers with the same name should be joined with a comma (", ") as described in L<RFC 2616|http://www.ietf.org/rfc/rfc2616>. The C<HTTP_CONTENT_LENGTH> and C<HTTP_CONTENT_TYPE> headers MUST NOT be set.</td>
+    <td>The remaining request headers are placed here. The names are prefixed with <code>HTTP_</code>, in ALL CAPS with the hyphens ("-") turned to underscores ("_"). Multiple incoming headers with the same name should be joined with a comma (", ") as described in L<RFC 2616|http://www.ietf.org/rfc/rfc2616>. The <code>HTTP_CONTENT_LENGTH</code> and <code>HTTP_CONTENT_TYPE</code> headers MUST NOT be set.</td>
   </tr>
   <tr>
     <td>Other CGI Keys</td>
