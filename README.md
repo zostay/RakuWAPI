@@ -73,9 +73,9 @@ It SHOULD be able to load applications found in P6SGI script files. These are Pe
 
 ### 2.0.1 The Environment
 
-The environment MUST be an [Associative](Associative). The keys of this map are mostly derived the old Common Gateway Interface (CGI) as well as a number of additional P6SGI-specific values. The application server MUST provide each key as the type given. All variables given in the table below MUST be supported, except for those with the `p6sgix.` prefix.
+The environment MUST be an [Associative](http://doc.perl6.org/type/Associative). The keys of this map are mostly derived the old Common Gateway Interface (CGI) as well as a number of additional P6SGI-specific values. The application server MUST provide each key as the type given. All variables given in the table below MUST be supported, except for those with the `p6sgix.` prefix.
 
-This list is primarily adopted from [PSGI](PSGI).
+This list is primarily adopted from [PSGI](http://doc.perl6.org/type/PSGI).
 
 <table>
   <thead>
@@ -229,7 +229,7 @@ The input stream object provided by the server MUST provide the following method
 
         method read(Int:D $bytes) returns Blob { ... }
 
-    This method MUST be available. This method is given the number of bytes to read from the input stream and returns a [Blob](Blob) containing up to that many bytes or a Blob type object if the stream has come to an end.
+    This method MUST be available. This method is given the number of bytes to read from the input stream and returns a [Blob](http://doc.perl6.org/type/Blob) containing up to that many bytes or a Blob type object if the stream has come to an end.
 
   * seek
 
@@ -268,13 +268,13 @@ The error stream MUST implement the following methods:
 
 ### 2.0.4 Application Response
 
-A P6SGI application typically returns a [Promise](Promise). This Promise is kept with a [Capture](Capture) which contains 3 positional arguments: the status code, the headers, and the message body, respectively.
+A P6SGI application typically returns a [Promise](http://doc.perl6.org/type/Promise). This Promise is kept with a [Capture](http://doc.perl6.org/type/Capture) which contains 3 positional arguments: the status code, the headers, and the message body, respectively.
 
   * The status code is returned as an integer matching one of the standard HTTP status codes (e.g., 200 for success, 500 for error, 404 for not found, etc.).
 
   * The headers are returned as a List of Pairs mapping header names to header values.
 
-  * The message body is typically returned as a [Supply](Supply) that emits zero or more objects. The server MUST handle any [Cool](Cool) or [Blob](Blob) that are emitted. Each Cool emitted must be stringified and encoded into a Blob. The Blob objects that result can be concatenated to form the finished message body.
+  * The message body is typically returned as a [Supply](http://doc.perl6.org/type/Supply) that emits zero or more objects. The server MUST handle any [Cool](http://doc.perl6.org/type/Cool) or [Blob](http://doc.perl6.org/type/Blob) that are emitted. Each Cool emitted must be stringified and encoded into a Blob. The Blob objects that result can be concatenated to form the finished message body.
 
 Here's an example of such a typical application:
 
@@ -293,19 +293,19 @@ Aside from the typical response, applications are permitted to return any part o
         });
     }
 
-Calling `Promise` on the returned object returns a Promise that is kept with the required Capture. The first two elements are what are normally expected, but the third is just a list. A [List](List), however, coerces to Supply as required.
+Calling `Promise` on the returned object returns a Promise that is kept with the required Capture. The first two elements are what are normally expected, but the third is just a list. A [List](http://doc.perl6.org/type/List), however, coerces to Supply as required.
 
 The server SHOULD NOT assume that the Promise will always be kept and SHOULD handle a broken Promise as appropriate. The server SHOULD assume the Promise has been vowed a MUST NOT try to keep or break the Promise itself.
 
-Each [Pair](Pair) in the list of headers maps a header name to a header value. The application may return the same header name multiple times. The order of multiple headers with the same name SHOULD be preserved.
+Each [Pair](http://doc.perl6.org/type/Pair) in the list of headers maps a header name to a header value. The application may return the same header name multiple times. The order of multiple headers with the same name SHOULD be preserved.
 
 If the application is missing headers that are required for the Status Code given or provides headers that are forbidden, the application server SHOULD treat that as a server error.
 
-The server SHOULD examine the `Content-Type` header for the `charset` setting. This SHOULD be used to aid in encoding any [Str](Str) encountered when processing the Message Body. If the application does not provide a `charset`, the server MAY choose to add this header itself using the encoding provided in `p6sgi.body.encoding` in the environment.
+The server SHOULD examine the `Content-Type` header for the `charset` setting. This SHOULD be used to aid in encoding any [Str](http://doc.perl6.org/type/Str) encountered when processing the Message Body. If the application does not provide a `charset`, the server MAY choose to add this header itself using the encoding provided in `p6sgi.body.encoding` in the environment.
 
 The server SHOULD examine the `Content-Length` header, if given. It MAY choose to stop consuming the Message Body once the number of bytes given has been read. It SHOULD guarantee that the body length is the same as described in the `Content-Length`.
 
-Unless the status code is one that is not permitted to have a message body, the application server MUST tap the Supply and process each emitted [Blob](Blob) or [Cool](Cool), until the the either the Supply is done or the server decides to quit tapping the stream for some reason.
+Unless the status code is one that is not permitted to have a message body, the application server MUST tap the Supply and process each emitted [Blob](http://doc.perl6.org/type/Blob) or [Cool](http://doc.perl6.org/type/Cool), until the the either the Supply is done or the server decides to quit tapping the stream for some reason.
 
 The application server SHOULD continue processing emitted values until the Supply is done or until `Content-Length` bytes have been emitted. The server MAY stop tapping the Supply for various other reasons as well, such as timeouts or because the client has closed the socket, etc.
 
@@ -315,9 +315,9 @@ If the Supply is quit instead of being done, the server SHOULD attempt to handle
 
 It is up to the server how to handle encoded characters given by the application within the headers.
 
-Within the body, however, any [Cool](Cool) emitted from the [Supply](Supply) MUST be stringified and then encoded. If the application has specified a `charset` with the [Content-Type](Content-Type) header, the server SHOULD honor that character encoding. If none is given or the server does not honor the [Content-Type](Content-Type) header, it MUST encode any stringified Cool with the encoding named in `psgi.encoding`.
+Within the body, however, any [Cool](http://doc.perl6.org/type/Cool) emitted from the [Supply](http://doc.perl6.org/type/Supply) MUST be stringified and then encoded. If the application has specified a `charset` with the [Content-Type](Content-Type) header, the server SHOULD honor that character encoding. If none is given or the server does not honor the [Content-Type](Content-Type) header, it MUST encode any stringified Cool with the encoding named in `psgi.encoding`.
 
-Any [Blob](Blob) encountered in the body SHOULD be sent on as is, treating the data as plain binary.
+Any [Blob](http://doc.perl6.org/type/Blob) encountered in the body SHOULD be sent on as is, treating the data as plain binary.
 
 2.1 Layer 1: Middleware
 -----------------------
@@ -391,9 +391,9 @@ All the encoding issues in 2.0.5 and 2.2.5 need to be considered.
 
 Special care must be taken when middleware needs to process the application body. In such cases, the middleware must deal with the possibility of needing to encode the characters being supplied. In such cases, middleware MUST do its best to handle encoding as servers are required:
 
-  * Any [Blob](Blob) data SHOULD be passed through as-is.
+  * Any [Blob](http://doc.perl6.org/type/Blob) data SHOULD be passed through as-is.
 
-  * Any non-Blob SHOULD be stringified using [Str](Str) or the unary `~` prefix.
+  * Any non-Blob SHOULD be stringified using [Str](http://doc.perl6.org/type/Str) or the unary `~` prefix.
 
   * Middleware SHOULD examine the charset value of the Content-Type header and prefer that encoding.
 
@@ -438,7 +438,7 @@ It is recommended that such files identify themselves with the suffix .p6w when 
 
 ### 2.2.1 The Environment
 
-The one and only argument passed to the application is an [Associative](Associative) containing the environment. The environment variables that MUST be set are defined in section 2.0.1. Additional variables are probably defined by your application server, so please see its documentation for details.
+The one and only argument passed to the application is an [Associative](http://doc.perl6.org/type/Associative) containing the environment. The environment variables that MUST be set are defined in section 2.0.1. Additional variables are probably defined by your application server, so please see its documentation for details.
 
 The application MAY store additional values in the environment as it sees fit. This allows the application to communicate with a server or middleware or just to store information useful for the duration of the request. If the application modifies the environment, the variables set MUST contain a period and SHOULD start with a unique name that is not `p6sgi.` or `p6sgix.` as these are reserved.
 
@@ -468,13 +468,13 @@ A trivial P6SGI application could be implemented like this:
         };
     }
 
-In detail, an application MUST return a [Promise](Promise) or an object that may coerce into a Promise (i.e., it has a `Promise` method that takes no arguments and returns a Promise object). This Promise MUST be kept with a Capture or object that coerces into a Capture (e.g., a [List](List) or an [Array](Array)). It MUST contain 3 positional arguments, which are, respectively, the status code, the list of headers, and the message body. These are each defined as follows:
+In detail, an application MUST return a [Promise](http://doc.perl6.org/type/Promise) or an object that may coerce into a Promise (i.e., it has a `Promise` method that takes no arguments and returns a Promise object). This Promise MUST be kept with a Capture or object that coerces into a Capture (e.g., a [List](http://doc.perl6.org/type/List) or an [Array](http://doc.perl6.org/type/Array)). It MUST contain 3 positional arguments, which are, respectively, the status code, the list of headers, and the message body. These are each defined as follows:
 
-  * The status code MUST be an [Int](Int) or object that coerces to an Int. It MUST be a valid HTTP status code.
+  * The status code MUST be an [Int](http://doc.perl6.org/type/Int) or object that coerces to an Int. It MUST be a valid HTTP status code.
 
-  * The headers MUST be a [List](List) of [Pair](Pair)s naming the headers to the application intends to return. The application MAY return the same header name multiple times.
+  * The headers MUST be a [List](http://doc.perl6.org/type/List) of [Pair](http://doc.perl6.org/type/Pair)s naming the headers to the application intends to return. The application MAY return the same header name multiple times.
 
-  * The message body MUST be a [Supply](Supply) that emits [Cool](Cool) and [Blob](Blob) objects or an object that coerces into such a Supply (e.g., a List or an Array).
+  * The message body MUST be a [Supply](http://doc.perl6.org/type/Supply) that emits [Cool](http://doc.perl6.org/type/Cool) and [Blob](http://doc.perl6.org/type/Blob) objects or an object that coerces into such a Supply (e.g., a List or an Array).
 
 For example, here is another example that demonstrates the flexibility possible in the application response:
 
@@ -497,9 +497,9 @@ This application will print out all the values of factorial from 1 to N where N 
 
 ### 2.2.5 Encoding
 
-When sending the message body to the server, the application SHOULD prefer to use [Blob](Blob) objects. This allows the application to fully control the encoding of any text being sent.
+When sending the message body to the server, the application SHOULD prefer to use [Blob](http://doc.perl6.org/type/Blob) objects. This allows the application to fully control the encoding of any text being sent.
 
-It is also possible for the application to use [Cool](Cool) instances, but this puts the server in charge of stringifying and encoding the response. The server is only required to encode the data according to the encoding specified in the `p6sgi.body.encoding` key of the environment. Application servers are recommended to examine the `charset` of the Content-Type header returned by the application, but are not required to do so.
+It is also possible for the application to use [Cool](http://doc.perl6.org/type/Cool) instances, but this puts the server in charge of stringifying and encoding the response. The server is only required to encode the data according to the encoding specified in the `p6sgi.body.encoding` key of the environment. Application servers are recommended to examine the `charset` of the Content-Type header returned by the application, but are not required to do so.
 
 Applications SHOULD avoid characters that require encoding in HTTP headers.
 
@@ -548,9 +548,9 @@ Changes
 0.2.Draft
 ---------
 
-This second revision eliminates the legacy standard and requires that all P6SGI responses be returned as a [Promise](Promise). The goal is to try and gain some uniformity in the responses the server must deal with.
+This second revision eliminates the legacy standard and requires that all P6SGI responses be returned as a [Promise](http://doc.perl6.org/type/Promise). The goal is to try and gain some uniformity in the responses the server must deal with.
 
 0.1.Draft
 ---------
 
-This is the first published version. It was heavily influenced by PSGI and included interfaces based on the standard, deferred, and streaming responses of PSGI. Instead of callbacks, however, it used [Promise](Promise) to handle deferred responses and [Channel](Channel) to handle streaming. It mentioned middleware in passing.
+This is the first published version. It was heavily influenced by PSGI and included interfaces based on the standard, deferred, and streaming responses of PSGI. Instead of callbacks, however, it used [Promise](http://doc.perl6.org/type/Promise) to handle deferred responses and [Channel](http://doc.perl6.org/type/Channel) to handle streaming. It mentioned middleware in passing.
