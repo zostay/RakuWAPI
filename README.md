@@ -77,7 +77,7 @@ It SHOULD be able to load applications found in P6SGI script files. These are Pe
 
 The environment MUST be an [Associative](http://doc.perl6.org/type/Associative). The keys of this map are mostly derived the old Common Gateway Interface (CGI) as well as a number of additional P6SGI-specific values. The application server MUST provide each key as the type given. All variables given in the table below MUST be supported, except for those with the `p6sgix.` prefix.
 
-This list is primarily adopted from [PSGI](http://doc.perl6.org/type/PSGI).
+This list is primarily adopted from [PSGI](https://metacpan.com/pod/PSGI).
 
 <table>
   <thead>

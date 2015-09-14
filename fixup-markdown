@@ -56,10 +56,18 @@ for $*ARGFILES.lines -> $_ is copy {
         'L<' ( <[ \w \s ]>+ ) '|' ( <-[ \> ]>+ ) '>'
     /, { qq|<a href=\"$1\">{$0}</a>| }, :g);
 
+    # Pod::To::Markdown does not handle links well at all
+    sub url($n) {
+        given $n {
+            when 'PSGI' { 'https://metacpan.com/pod/PSGI' }
+            default     { "http://doc.perl6.org/type/$n" }
+        }
+    }
+
     # Find links [word](word) and make them [word](http://doc.perl6.org/type/word)
     .=subst(/
         '[' ( \w+ ) '](' $0 ')'
-    /, { "[$0](http://doc.perl6.org/type/$0)" }, :g);
+    /, { "[$0]({url($0)})" }, :g);
          
     .say;
 }
