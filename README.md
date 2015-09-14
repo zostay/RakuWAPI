@@ -64,14 +64,14 @@ The server MUST be able to find applications somehow.
 
 It SHOULD be able to load applications found in P6SGI script files. These are Perl 6 code files that end with the definition of a block to be used as the application routine. For example:
 
-```perl6
+    ```perl6
     use v6;
     sub app(%env) {
         start {
             200, [ Content-Type => 'text/plain' ], [ 'Hello World!' ]
         }
     }
-```
+    ```
 
 ### 2.0.1 The Environment
 
@@ -229,17 +229,17 @@ The input stream object provided by the server MUST provide the following method
 
   * read
 
-```perl6
+     ```perl6
         method read(Int:D $bytes) returns Blob { ... }
-```
+     ```
 
     This method MUST be available. This method is given the number of bytes to read from the input stream and returns a [Blob](http://doc.perl6.org/type/Blob) containing up to that many bytes or a Blob type object if the stream has come to an end.
 
   * seek
 
-```perl6
+     ```perl6
         method seek(Int:D $offset, Int:D $whence where 0 >= * >= 2) returns Bool { ... }
-```
+     ```
 
     This method MAY be provided in all cases, but MUST be provided if `p6sgi.input.buffered` is set in the environment. Calling this moves the read cursor to byte position `$offset` relative to `$whence`, which is one of the following integers:
 
@@ -259,10 +259,10 @@ The error stream MUST implement the following methods:
 
   * print
 
-```perl6
+     ```perl6
         multi method print(Str:D: $error) returns Bool:D { ... }
         multi method print(*@error) returns Bool:D { ... }
-```
+     ```
 
     Both multi variants MUST be provided. The slurpy version using `@error` will concatenate the stringified version of each value given for recording.
 
@@ -270,9 +270,9 @@ The error stream MUST implement the following methods:
 
   * flush
 
-```perl6
+     ```perl6
         method flush() returns Bool:D { ... }
-```
+     ```
 
     This method MUST be provided. It MAY be a no-op, particularly if `p6sgi.errors.buffered` is False. It SHOULD flush the error stream buffer. It returns `True` on success.
 
@@ -288,24 +288,24 @@ A P6SGI application typically returns a [Promise](http://doc.perl6.org/type/Prom
 
 Here's an example of such a typical application:
 
-```perl6
+    ```perl6
     sub app(%env) {
         start {
             200, [ Content-Type => 'text/plain' ], Supply.from-list([ 'Hello World' ])
         };
     }
-```
+    ```
 
 Aside from the typical response, applications are permitted to return any part of the response with a different type of object so long as that object provides a coercion to the required type. Here is another application that is functionally equivalent to the typical example just given:
 
-```perl6
+    ```perl6
     sub app(%env) {
         Supply.on-demand(-> $s {
             $s.emit([ 200, [ Content-Type => 'text/plain' ], [ 'Hello World' ]);
             $s.done;
         });
     }
-```
+    ```
 
 Calling `Promise` on the returned object returns a Promise that is kept with the required Capture. The first two elements are what are normally expected, but the third is just a list. A [List](http://doc.perl6.org/type/List), however, coerces to Supply as required.
 
@@ -340,7 +340,7 @@ P6SGI middleware is a P6SGI application that wraps another P6SGI application. Mi
 
 For example, in the following snippet `&mw` is a simple middleware application that adds a custom header:
 
-```perl6
+    ```perl6
     my &app = sub (%env) {
         start {
             200,
@@ -358,7 +358,7 @@ For example, in the following snippet `&mw` is a simple middleware application t
     };
 
     &app.wrap(&mw);
-```
+    ```
 
 **Note:** For those familiar with PSGI and Plack should take careful notice that Perl 6 `wrap` has the invocant and argument swapped from the way Plack::Middlware operates. In P6SGI, the `wrap` method is always called on the *app* not the *middleware*.
 
@@ -374,7 +374,7 @@ This is the method demonstrated in the example above. Perl 6 provides a handy `w
 
 This method resembles that which would normally be used in PSGI, which is to define the middleware using a closure that wraps the application.
 
-```perl6
+    ```perl6
     my &mw = sub (%env) {
         app(%env).then(-> $p {
             my @res = $p.result;
@@ -383,7 +383,7 @@ This method resembles that which would normally be used in PSGI, which is to def
         });
     };
     &app = &mw;
-```
+    ```
 
 This example is functionality identical to the previous example.
 
@@ -424,13 +424,13 @@ A P6SGI application is a Perl 6 routine that receives a P6SGI environment and re
 
 A simple Hello World P6SGI application may be implemented as follows:
 
-```perl6
+    ```perl6
     sub app(%env) {
         start {
             200, [ Content-Type => 'text/plain' ], [ 'Hello World' ]
         };
     }
-```
+    ```
 
 ### 2.2.0 Defining an Application
 
@@ -440,7 +440,7 @@ Typically, however, the application is defined in a script file that defines the
 
 For example, such a file might look like this:
 
-```perl6
+    ```perl6
     use v6;
     use MyApp;
     use MyApp::Middleware;
@@ -452,7 +452,7 @@ For example, such a file might look like this:
     }
     &app.wrap(&my-middleware);
     &app;
-```
+    ```
 
 In this example, we load some libraries from our imaginary main application, we define a simple P6SGI app, we apply some middleware (presumably exported from `MyApp::Middleware`), and then end with the reference to our application. This is the typical method by which an application server will load an application.
 
@@ -482,7 +482,7 @@ The application MUST return a valid P6SGI response to the server.
 
 A trivial P6SGI application could be implemented like this:
 
-```perl6
+    ```perl6
     sub app(%env) {
         start {
             200,
@@ -490,7 +490,7 @@ A trivial P6SGI application could be implemented like this:
             [ "Hello World" ],
         };
     }
-```
+    ```
 
 In detail, an application MUST return a [Promise](http://doc.perl6.org/type/Promise) or an object that may coerce into a Promise (i.e., it has a `Promise` method that takes no arguments and returns a Promise object). This Promise MUST be kept with a Capture or object that coerces into a Capture (e.g., a [List](http://doc.perl6.org/type/List) or an [Array](http://doc.perl6.org/type/Array)). It MUST contain 3 positional arguments, which are, respectively, the status code, the list of headers, and the message body. These are each defined as follows:
 
@@ -502,7 +502,7 @@ In detail, an application MUST return a [Promise](http://doc.perl6.org/type/Prom
 
 For example, here is another example that demonstrates the flexibility possible in the application response:
 
-```perl6
+    ```perl6
     sub app(%env) {
         start {
             my $n = %env<QUERY_STRING>.Int;
@@ -517,7 +517,7 @@ For example, here is another example that demonstrates the flexibility possible 
             });
         };
     }
-```
+    ```
 
 This application will print out all the values of factorial from 1 to N where N is given as the query string. The header is returned immediately, but the lines of the body are returned as the values of factorial are calculated.
 
