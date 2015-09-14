@@ -329,7 +329,7 @@ If the Supply is quit instead of being done, the server SHOULD attempt to handle
 
 It is up to the server how to handle encoded characters given by the application within the headers.
 
-Within the body, however, any [Cool](http://doc.perl6.org/type/Cool) emitted from the [Supply](http://doc.perl6.org/type/Supply) MUST be stringified and then encoded. If the application has specified a `charset` with the [Content-Type](Content-Type) header, the server SHOULD honor that character encoding. If none is given or the server does not honor the [Content-Type](Content-Type) header, it MUST encode any stringified Cool with the encoding named in `psgi.encoding`.
+Within the body, however, any [Cool](http://doc.perl6.org/type/Cool) emitted from the [Supply](http://doc.perl6.org/type/Supply) MUST be stringified and then encoded. If the application has specified a `charset` with the `Content-Type` header, the server SHOULD honor that character encoding. If none is given or the server does not honor the `Content-Type` header, it MUST encode any stringified Cool with the encoding named in `psgi.encoding`.
 
 Any [Blob](http://doc.perl6.org/type/Blob) encountered in the body SHOULD be sent on as is, treating the data as plain binary.
 
@@ -472,7 +472,7 @@ This is an [IO::Handle](IO::Handle)-like object, but might not be an IO::Handle.
 
 ### 2.2.3 The Error Stream
 
-The application server is required to provide a [p6sgi.errors](p6sgi.errors) variable in the environment with an [IO::Handle](IO::Handle)-like object capable of logging application errors. The application MAY choose to log errors here (or it MAY choose to log them wherever else it likes).
+The application server is required to provide a `p6sgi.errors` variable in the environment with an [IO::Handle](IO::Handle)-like object capable of logging application errors. The application MAY choose to log errors here (or it MAY choose to log them wherever else it likes).
 
 As with the input stream, the server is not required to provide an IO::Handle and the application SHOULD NOT check what kind of object it is, but just use the `print` and `flush` methods as defined in section 2.0.3.
 

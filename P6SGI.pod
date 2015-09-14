@@ -307,7 +307,7 @@ If the Supply is quit instead of being done, the server SHOULD attempt to handle
 
 It is up to the server how to handle encoded characters given by the application within the headers.
 
-Within the body, however, any L<Cool> emitted from the L<Supply> MUST be stringified and then encoded. If the application has specified a C<charset> with the L<Content-Type> header, the server SHOULD honor that character encoding. If none is given or the server does not honor the L<Content-Type> header, it MUST encode any stringified Cool with the encoding named in C<psgi.encoding>.
+Within the body, however, any L<Cool> emitted from the L<Supply> MUST be stringified and then encoded. If the application has specified a C<charset> with the C<Content-Type> header, the server SHOULD honor that character encoding. If none is given or the server does not honor the C<Content-Type> header, it MUST encode any stringified Cool with the encoding named in C<psgi.encoding>.
 
 Any L<Blob> encountered in the body SHOULD be sent on as is, treating the data as plain binary.
 
@@ -440,7 +440,7 @@ This is an L<IO::Handle>-like object, but might not be an IO::Handle. The applic
 
 =head3 2.2.3 The Error Stream
 
-The application server is required to provide a L<p6sgi.errors> variable in the environment with an L<IO::Handle>-like object capable of logging application errors. The application MAY choose to log errors here (or it MAY choose to log them wherever else it likes).
+The application server is required to provide a C<p6sgi.errors> variable in the environment with an L<IO::Handle>-like object capable of logging application errors. The application MAY choose to log errors here (or it MAY choose to log them wherever else it likes).
 
 As with the input stream, the server is not required to provide an IO::Handle and the application SHOULD NOT check what kind of object it is, but just use the C<print> and C<flush> methods as defined in section 2.0.3.
 
