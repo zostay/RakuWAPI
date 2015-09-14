@@ -32,12 +32,12 @@ for $*ARGFILES.lines -> $_ is copy {
         $on-hold.=subst(/\s+$/, '');
         say $on-hold;
         $on-hold = '';
-        say ' ' x $indent + 4, "```\n";
+        say ' ' x $indent + 4*?$indent, "```\n";
     }
 
     if !$in-html && !$in-code && /^\s ** {$indent + 4}/ {
         $in-code = True;
-        say ' ' x $indent + 4, "```perl6";
+        say ' ' x $indent + 4*?$indent, "```perl6";
     }
 
     if $in-code {
