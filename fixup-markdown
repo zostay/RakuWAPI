@@ -13,13 +13,14 @@ use v6;
 my Bool $in-html = False;
 my Bool $in-code = False;
 my Int $indent = 0;
+my Str $on-hold = '';
 for $*ARGFILES.lines -> $_ is copy {
 
     $in-html = True  if $_ eq '<table>';
     $in-html = False if $_ eq '</table>';
 
     if /^(\s+) "*"/ {
-        $indent = $0.chars;
+        $indent = $0.chars - 1;
     }
 
     if /^\S/ {
@@ -28,12 +29,20 @@ for $*ARGFILES.lines -> $_ is copy {
 
     if $in-code && !m/^\s ** {$indent + 4}/ && m/^\s*\S/ {
         $in-code = False;
-        say "```";
+        $on-hold.=subst(/\s+$/, '');
+        say $on-hold;
+        $on-hold = '';
+        say "```\n";
     }
 
     if !$in-html && !$in-code && /^\s ** {$indent + 4}/ {
         $in-code = True;
         say "```perl6";
+    }
+
+    if $in-code {
+        $on-hold ~= $_ ~ "\n";
+        next;
     }
 
     # Fixup unprocessed C<<>> and C<> tags

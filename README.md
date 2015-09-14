@@ -71,8 +71,8 @@ It SHOULD be able to load applications found in P6SGI script files. These are Pe
             200, [ Content-Type => 'text/plain' ], [ 'Hello World!' ]
         }
     }
-
 ```
+
 ### 2.0.1 The Environment
 
 The environment MUST be an [Associative](http://doc.perl6.org/type/Associative). The keys of this map are mostly derived the old Common Gateway Interface (CGI) as well as a number of additional P6SGI-specific values. The application server MUST provide each key as the type given. All variables given in the table below MUST be supported, except for those with the `p6sgix.` prefix.
@@ -231,16 +231,16 @@ The input stream object provided by the server MUST provide the following method
 
 ```perl6
         method read(Int:D $bytes) returns Blob { ... }
-
 ```
+
     This method MUST be available. This method is given the number of bytes to read from the input stream and returns a [Blob](http://doc.perl6.org/type/Blob) containing up to that many bytes or a Blob type object if the stream has come to an end.
 
   * seek
 
 ```perl6
         method seek(Int:D $offset, Int:D $whence where 0 >= * >= 2) returns Bool { ... }
-
 ```
+
     This method MAY be provided in all cases, but MUST be provided if `p6sgi.input.buffered` is set in the environment. Calling this moves the read cursor to byte position `$offset` relative to `$whence`, which is one of the following integers:
 
       * `0`: Seek from the start of the file.
@@ -262,8 +262,8 @@ The error stream MUST implement the following methods:
 ```perl6
         multi method print(Str:D: $error) returns Bool:D { ... }
         multi method print(*@error) returns Bool:D { ... }
-
 ```
+
     Both multi variants MUST be provided. The slurpy version using `@error` will concatenate the stringified version of each value given for recording.
 
     Both variants return `True` on success.
@@ -272,8 +272,8 @@ The error stream MUST implement the following methods:
 
 ```perl6
         method flush() returns Bool:D { ... }
-
 ```
+
     This method MUST be provided. It MAY be a no-op, particularly if `p6sgi.errors.buffered` is False. It SHOULD flush the error stream buffer. It returns `True` on success.
 
 ### 2.0.4 Application Response
@@ -294,8 +294,8 @@ Here's an example of such a typical application:
             200, [ Content-Type => 'text/plain' ], Supply.from-list([ 'Hello World' ])
         };
     }
-
 ```
+
 Aside from the typical response, applications are permitted to return any part of the response with a different type of object so long as that object provides a coercion to the required type. Here is another application that is functionally equivalent to the typical example just given:
 
 ```perl6
@@ -305,8 +305,8 @@ Aside from the typical response, applications are permitted to return any part o
             $s.done;
         });
     }
-
 ```
+
 Calling `Promise` on the returned object returns a Promise that is kept with the required Capture. The first two elements are what are normally expected, but the third is just a list. A [List](http://doc.perl6.org/type/List), however, coerces to Supply as required.
 
 The server SHOULD NOT assume that the Promise will always be kept and SHOULD handle a broken Promise as appropriate. The server SHOULD assume the Promise has been vowed a MUST NOT try to keep or break the Promise itself.
@@ -358,8 +358,8 @@ For example, in the following snippet `&mw` is a simple middleware application t
     };
 
     &app.wrap(&mw);
-
 ```
+
 **Note:** For those familiar with PSGI and Plack should take careful notice that Perl 6 `wrap` has the invocant and argument swapped from the way Plack::Middlware operates. In P6SGI, the `wrap` method is always called on the *app* not the *middleware*.
 
 ### 2.1.0 Middleware Application
@@ -383,8 +383,8 @@ This method resembles that which would normally be used in PSGI, which is to def
         });
     };
     &app = &mw;
-
 ```
+
 This example is functionality identical to the previous example.
 
 ### 2.1.1 Environment
@@ -430,8 +430,8 @@ A simple Hello World P6SGI application may be implemented as follows:
             200, [ Content-Type => 'text/plain' ], [ 'Hello World' ]
         };
     }
-
 ```
+
 ### 2.2.0 Defining an Application
 
 The way an application is defined and used by a P6SGI server may vary by server. The specification does not tell servers how to locate an application to run it, so you will need to see the server's documentation for a description of how to do that.
@@ -452,8 +452,8 @@ For example, such a file might look like this:
     }
     &app.wrap(&my-middleware);
     &app;
-
 ```
+
 In this example, we load some libraries from our imaginary main application, we define a simple P6SGI app, we apply some middleware (presumably exported from `MyApp::Middleware`), and then end with the reference to our application. This is the typical method by which an application server will load an application.
 
 It is recommended that such files identify themselves with the suffix .p6w when a file suffix is useful.
@@ -490,8 +490,8 @@ A trivial P6SGI application could be implemented like this:
             [ "Hello World" ],
         };
     }
-
 ```
+
 In detail, an application MUST return a [Promise](http://doc.perl6.org/type/Promise) or an object that may coerce into a Promise (i.e., it has a `Promise` method that takes no arguments and returns a Promise object). This Promise MUST be kept with a Capture or object that coerces into a Capture (e.g., a [List](http://doc.perl6.org/type/List) or an [Array](http://doc.perl6.org/type/Array)). It MUST contain 3 positional arguments, which are, respectively, the status code, the list of headers, and the message body. These are each defined as follows:
 
   * The status code MUST be an [Int](http://doc.perl6.org/type/Int) or object that coerces to an Int. It MUST be a valid HTTP status code.
@@ -517,8 +517,8 @@ For example, here is another example that demonstrates the flexibility possible 
             });
         };
     }
-
 ```
+
 This application will print out all the values of factorial from 1 to N where N is given as the query string. The header is returned immediately, but the lines of the body are returned as the values of factorial are calculated.
 
 ### 2.2.5 Encoding
