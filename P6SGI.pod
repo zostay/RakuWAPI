@@ -167,18 +167,6 @@ This list is primarily adopted from L<PSGI|https://metacpan.com/pod/PSGI>.
     C<p6sgi.body.encoding>   | C<< Str:D >>                           | Name of the encoding the server will
                              |                                        | use for any strings it is sent.
 
-    C<p6sgix.header.done>    | C<< Promise:D >>                       | A vowed Promise that is kept by the
-                             |                                        | server when the server is done
-                             |                                        | sending or processing the header. It
-                             |                                        | will be broken if the server is unable
-                             |                                        | to send the application header.
-
-    C<p6sgix.body.done>      | C<< Promise:D >>                       | A vowed Promise that is kept by the
-                             |                                        | server when the server has finished
-                             |                                        | sending or processing the response.
-                             |                                        | It will be broken if the server
-                             |                                        | terminates processing early.
-
 =end table
 
 In the environment, either C<SCRIPT_NAME> or C<PATH_INFO> must be set to a non-empty string. When C<REQUEST_URI> is "/", the C<PATH_INFO> SHOULD be "/" and C<SCRIPT_NAME> SHOULD be the empty string. C<SCRIPT_NAME> MUST NOT be set to "/".
@@ -493,9 +481,79 @@ It is also possible for the application to use L<Cool> instances, but this puts 
 
 Applications SHOULD avoid characters that require encoding in HTTP headers.
 
+=head1 3 Extensions
+
+In addition to the standard specification, there are a number of extensions that servers or middleware MAY choose to implement. They are completely optional and applications and middleware SHOULD check for their presence before depending on them
+
+=head2 3.0 Environment Extensions
+
+These are extensions to the standard environment.
+
+=head3 3.0.0 Header Done
+
+The C<p6sgix.header.done> environment variable, if provided, MUST be a vowed L<Promise>. This Promise MUST be kept when the server is done sending or processing the response header. The Promise MUST be broken if the server is unable to or will not send the application provided headers. 
+
+This is not an exhaustive list, but here are a few possible reasons why this Promise MAY be broken:
+
+=item The headers are invalid and the application server will not send them.
+
+=item An internal error occurred in the application server.
+
+=item The client hungup the connection before the headers could be sent.
+
+=head3 3.0.1 Body Done
+
+The C<p6sgix.body.done> environment variable, if provided, MUST be a vowed L<Promise>. This Promise MUST be kept when the server is done sending or processing the response body. The Promise MUST be broken if the server is unable to or will not send the complete application body.
+
+This is not an exhaustive list, but here are a few possible reasons why this Promise MAY be broken:
+
+=item The application server has already transmitted C<Content-Length>, but the application continued to send bytes after that point.
+
+=item The client hungup the connection before it finished sending the response.
+
+=head3 3.0.2 Raw Socket
+
+The C<p6sgix.io> environment variable, if provided, MUST be the bare metal L<IO::Handle> used to communicate to the client.
+
+=head3 3.0.3 Logger
+
+The C<p6gix.logger> environment variable, if provided, MUST be a L<Routine> defined with a signature as follows:
+
+    sub (Str:D :$level, Str:D :$message);
+
+When called application MUST provide a C<$level> that is one of: `debug`, `info`, `warn`, `error`, `fatal`.
+
+=head3 3.0.4 Session
+
+The C<p6sgix.session> environment variable, if provided, MUST be an L<Associative> mapping arbitrary keys and values that may be read and written to by an application. The application SHOULD only use L<Str> keys and values. The implementation of persisting this data is up to the application or middleware implementing the session.
+
+=head3 3.0.5 Session Options
+
+The C<p6sgix.session.options> environment variable, if provided, MUST be an L<Associative> mapping implementation-specific keys and values. This allows the application a channel by which to instruct the session handler how to operate.
+
+=head3 3.0.6 Harikiri Flag
+
+The C<p6sgix.harikiri> environment variable, if provided, MUST be a L<Bool>. If set to C<True> it signals to the application that the server supports harikiri mode, which allows the application to ask the server to terminate the current work when the request is complete. See 3.0.7.
+
+=head3 3.0.7 Harikiri Commit Flag
+
+The C<p6sgix.harikiri.commit> environment variable MAY be set by the application to signal to the server that the current worker should be killed after the current request has been processed.
+
+=head3 3.0.8 Cleanup Handlers Flag
+
+The C<p6sgix.cleanup> environment variable, if provided, MUST be a L<Bool>. If set to C<True> it tells the application that the server supports running cleanup handlers after the request is complete. See 3.0.9.
+
+=head3 3.0.9 Cleanup Handlers Stack
+
+The C<p6sgix.cleanup.handlers> environment variable MUST be provided if the C<p6sgix.cleanup> flag is set (see 3.0.8). This MUST an L<Array>. The application adds cleanup handlers to the list by putting L<Callable>s into the Array (usually by C<push>ing). Each handler will be given a copy of the C<%env> as the first argument.
+
+If the server supports harikiri mode, it SHOULD allow the cleanup handlers to invoke harikiri mode if they set C<p6sgix.hariki.commit> (see 3.0.7).
+
 =head1 Changes
 
 =head2 0.5.Draft
+
+=item Porting extensions from PSGI and moving the existing extensions into the extension section.
 
 =item Adding some notes about middleware encoding.
 

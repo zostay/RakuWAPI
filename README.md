@@ -197,16 +197,6 @@ This list is primarily adopted from [PSGI](https://metacpan.com/pod/PSGI).
     <td><code>Str:D</code></td>
     <td>Name of the encoding the server will use for any strings it is sent.</td>
   </tr>
-  <tr>
-    <td><code>p6sgix.header.done</code></td>
-    <td><code>Promise:D</code></td>
-    <td>A vowed Promise that is kept by the server when the server is done sending or processing the header. It will be broken if the server is unable to send the application header.</td>
-  </tr>
-  <tr>
-    <td><code>p6sgix.body.done</code></td>
-    <td><code>Promise:D</code></td>
-    <td>A vowed Promise that is kept by the server when the server has finished sending or processing the response. It will be broken if the server terminates processing early.</td>
-  </tr>
 </table>
 
 In the environment, either `SCRIPT_NAME` or `PATH_INFO` must be set to a non-empty string. When `REQUEST_URI` is "/", the `PATH_INFO` SHOULD be "/" and `SCRIPT_NAME` SHOULD be the empty string. `SCRIPT_NAME` MUST NOT be set to "/".
@@ -529,11 +519,85 @@ It is also possible for the application to use [Cool](http://doc.perl6.org/type/
 
 Applications SHOULD avoid characters that require encoding in HTTP headers.
 
+3 Extensions
+============
+
+In addition to the standard specification, there are a number of extensions that servers or middleware MAY choose to implement. They are completely optional and applications and middleware SHOULD check for their presence before depending on them
+
+3.0 Environment Extensions
+--------------------------
+
+These are extensions to the standard environment.
+
+### 3.0.0 Header Done
+
+The `p6sgix.header.done` environment variable, if provided, MUST be a vowed [Promise](http://doc.perl6.org/type/Promise). This Promise MUST be kept when the server is done sending or processing the response header. The Promise MUST be broken if the server is unable to or will not send the application provided headers. 
+
+This is not an exhaustive list, but here are a few possible reasons why this Promise MAY be broken:
+
+  * The headers are invalid and the application server will not send them.
+
+  * An internal error occurred in the application server.
+
+  * The client hungup the connection before the headers could be sent.
+
+### 3.0.1 Body Done
+
+The `p6sgix.body.done` environment variable, if provided, MUST be a vowed [Promise](http://doc.perl6.org/type/Promise). This Promise MUST be kept when the server is done sending or processing the response body. The Promise MUST be broken if the server is unable to or will not send the complete application body.
+
+This is not an exhaustive list, but here are a few possible reasons why this Promise MAY be broken:
+
+  * The application server has already transmitted `Content-Length`, but the application continued to send bytes after that point.
+
+  * The client hungup the connection before it finished sending the response.
+
+### 3.0.2 Raw Socket
+
+The `p6sgix.io` environment variable, if provided, MUST be the bare metal [IO::Handle](IO::Handle) used to communicate to the client.
+
+### 3.0.3 Logger
+
+The `p6gix.logger` environment variable, if provided, MUST be a [Routine](http://doc.perl6.org/type/Routine) defined with a signature as follows:
+
+```perl6
+    sub (Str:D :$level, Str:D :$message);
+```
+
+When called application MUST provide a `$level` that is one of: `debug`, `info`, `warn`, `error`, `fatal`.
+
+### 3.0.4 Session
+
+The `p6sgix.session` environment variable, if provided, MUST be an [Associative](http://doc.perl6.org/type/Associative) mapping arbitrary keys and values that may be read and written to by an application. The application SHOULD only use [Str](http://doc.perl6.org/type/Str) keys and values. The implementation of persisting this data is up to the application or middleware implementing the session.
+
+### 3.0.5 Session Options
+
+The `p6sgix.session.options` environment variable, if provided, MUST be an [Associative](http://doc.perl6.org/type/Associative) mapping implementation-specific keys and values. This allows the application a channel by which to instruct the session handler how to operate.
+
+### 3.0.6 Harikiri Flag
+
+The `p6sgix.harikiri` environment variable, if provided, MUST be a [Bool](http://doc.perl6.org/type/Bool). If set to `True` it signals to the application that the server supports harikiri mode, which allows the application to ask the server to terminate the current work when the request is complete. See 3.0.7.
+
+### 3.0.7 Harikiri Commit Flag
+
+The `p6sgix.harikiri.commit` environment variable MAY be set by the application to signal to the server that the current worker should be killed after the current request has been processed.
+
+### 3.0.8 Cleanup Handlers Flag
+
+The `p6sgix.cleanup` environment variable, if provided, MUST be a [Bool](http://doc.perl6.org/type/Bool). If set to `True` it tells the application that the server supports running cleanup handlers after the request is complete. See 3.0.9.
+
+### 3.0.9 Cleanup Handlers Stack
+
+The `p6sgix.cleanup.handlers` environment variable MUST be provided if the `p6sgix.cleanup` flag is set (see 3.0.8). This MUST an [Array](http://doc.perl6.org/type/Array). The application adds cleanup handlers to the list by putting [Callable](http://doc.perl6.org/type/Callable)s into the Array (usually by `push`ing). Each handler will be given a copy of the `%env` as the first argument.
+
+If the server supports harikiri mode, it SHOULD allow the cleanup handlers to invoke harikiri mode if they set `p6sgix.hariki.commit` (see 3.0.7).
+
 Changes
 =======
 
 0.5.Draft
 ---------
+
+  * Porting extensions from PSGI and moving the existing extensions into the extension section.
 
   * Adding some notes about middleware encoding.
 
