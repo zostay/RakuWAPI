@@ -53,8 +53,8 @@ for $*ARGFILES.lines -> $_ is copy {
 
     # Fixup unprocessed links
     .=subst(/
-        'L<' ( <-[ \w \s ]>+ ) '|' ( <-[ \> ]>+ ) '>'
-    /, { dd $0; dd $1; "<a href=\"$1\">$0</a>" }, :g);
+        'L<' ( <[ \w \s ]>+ ) '|' ( <-[ \> ]>+ ) '>'
+    /, { qq|<a href=\"$1\">{$0}</a>| }, :g);
 
     # Find links [word](word) and make them [word](http://doc.perl6.org/type/word)
     .=subst(/

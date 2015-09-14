@@ -100,7 +100,7 @@ This list is primarily adopted from [PSGI](http://doc.perl6.org/type/PSGI).
   <tr>
     <td><code>PATH_INFO</code></td>
     <td><code>Str:D where any('', m{ ^ "/" })</code></td>
-    <td>This is the remainder of the request URL path within the application. This value SHOULD be URI decoded by the application server according to L<RFC 3875|http://www.ietf.org/rfc/rfc3875></td>
+    <td>This is the remainder of the request URL path within the application. This value SHOULD be URI decoded by the application server according to <a href="http://www.ietf.org/rfc/rfc3875">RFC 3875</a></td>
   </tr>
   <tr>
     <td><code>REQUEST_URI</code></td>
@@ -140,7 +140,7 @@ This list is primarily adopted from [PSGI](http://doc.perl6.org/type/PSGI).
   <tr>
     <td><code>HTTP_*</code></td>
     <td><code>Str:_</code></td>
-    <td>The remaining request headers are placed here. The names are prefixed with <code>HTTP_</code>, in ALL CAPS with the hyphens ("-") turned to underscores ("_"). Multiple incoming headers with the same name should be joined with a comma (", ") as described in L<RFC 2616|http://www.ietf.org/rfc/rfc2616>. The <code>HTTP_CONTENT_LENGTH</code> and <code>HTTP_CONTENT_TYPE</code> headers MUST NOT be set.</td>
+    <td>The remaining request headers are placed here. The names are prefixed with <code>HTTP_</code>, in ALL CAPS with the hyphens ("-") turned to underscores ("_"). Multiple incoming headers with the same name should be joined with a comma (", ") as described in <a href="http://www.ietf.org/rfc/rfc2616">RFC 2616</a>. The <code>HTTP_CONTENT_LENGTH</code> and <code>HTTP_CONTENT_TYPE</code> headers MUST NOT be set.</td>
   </tr>
   <tr>
     <td>Other CGI Keys</td>
