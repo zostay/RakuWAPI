@@ -553,7 +553,9 @@ This is not an exhaustive list, but here are a few possible reasons why this Pro
 
 ### 3.0.2 Raw Socket
 
-The `p6sgix.io` environment variable, if provided, MUST be the bare metal [IO::Handle](IO::Handle) used to communicate to the client.
+The `p6sgix.io` environment variable, if provided, MUST be the bare metal [IO::Socket::INET](IO::Socket::INET) used to communicate to the client. This is the interface of last resort as it sidesteps the entire P6SGI interface. 
+
+If your application requires the use of this socket, please file an issue describing the nature of your application in detail. You may have a use-case that requires revisions to the P6SGI standard to cope with.
 
 ### 3.0.3 Logger
 
