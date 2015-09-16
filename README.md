@@ -60,7 +60,7 @@ A P6SGI application server is a program capable of running P6SGI applications as
 
 ### 2.0.0 Locating Applications
 
-The server MUST be able to find applications somehow.
+The server MUST be able to find applications.
 
 It SHOULD be able to load applications found in P6SGI script files. These are Perl 6 code files that end with the definition of a block to be used as the application routine. For example:
 
@@ -322,6 +322,16 @@ It is up to the server how to handle encoded characters given by the application
 Within the body, however, any [Cool](http://doc.perl6.org/type/Cool) emitted from the [Supply](http://doc.perl6.org/type/Supply) MUST be stringified and then encoded. If the application has specified a `charset` with the `Content-Type` header, the server SHOULD honor that character encoding. If none is given or the server does not honor the `Content-Type` header, it MUST encode any stringified Cool with the encoding named in `psgi.encoding`.
 
 Any [Blob](http://doc.perl6.org/type/Blob) encountered in the body SHOULD be sent on as is, treating the data as plain binary.
+
+### 2.0.6 Application Execution
+
+A P6SGI application server processes requests from an origin, passes the processed request information to the application, waits for the application's response, and then returns the response to the origin. In the simplest example this means handling an HTTP roundtrip. It may also mean implementing a related protocol like CGI or FastCGI or SCGI or something else entirely.
+
+In the modern web, an application may want to implement a variety of complex HTTP interactions. These use-cases are not described by the typical HTTP request-response roundtrip. For example, an application may implement a WebSocket API or an interactive Accept-Continue response or stream data to or from the origin. As such, application servers SHOULD make a best effort to be implemented in such a way as to make this variety applications possible.
+
+The application server SHOULD pass control to the application as soon as the headers have been received and the environment can be constructed. The application server SHOULD continue processing the message body while the application server beings its work and pass any content received to the application as soon as possible after reception.
+
+The server SHOULD return the application response headers back to the origin as soon as they are received. After which, the server SHOULD return each chunk emitted by the response body from the application as soon as possible.
 
 2.1 Layer 1: Middleware
 -----------------------
