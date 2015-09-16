@@ -507,6 +507,8 @@ The C<p6sgix.body.done> environment variable, if provided, MUST be a vowed L<Pro
 
 This is not an exhaustive list, but here are a few possible reasons why this Promise MAY be broken:
 
+See also 3.0.7.
+
 =item The application server has already transmitted C<Content-Length>, but the application continued to send bytes after that point.
 
 =item The client hungup the connection before it finished sending the response.
@@ -525,31 +527,33 @@ The C<p6gix.logger> environment variable, if provided, MUST be a L<Routine> defi
 
 When called application MUST provide a C<$level> that is one of: `debug`, `info`, `warn`, `error`, `fatal`.
 
-=head3 3.0.4 Session
+=head3 3.0.4 Sessions
 
 The C<p6sgix.session> environment variable, if provided, MUST be an L<Associative> mapping arbitrary keys and values that may be read and written to by an application. The application SHOULD only use L<Str> keys and values. The implementation of persisting this data is up to the application or middleware implementing the session.
 
-=head3 3.0.5 Session Options
-
 The C<p6sgix.session.options> environment variable, if provided, MUST be an L<Associative> mapping implementation-specific keys and values. This allows the application a channel by which to instruct the session handler how to operate.
 
-=head3 3.0.6 Harikiri Flag
+=head3 3.0.5 Harikiri Mode
 
-The C<p6sgix.harikiri> environment variable, if provided, MUST be a L<Bool>. If set to C<True> it signals to the application that the server supports harikiri mode, which allows the application to ask the server to terminate the current work when the request is complete. See 3.0.7.
-
-=head3 3.0.7 Harikiri Commit Flag
+The C<p6sgix.harikiri> environment variable, if provided, MUST be a L<Bool>. If set to C<True> it signals to the application that the server supports harikiri mode, which allows the application to ask the server to terminate the current work when the request is complete.
 
 The C<p6sgix.harikiri.commit> environment variable MAY be set by the application to signal to the server that the current worker should be killed after the current request has been processed.
 
-=head3 3.0.8 Cleanup Handlers Flag
+=head3 3.0.6 Cleanup Handlers
 
-The C<p6sgix.cleanup> environment variable, if provided, MUST be a L<Bool>. If set to C<True> it tells the application that the server supports running cleanup handlers after the request is complete. See 3.0.9.
+The C<p6sgix.cleanup> environment variable, if provided, MUST be a L<Bool>. If set to C<True> it tells the application that the server supports running cleanup handlers after the request is complete.
 
-=head3 3.0.9 Cleanup Handlers Stack
+The C<p6sgix.cleanup.handlers> environment variable MUST be provided if the C<p6sgix.cleanup> flag is set. This MUST an L<Array>. The application adds cleanup handlers to the list by putting L<Callable>s into the Array (usually by C<push>ing). Each handler will be given a copy of the C<%env> as the first argument.
 
-The C<p6sgix.cleanup.handlers> environment variable MUST be provided if the C<p6sgix.cleanup> flag is set (see 3.0.8). This MUST an L<Array>. The application adds cleanup handlers to the list by putting L<Callable>s into the Array (usually by C<push>ing). Each handler will be given a copy of the C<%env> as the first argument.
+If the server supports harikiri mode, it SHOULD allow the cleanup handlers to invoke harikiri mode if they set C<p6sgix.hariki.commit> (see 3.0.5).
 
-If the server supports harikiri mode, it SHOULD allow the cleanup handlers to invoke harikiri mode if they set C<p6sgix.hariki.commit> (see 3.0.7).
+=head3 3.0.7 Output Block Detection
+
+The C<p6sgix.body.backpressure> environment variable, if provided, MUST be a L<Bool> flag. It is set to C<True> to indicate that the P6SGI server provide response backpressure detection by polling for non-blocking I/O problems. In this case, the server MUST provide the other two environment variables. If C<False> or not defined, the server does not provide these two environment variables.
+
+The C<p6sgix.body.backpressure.supply> environment variable MUST be provided if C<p6sgix.body.backpressure> is C<True>. When provided, it MUST be a live L<Supply> that emits C<True> and C<False> values. C<True> is emitted whenever the server detects a blocked output socket. C<False> is emitted whenever the server detects the previously blocked socket is no longer blocked.
+
+The C<p6sgix.body.backpressure.test> environment variable MUST be provided if C<p6sgix.body.backpressure> is C<True>. When provided, it MUST be a L<Bool> that is C<True> while output is blocked and C<False> otherwise. This can be useful for detecting the initial state before the backpressure supply has emitted any value or just as a way to poll the last known status of the socket.
 
 =head1 Changes
 
