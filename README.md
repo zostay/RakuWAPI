@@ -159,23 +159,13 @@ This list is primarily adopted from [PSGI](https://metacpan.com/pod/PSGI).
   </tr>
   <tr>
     <td><code>p6sgi.input</code></td>
-    <td>Like <code>IO::Handle:_</code></td>
+    <td><code>Supply:D</code></td>
     <td>The input stream for reading the body of the request, if any.</td>
   </tr>
   <tr>
-    <td><code>p6sgi.input.buffered</code></td>
-    <td><code>Bool:D</code></td>
-    <td>True if the input stream is buffered and seekable.</td>
-  </tr>
-  <tr>
     <td><code>p6sgi.errors</code></td>
-    <td>Like <code>IO::Handle:D</code></td>
+    <td><code>Supply:D</code></td>
     <td>The error stream for logging.</td>
-  </tr>
-  <tr>
-    <td><code>p6sgi.errors.buffered</code></td>
-    <td><code>Bool:D</code></td>
-    <td>True if the error stream is buffered.</td>
   </tr>
   <tr>
     <td><code>p6sgi.multithread</code></td>
@@ -213,58 +203,11 @@ The following prefixes are reserved for use by this standard:
 
 ### 2.0.2 The Input Stream
 
-The input stream is set in the `p6sgi.input` key of the environment. The server MUST provide an object that implements the subset of the methods of [IO::Handle](IO::Handle) described here. It MAY provide an [IO::Handle](IO::Handle).
-
-The input stream object provided by the server MUST provide the following methods:
-
-  * read
-
-     ```perl6
-        method read(Int:D $bytes) returns Blob { ... }
-     ```
-
-    This method MUST be available. This method is given the number of bytes to read from the input stream and returns a [Blob](http://doc.perl6.org/type/Blob) containing up to that many bytes or a Blob type object if the stream has come to an end.
-
-  * seek
-
-     ```perl6
-        method seek(Int:D $offset, Int:D $whence where 0 >= * >= 2) returns Bool { ... }
-     ```
-
-    This method MAY be provided in all cases, but MUST be provided if `p6sgi.input.buffered` is set in the environment. Calling this moves the read cursor to byte position `$offset` relative to `$whence`, which is one of the following integers:
-
-      * `0`: Seek from the start of the file.
-
-      * `1`: Seek from the current read cursor position.
-
-      * `2`: Seek from the end of the file.
-
-    This method returns `True` on successful seek.
+The input stream is set in the `p6sgi.input` key of the environment. The server MUST provide an on-demand [Supply](http://doc.perl6.org/type/Supply) that emits [Blob](http://doc.perl6.org/type/Blob) objects containing the content of the request payload, if any. When the message payload is completely received, the server MUST call `done` on the Supply. If there is an error processing the request payload, such as an early termination of the body by the client, the server MUST call `quit` on the Supply with an appropriate exception.
 
 ### 2.0.3 The Error Stream
 
-The error stream MUST be given in the environment via `p6sgi.errors`. It is also an [IO::Handle](IO::Handle)-like object, used to log application errors. The server SHOULD write these errors to an appropriate log, console, etc. The error stream MAY be an [IO::Handle](IO::Handle).
-
-The error stream MUST implement the following methods:
-
-  * print
-
-     ```perl6
-        multi method print(Str:D: $error) returns Bool:D { ... }
-        multi method print(*@error) returns Bool:D { ... }
-     ```
-
-    Both multi variants MUST be provided. The slurpy version using `@error` will concatenate the stringified version of each value given for recording.
-
-    Both variants return `True` on success.
-
-  * flush
-
-     ```perl6
-        method flush() returns Bool:D { ... }
-     ```
-
-    This method MUST be provided. It MAY be a no-op, particularly if `p6sgi.errors.buffered` is False. It SHOULD flush the error stream buffer. It returns `True` on success.
+The error stream MUST be given in the environment via `p6sgi.errors`. This MUST be a [Supply](http://doc.perl6.org/type/Supply) the server provides emitting errors. The application MAY call `emit` on the Supply zero or more times, passing any object that may be stringified. The server SHOULD write these log entries to a suitable log file or to STDERR or wherever appropriate. If written to a typical file handle, it should automatically append a newline to each emitted message.
 
 ### 2.0.4 Application Response
 
@@ -274,7 +217,7 @@ A P6SGI application typically returns a [Promise](http://doc.perl6.org/type/Prom
 
   * The headers are returned as a List of Pairs mapping header names to header values.
 
-  * The message body is typically returned as a [Supply](http://doc.perl6.org/type/Supply) that emits zero or more objects. The server MUST handle any [Cool](http://doc.perl6.org/type/Cool) or [Blob](http://doc.perl6.org/type/Blob) that are emitted. Each Cool emitted must be stringified and encoded into a Blob. The Blob objects that result can be concatenated to form the finished message body.
+  * The response payload is returned as a [Supply](http://doc.perl6.org/type/Supply) that emits zero or more objects. The server MUST handle any [Cool](http://doc.perl6.org/type/Cool) or [Blob](http://doc.perl6.org/type/Blob) that are emitted as part of the message payload. In addition to Cool and Blob, servers may also received [List](http://doc.perl6.org/type/List)s of [Pair](http://doc.perl6.org/type/Pair)s to allow applications to embed trailing headers, and [Associative](http://doc.perl6.org/type/Associative) objects containing protocol-specific messages and options.
 
 Here's an example of such a typical application:
 
@@ -315,13 +258,17 @@ The application server SHOULD continue processing emitted values until the Suppl
 
 If the Supply is quit instead of being done, the server SHOULD attempt to handle the error as appropriate.
 
-### 2.0.5 Encoding
+### 2.0.5 Payload and Encoding
 
 It is up to the server how to handle encoded characters given by the application within the headers.
 
 Within the body, however, any [Cool](http://doc.perl6.org/type/Cool) emitted from the [Supply](http://doc.perl6.org/type/Supply) MUST be stringified and then encoded. If the application has specified a `charset` with the `Content-Type` header, the server SHOULD honor that character encoding. If none is given or the server does not honor the `Content-Type` header, it MUST encode any stringified Cool with the encoding named in `psgi.encoding`.
 
 Any [Blob](http://doc.perl6.org/type/Blob) encountered in the body SHOULD be sent on as is, treating the data as plain binary.
+
+Any [List](http://doc.perl6.org/type/List) of [Pair](http://doc.perl6.org/type/Pair)s is treated as a trailing header. The details of how this works are protocol-specific.
+
+Any [Associative](http://doc.perl6.org/type/Associative) defines a custom message which allows the application to communicate special protocol-specific messages through the server.
 
 ### 2.0.6 Application Execution
 
@@ -393,7 +340,9 @@ Middleware applications SHOULD pass on the complete environment, only modifying 
 
 ### 2.1.2 The Input Stream
 
-Middleware applications reading the input stream SHOULD seek back to the beginning of the stream if it reads from the input stream.
+An application server is required to provide the input stream as a [Supply](http://doc.perl6.org/type/Supply) emitting [Blob](http://doc.perl6.org/type/Blob)s. Middleware, however, MAY replace the Supply with one that emits anything that might be useful to the application or even remove it altogether.
+
+The middleware MUST still terminate the payload in the Input Stream with a call to `done` and an abnormal termination with `quit`.
 
 ### 2.1.3 The Error Stream
 
@@ -403,11 +352,11 @@ See section 2.2.3.
 
 As with an application, middleware MUST return a valid P6SGI response to the server.
 
-### 2.1.5 Encoding
+### 2.1.5 Payload and Encoding
 
 All the encoding issues in 2.0.5 and 2.2.5 need to be considered.
 
-Special care must be taken when middleware needs to process the application body. In such cases, the middleware must deal with the possibility of needing to encode the characters being supplied. In such cases, middleware MUST do its best to handle encoding as servers are required:
+Special care needs to be taken when middleware needs to process the application body. In such cases, the middleware MUST deal with the possibility of needing to encode the characters being supplied. In such cases, middleware MUST do its best to handle encoding as servers are required:
 
   * Any [Blob](http://doc.perl6.org/type/Blob) data SHOULD be passed through as-is.
 
@@ -416,6 +365,8 @@ Special care must be taken when middleware needs to process the application body
   * Middleware SHOULD examine the charset value of the Content-Type header and prefer that encoding.
 
   * If no charset is present or the middleware does not implementing charset handling, the middleware MUST encode using the value in `p6sgi.body.encoding`.
+
+The application is permitted to emit any object as part of the response payload so long as some middleware maps those objects into the types the application server is required to support: [Cool](http://doc.perl6.org/type/Cool), [Blob](http://doc.perl6.org/type/Blob), [List](http://doc.perl6.org/type/List) of [Pairs](http://doc.perl6.org/type/Pairs), and [Associative](http://doc.perl6.org/type/Associative). The latter two must be appropriate for the protocol being communicated.
 
 2.2 Layer 2: Application
 ------------------------
@@ -466,15 +417,13 @@ The application MAY store additional values in the environment as it sees fit. T
 
 ### 2.2.2 The Input Stream
 
-During a POST, PUT, or other operation, the client may send along a message body to your application. The application MAY choose to read the body using the input stream provided in the `p6sgi.input` key of the environment.
+During a POST, PUT, or other operation, the client may send along a request payload to your application. The application MAY choose to read the body using the input stream provided in the `p6sgi.input` key of the environment. This is a [Supply](http://doc.perl6.org/type/Supply), which may emit any kind of object. The server will provide a Supply that emits zero or more [Blob](http://doc.perl6.org/type/Blob)s, but the application middleware may map that information as required. It is expected that the application will be written with the kind of data it may receive in mind.
 
-This is an [IO::Handle](IO::Handle)-like object, but might not be an IO::Handle. The application SHOULD NOT check what kind of object it is and just use the object's `read` and `seek` methods as needed. These are defined in more detail in section 2.0.2.
+On normal termination of the payload, the Supply will finish with a `done` signal. On error, it will finish with a `quit`.
 
 ### 2.2.3 The Error Stream
 
-The application server is required to provide a `p6sgi.errors` variable in the environment with an [IO::Handle](IO::Handle)-like object capable of logging application errors. The application MAY choose to log errors here (or it MAY choose to log them wherever else it likes).
-
-As with the input stream, the server is not required to provide an IO::Handle and the application SHOULD NOT check what kind of object it is, but just use the `print` and `flush` methods as defined in section 2.0.3.
+The application server is required to provide a `p6sgi.errors` variable in the environment with a [Supply](http://doc.perl6.org/type/Supply) object. The application MAY emit any errors or messages here using any object that stringifies. The application SHOULD NOT terminate such messages with a newline as the server will do so if necessary.
 
 ### 2.2.4 Application Response
 
@@ -498,7 +447,7 @@ In detail, an application MUST return a [Promise](http://doc.perl6.org/type/Prom
 
   * The headers MUST be a [List](http://doc.perl6.org/type/List) of [Pair](http://doc.perl6.org/type/Pair)s naming the headers to the application intends to return. The application MAY return the same header name multiple times.
 
-  * The message body MUST be a [Supply](http://doc.perl6.org/type/Supply) that emits [Cool](http://doc.perl6.org/type/Cool) and [Blob](http://doc.perl6.org/type/Blob) objects or an object that coerces into such a Supply (e.g., a List or an Array).
+  * The message body MUST be a [Supply](http://doc.perl6.org/type/Supply) that typically emits [Cool](http://doc.perl6.org/type/Cool) and [Blob](http://doc.perl6.org/type/Blob) and [List](http://doc.perl6.org/type/List) of [Pair](http://doc.perl6.org/type/Pair) and [Associative](http://doc.perl6.org/type/Associative) objects or an object that coerces into such a Supply (e.g., a List or an Array).
 
 For example, here is another example that demonstrates the flexibility possible in the application response:
 
@@ -521,11 +470,19 @@ For example, here is another example that demonstrates the flexibility possible 
 
 This application will print out all the values of factorial from 1 to N where N is given as the query string. The header is returned immediately, but the lines of the body are returned as the values of factorial are calculated.
 
-### 2.2.5 Encoding
+### 2.2.5 Payload and Encoding
 
-When sending the message body to the server, the application SHOULD prefer to use [Blob](http://doc.perl6.org/type/Blob) objects. This allows the application to fully control the encoding of any text being sent.
+The application may emit any object to the returned [Supply](http://doc.perl6.org/type/Supply) to be part of the response payload. It is expected, however, that either these objects will be mapped into the expectations of the application server by middleware or already be in such a form.
 
-It is also possible for the application to use [Cool](http://doc.perl6.org/type/Cool) instances, but this puts the server in charge of stringifying and encoding the response. The server is only required to encode the data according to the encoding specified in the `p6sgi.body.encoding` key of the environment. Application servers are recommended to examine the `charset` of the Content-Type header returned by the application, but are not required to do so.
+The server is expected to process the following emitted objects:
+
+  * [Blob](http://doc.perl6.org/type/Blob). When sending the response payload to the server, the application SHOULD prefer to use Blob objects for the main data payload. This allows the application to fully control the encoding of any text being sent.
+
+  * [Cool](http://doc.perl6.org/type/Cool). It is also possible for the application to use Cool instances, but this puts the server in charge of stringifying and encoding the response. The server is only required to encode the data according to the encoding specified in the `p6sgi.body.encoding` key of the environment. Application servers and middleware recommended to examine the `charset` of the Content-Type header returned by the application, but are not required to do so.
+
+  * [List](http://doc.perl6.org/type/List) of [Pair](http://doc.perl6.org/type/Pair)s. Some response payloads may require an additional set of trailing headers. This allows for additional headers to be sent after the payload.
+
+  * [Associative](http://doc.perl6.org/type/Associative). Some web protocols require custom options and messages. These are passed from application to server using Associative objects (usually a [Hash](http://doc.perl6.org/type/Hash)).
 
 Applications SHOULD avoid characters that require encoding in HTTP headers.
 
