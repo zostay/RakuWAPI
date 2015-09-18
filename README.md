@@ -34,7 +34,9 @@ Aside from that is the underlying assumption that this is a simple interface and
 
 A P6SGI application is a Perl 6 routine that expects to receive an environment from an *application server* and returns a response each time it is called by the server.
 
-A Web Server is an application that processes requests and responses according to the HTTP protocol.
+A Web Server is an application that processes requests and responses according to the HTTP or related protocol.
+
+The origin is the external entity that makes a given request and/or expects a response from the application server. This can be thought of generically as a web browser, bot, or other user agent.
 
 An application server is a program that is able to provide an environment to a *P6SGI application* and process the value returned from such an application.
 
@@ -54,7 +56,11 @@ This specification is divided into three layers: Layer 0: Server, Layer 1: Middl
 2.0 Layer 0: Server
 -------------------
 
-A P6SGI application server is a program capable of running P6SGI applications as defined by this specification.
+A P6SGI application server is a program capable of running P6SGI applications as defined by this specification. 
+
+A P6SGI application server typically implements some variant of web service. This typically means implementing an HTTP/1.x protocol service or a related protocol such as CGI, FastCGI, SCGI, etc. An application server also manages the application lifecycle and executes the application, providing it with a complete environment, and processing the response from the application to determine how to respond to the origin.
+
+An application server SHOULD strive to be as flexible as possible to allow as many unusual interactions, subprotocols, and upgrade protocols to be implemented as possible within the connection.
 
 ### 2.0.0 Locating Applications
 
@@ -71,11 +77,11 @@ It SHOULD be able to load applications found in P6SGI script files. These are Pe
     }
 ```
 
+These files MAY have a .p6w suffix, but this is not at all required.
+
 ### 2.0.1 The Environment
 
 The environment MUST be an [Associative](http://doc.perl6.org/type/Associative). The keys of this map are mostly derived the old Common Gateway Interface (CGI) as well as a number of additional P6SGI-specific values. The application server MUST provide each key as the type given. All variables given in the table below MUST be supported, except for those with the `p6sgix.` prefix.
-
-This list is primarily adopted from [PSGI](https://metacpan.com/pod/PSGI).
 
 <table>
   <thead>
