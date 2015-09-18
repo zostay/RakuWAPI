@@ -27,8 +27,6 @@ This standard has the following goals:
 
   * Provide flexibility so that unanticipated use-cases may be implemented and so that the interface may be extended by servers wishing to do so.
 
-  * Allow for backwards compatibility to PSGI applications.
-
 Aside from that is the underlying assumption that this is a simple interface and ought to at least somewhat resemble work in the standards it is derived from, including [Rack](http://www.rubydoc.info/github/rack/rack/master/file/SPEC), [WSGI](https://www.python.org/dev/peps/pep-0333/), [PSGI](https://metacpan.com/pod/PSGI), [CGI](http://www.w3.org/CGI/), and others.
 
 1 TERMINOLOGY
