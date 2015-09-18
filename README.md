@@ -206,7 +206,9 @@ The following prefixes are reserved for use by this standard:
 
 ### 2.0.2 The Input Stream
 
-The input stream is set in the `p6sgi.input` key of the environment. The server MUST provide an on-demand [Supply](http://doc.perl6.org/type/Supply) that emits [Blob](http://doc.perl6.org/type/Blob) objects containing the content of the request payload, if any. When the message payload is completely received, the server MUST call `done` on the Supply. If there is an error processing the request payload, such as an early termination of the body by the client, the server MUST call `quit` on the Supply with an appropriate exception.
+The input stream is set in the `p6sgi.input` key of the environment. The server MUST provide a [Supply](http://doc.perl6.org/type/Supply) that emits [Blob](http://doc.perl6.org/type/Blob) objects containing the content of the request payload, if any. When the message payload is completely received, the server MUST call `done` on the Supply. If there is an error processing the request payload, such as an early termination of the body by the client, the server MUST call `quit` on the Supply with an appropriate exception.
+
+The `p6sgi.input` Supply MUST either be an on-demand Supply or the server MUST not begin emitting values to the Supply until after the `p6sgi.ready` [Promise](http://doc.perl6.org/type/Promise) has been kept.
 
 ### 2.0.3 The Error Stream
 
@@ -279,9 +281,9 @@ A P6SGI application server processes requests from an origin, passes the process
 
 In the modern web, an application may want to implement a variety of complex HTTP interactions. These use-cases are not described by the typical HTTP request-response roundtrip. For example, an application may implement a WebSocket API or an interactive Accept-Continue response or stream data to or from the origin. As such, application servers SHOULD make a best effort to be implemented in such a way as to make this variety applications possible.
 
-The application server SHOULD pass control to the application as soon as the headers have been received and the environment can be constructed. The application server SHOULD continue processing the message body while the application server beings its work and pass any content received to the application as soon as possible after reception.
+The application server SHOULD pass control to the application as soon as the headers have been received and the environment can be constructed. The application server MAY continue processing the message body while the application server begins its work. The server SHOULD NOT emit the contents of the request payload via `p6sgi.input` yet. The server MUST NOT emit to `p6sgi.input` at this point unless the [Supply](http://doc.perl6.org/type/Supply) there is provided on-demand.
 
-Once the applicaiton has returned the response headers and the response payload to the server. The server MUST tap the [Supply](http://doc.perl6.org/type/Supply) representing the response payload as soon as possible. Immediately after tapping the Supply, the application server MUST keep the [Promise](http://doc.perl6.org/type/Promise) (with no value) in `p6sgi.ready`. The application server SHOULD NOT break this Promise.
+Once the application has returned the response headers and the response payload to the server. The server MUST tap the [Supply](http://doc.perl6.org/type/Supply) representing the response payload as soon as possible. Immediately after tapping the Supply, the application server MUST keep the [Promise](http://doc.perl6.org/type/Promise) (with no value) in `p6sgi.ready`. The application server SHOULD NOT break this Promise. Immediately after keeping the Promise in `p6sgi.ready`, the server SHOULD start emitting the contents of the request payload, if any, to `p6sgi.input`.
 
 The server SHOULD return the application response headers back to the origin as soon as they are received. After which, the server SHOULD return each chunk emitted by the response body from the application as soon as possible.
 
@@ -304,7 +306,7 @@ For example, in the following snippet `&mw` is a simple middleware application t
     my &mw = sub (%env) {
         callsame().then(-> $p {
             my @res = $p.result;
-            @res[1].push: X-P6SGI-Used => 'True';
+            @res[1].push: P6SGI-Used => 'True';
             @res;
         });
     };
@@ -330,7 +332,7 @@ This method resembles that which would normally be used in PSGI, which is to def
     my &mw = sub (%env) {
         app(%env).then(-> $p {
             my @res = $p.result;
-            @res[1].push: X-P6SGI-Used => 'True';
+            @res[1].push: P6SGI-Used => 'True';
             @res;
         });
     };
