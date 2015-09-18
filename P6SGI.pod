@@ -150,7 +150,7 @@ The environment MUST be an L<Associative>. The keys of this map are mostly deriv
 
     C<p6sgi.errors>          | C<< Supply:D >>                        | The error stream for logging.
 
-    C<p6sgi.ready>           | C<< Promise:D >>                       | This is a void Promise that MUST be 
+    C<p6sgi.ready>           | C<< Promise:D >>                       | This is a vowed Promise that MUST be 
                              |                                        | kept by the server as soon as the 
                              |                                        | server has tapped the application's 
                              |                                        | output Supply and is ready to 

@@ -174,7 +174,7 @@ The environment MUST be an [Associative](http://doc.perl6.org/type/Associative).
   <tr>
     <td><code>p6sgi.ready</code></td>
     <td><code>Promise:D</code></td>
-    <td>This is a void Promise that MUST be kept by the server as soon as the server has tapped the application's output Supply and is ready to receive emitted messages. The value of the kept Promise is irrelevent. The server SHOULD NOT break this Promise.</td>
+    <td>This is a vowed Promise that MUST be kept by the server as soon as the server has tapped the application's output Supply and is ready to receive emitted messages. The value of the kept Promise is irrelevent. The server SHOULD NOT break this Promise.</td>
   </tr>
   <tr>
     <td><code>p6sgi.multithread</code></td>
