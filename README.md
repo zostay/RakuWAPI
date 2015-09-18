@@ -166,6 +166,11 @@ This list is primarily adopted from [PSGI](https://metacpan.com/pod/PSGI).
     <td>The error stream for logging.</td>
   </tr>
   <tr>
+    <td><code>p6sgi.ready</code></td>
+    <td><code>Promise:D</code></td>
+    <td>This is a void Promise that MUST be kept by the server as soon as the server has tapped the application's output Supply and is ready to receive emitted messages. The value of the kept Promise is irrelevent. The server SHOULD NOT break this Promise.</td>
+  </tr>
+  <tr>
     <td><code>p6sgi.multithread</code></td>
     <td><code>Bool:D</code></td>
     <td>True if the app may be simultaneously invoked in another thread in the same process.</td>
@@ -275,6 +280,8 @@ A P6SGI application server processes requests from an origin, passes the process
 In the modern web, an application may want to implement a variety of complex HTTP interactions. These use-cases are not described by the typical HTTP request-response roundtrip. For example, an application may implement a WebSocket API or an interactive Accept-Continue response or stream data to or from the origin. As such, application servers SHOULD make a best effort to be implemented in such a way as to make this variety applications possible.
 
 The application server SHOULD pass control to the application as soon as the headers have been received and the environment can be constructed. The application server SHOULD continue processing the message body while the application server beings its work and pass any content received to the application as soon as possible after reception.
+
+Once the applicaiton has returned the response headers and the response payload to the server. The server MUST tap the [Supply](http://doc.perl6.org/type/Supply) representing the response payload as soon as possible. Immediately after tapping the Supply, the application server MUST keep the [Promise](http://doc.perl6.org/type/Promise) (with no value) in `p6sgi.ready`. The application server SHOULD NOT break this Promise.
 
 The server SHOULD return the application response headers back to the origin as soon as they are received. After which, the server SHOULD return each chunk emitted by the response body from the application as soon as possible.
 
