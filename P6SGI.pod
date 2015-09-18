@@ -250,7 +250,7 @@ Any L<List> of L<Pair>s is treated as a trailing header. The details of how this
 
 Any L<Associative> defines a custom message which allows the application to communicate special protocol-specific messages through the server.
 
-=head3 2.0.6 Application Execution
+=head3 2.0.6 Application Lifecycle
 
 A P6SGI application server processes requests from an origin, passes the processed request information to the application, waits for the application's response, and then returns the response to the origin. In the simplest example this means handling an HTTP roundtrip. It may also mean implementing a related protocol like CGI or FastCGI or SCGI or something else entirely.
 
@@ -531,6 +531,10 @@ The C<p6sgix.body.backpressure.test> environment variable MUST be provided if C<
 =head1 Changes
 
 =head2 0.5.Draft
+
+=item Adding C<p6sgi.ready> and added the Application Lifecycle section to describe the ideal lifecycle of an application.
+
+=item Changed C<p6sgi.input> and C<p6sgi.errors> to Supply objects.
 
 =item Porting extensions from PSGI and moving the existing extensions into the extension section.
 

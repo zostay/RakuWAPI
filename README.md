@@ -275,7 +275,7 @@ Any [List](http://doc.perl6.org/type/List) of [Pair](http://doc.perl6.org/type/P
 
 Any [Associative](http://doc.perl6.org/type/Associative) defines a custom message which allows the application to communicate special protocol-specific messages through the server.
 
-### 2.0.6 Application Execution
+### 2.0.6 Application Lifecycle
 
 A P6SGI application server processes requests from an origin, passes the processed request information to the application, waits for the application's response, and then returns the response to the origin. In the simplest example this means handling an HTTP roundtrip. It may also mean implementing a related protocol like CGI or FastCGI or SCGI or something else entirely.
 
@@ -576,6 +576,10 @@ Changes
 
 0.5.Draft
 ---------
+
+  * Adding `p6sgi.ready` and added the Application Lifecycle section to describe the ideal lifecycle of an application.
+
+  * Changed `p6sgi.input` and `p6sgi.errors` to Supply objects.
 
   * Porting extensions from PSGI and moving the existing extensions into the extension section.
 
