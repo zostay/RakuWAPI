@@ -154,7 +154,7 @@ The environment MUST be an [Associative](http://doc.perl6.org/type/Associative).
   <tr>
     <td><code>p6sgi.version</code></td>
     <td><code>Version:D</code></td>
-    <td>This is the version of this specification, <code>v0.3.Draft</code>.</td>
+    <td>This is the version of this specification, <code>v0.5.Draft</code>.</td>
   </tr>
   <tr>
     <td><code>p6sgi.url-scheme</code></td>

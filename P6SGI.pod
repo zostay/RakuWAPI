@@ -141,7 +141,7 @@ The environment MUST be an L<Associative>. The keys of this map are mostly deriv
                              |                                        | or formally specified.
 
     C<p6sgi.version>         | C<< Version:D >>                       | This is the version of this
-                             |                                        | specification, C<v0.3.Draft>.
+                             |                                        | specification, C<v0.5.Draft>.
 
     C<p6sgi.url-scheme>      | C<< Str:D >>                           | Either "http" or "https".
 
