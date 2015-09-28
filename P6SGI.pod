@@ -46,11 +46,21 @@ An D<application developer> is a developer who writes a I<P6SGI application>.
 
 =head1 2 SPECIFICATION
 
-This specification is divided into three layers: Layer 0: Server, Layer 1: Middleware, and Layer 2: Application.
+This specification is divided into three layers:
+
+=item Layer 0: Server
+
+=item Layer 1: Middleware
+
+=item Layer 2: Application
+
+Each layer has a specific role related the other layers. The server layer is primarily responsible for managing the application lifecycle and performing the low-level protocol handling aspects. The application layer is primarily responsible for receiving metadata and content from the server and delivering metadata and content back to the server. The middleware layer is responsible for enhancing the application or server by providing additional services and utilities.
+
+This specification goes through each layer in order.
 
 =head2 2.0 Layer 0: Server
 
-A P6SGI application server is a program capable of running P6SGI applications as defined by this specification. 
+A P6SGI application server is a program capable of running P6SGI applications as defined by this specification.
 
 A P6SGI application server typically implements some variant of web service. This typically means implementing an HTTP/1.x protocol service or a related protocol such as CGI, FastCGI, SCGI, etc. An application server also manages the application lifecycle and executes the application, providing it with a complete environment, and processing the response from the application to determine how to respond to the origin.
 
@@ -108,8 +118,9 @@ The environment MUST be an L<Associative>. The keys of this map are mostly deriv
                              |                                        | server.
 
     C<SERVER_PROTOCOL>       | C<< Str:D where *.chars > 0 >>         | This is the server protocol sent by
-                             |                                        | the client. Typically set to
-                             |                                        | "HTTP/1.1" or a similar value.
+                             |                                        | the client. It MAY be set to "HTTP/1.0"
+                             |                                        | or "HTTP/1.1" or "HTTP/2" or
+                             |                                        | "WebSocket/13" or a similar value.
 
     C<CONTENT_LENGTH>        | C<< Int:_ >>                           | This corresponds to the
                              |                                        | Content-Length header sent by the
@@ -150,10 +161,10 @@ The environment MUST be an L<Associative>. The keys of this map are mostly deriv
 
     C<p6sgi.errors>          | C<< Supply:D >>                        | The error stream for logging.
 
-    C<p6sgi.ready>           | C<< Promise:D >>                       | This is a vowed Promise that MUST be 
-                             |                                        | kept by the server as soon as the 
-                             |                                        | server has tapped the application's 
-                             |                                        | output Supply and is ready to 
+    C<p6sgi.ready>           | C<< Promise:D >>                       | This is a vowed Promise that MUST be
+                             |                                        | kept by the server as soon as the
+                             |                                        | server has tapped the application's
+                             |                                        | output Supply and is ready to
                              |                                        | receive emitted messages. The value
                              |                                        | of the kept Promise is irrelevent.
                              |                                        | The server SHOULD NOT break this
@@ -462,7 +473,7 @@ Applications SHOULD avoid characters that require encoding in HTTP headers.
 
 =head1 3 Extensions
 
-In addition to the standard specification, there are a number of extensions that servers or middleware MAY choose to implement. They are completely optional and applications and middleware SHOULD check for their presence before depending on them
+In addition to the standard specification, there are a number of extensions that servers or middleware MAY choose to implement. They are completely optional and applications and middleware SHOULD check for their presence before depending on them.
 
 =head2 3.0 Environment Extensions
 
@@ -470,7 +481,7 @@ These are extensions to the standard environment.
 
 =head3 3.0.0 Header Done
 
-The C<p6sgix.header.done> environment variable, if provided, MUST be a vowed L<Promise>. This Promise MUST be kept when the server is done sending or processing the response header. The Promise MUST be broken if the server is unable to or will not send the application provided headers. 
+The C<p6sgix.header.done> environment variable, if provided, MUST be a vowed L<Promise>. This Promise MUST be kept when the server is done sending or processing the response header. The Promise MUST be broken if the server is unable to or will not send the application provided headers.
 
 This is not an exhaustive list, but here are a few possible reasons why this Promise MAY be broken:
 
@@ -494,7 +505,7 @@ See also 3.0.7.
 
 =head3 3.0.2 Raw Socket
 
-The C<p6sgix.io> environment variable, if provided, MUST be the bare metal L<IO::Socket::INET> used to communicate to the client. This is the interface of last resort as it sidesteps the entire P6SGI interface. 
+The C<p6sgix.io> environment variable, if provided, MUST be the bare metal L<IO::Socket::INET> used to communicate to the client. This is the interface of last resort as it sidesteps the entire P6SGI interface.
 
 If your application requires the use of this socket, please file an issue describing the nature of your application in detail. You may have a use-case that requires revisions to the P6SGI standard to cope with.
 

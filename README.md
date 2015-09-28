@@ -51,12 +51,22 @@ An application developer is a developer who writes a *P6SGI application*.
 2 SPECIFICATION
 ===============
 
-This specification is divided into three layers: Layer 0: Server, Layer 1: Middleware, and Layer 2: Application.
+This specification is divided into three layers:
+
+  * Layer 0: Server
+
+  * Layer 1: Middleware
+
+  * Layer 2: Application
+
+Each layer has a specific role related the other layers. The server layer is primarily responsible for managing the application lifecycle and performing the low-level protocol handling aspects. The application layer is primarily responsible for receiving metadata and content from the server and delivering metadata and content back to the server. The middleware layer is responsible for enhancing the application or server by providing additional services and utilities.
+
+This specification goes through each layer in order.
 
 2.0 Layer 0: Server
 -------------------
 
-A P6SGI application server is a program capable of running P6SGI applications as defined by this specification. 
+A P6SGI application server is a program capable of running P6SGI applications as defined by this specification.
 
 A P6SGI application server typically implements some variant of web service. This typically means implementing an HTTP/1.x protocol service or a related protocol such as CGI, FastCGI, SCGI, etc. An application server also manages the application lifecycle and executes the application, providing it with a complete environment, and processing the response from the application to determine how to respond to the origin.
 
@@ -129,7 +139,7 @@ The environment MUST be an [Associative](http://doc.perl6.org/type/Associative).
   <tr>
     <td><code>SERVER_PROTOCOL</code></td>
     <td><code>Str:D where *.chars > 0</code></td>
-    <td>This is the server protocol sent by the client. Typically set to "HTTP/1.1" or a similar value.</td>
+    <td>This is the server protocol sent by the client. It MAY be set to "HTTP/1.0" or "HTTP/1.1" or "HTTP/2" or "WebSocket/13" or a similar value.</td>
   </tr>
   <tr>
     <td><code>CONTENT_LENGTH</code></td>
@@ -502,7 +512,7 @@ Applications SHOULD avoid characters that require encoding in HTTP headers.
 3 Extensions
 ============
 
-In addition to the standard specification, there are a number of extensions that servers or middleware MAY choose to implement. They are completely optional and applications and middleware SHOULD check for their presence before depending on them
+In addition to the standard specification, there are a number of extensions that servers or middleware MAY choose to implement. They are completely optional and applications and middleware SHOULD check for their presence before depending on them.
 
 3.0 Environment Extensions
 --------------------------
@@ -511,7 +521,7 @@ These are extensions to the standard environment.
 
 ### 3.0.0 Header Done
 
-The `p6sgix.header.done` environment variable, if provided, MUST be a vowed [Promise](http://doc.perl6.org/type/Promise). This Promise MUST be kept when the server is done sending or processing the response header. The Promise MUST be broken if the server is unable to or will not send the application provided headers. 
+The `p6sgix.header.done` environment variable, if provided, MUST be a vowed [Promise](http://doc.perl6.org/type/Promise). This Promise MUST be kept when the server is done sending or processing the response header. The Promise MUST be broken if the server is unable to or will not send the application provided headers.
 
 This is not an exhaustive list, but here are a few possible reasons why this Promise MAY be broken:
 
@@ -535,7 +545,7 @@ See also 3.0.7.
 
 ### 3.0.2 Raw Socket
 
-The `p6sgix.io` environment variable, if provided, MUST be the bare metal [IO::Socket::INET](IO::Socket::INET) used to communicate to the client. This is the interface of last resort as it sidesteps the entire P6SGI interface. 
+The `p6sgix.io` environment variable, if provided, MUST be the bare metal [IO::Socket::INET](IO::Socket::INET) used to communicate to the client. This is the interface of last resort as it sidesteps the entire P6SGI interface.
 
 If your application requires the use of this socket, please file an issue describing the nature of your application in detail. You may have a use-case that requires revisions to the P6SGI standard to cope with.
 
