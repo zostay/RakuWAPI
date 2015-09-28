@@ -8,7 +8,7 @@ STATUS
 
 This is a Proposed Draft.
 
-Version 0.5.Draft
+Version 0.6.Draft
 
 0 INTRODUCTION
 ==============
@@ -164,7 +164,7 @@ The environment MUST be an [Associative](http://doc.perl6.org/type/Associative).
   <tr>
     <td><code>p6sgi.version</code></td>
     <td><code>Version:D</code></td>
-    <td>This is the version of this specification, <code>v0.5.Draft</code>.</td>
+    <td>This is the version of this specification, <code>v0.6.Draft</code>.</td>
   </tr>
   <tr>
     <td><code>p6sgi.url-scheme</code></td>
@@ -514,12 +514,7 @@ Applications SHOULD avoid characters that require encoding in HTTP headers.
 
 In addition to the standard specification, there are a number of extensions that servers or middleware MAY choose to implement. They are completely optional and applications and middleware SHOULD check for their presence before depending on them.
 
-3.0 Environment Extensions
---------------------------
-
-These are extensions to the standard environment.
-
-### 3.0.0 Header Done
+### 3.0 Header Done
 
 The `p6sgix.header.done` environment variable, if provided, MUST be a vowed [Promise](http://doc.perl6.org/type/Promise). This Promise MUST be kept when the server is done sending or processing the response header. The Promise MUST be broken if the server is unable to or will not send the application provided headers.
 
@@ -531,25 +526,25 @@ This is not an exhaustive list, but here are a few possible reasons why this Pro
 
   * The client hungup the connection before the headers could be sent.
 
-### 3.0.1 Body Done
+### 3.1 Body Done
 
 The `p6sgix.body.done` environment variable, if provided, MUST be a vowed [Promise](http://doc.perl6.org/type/Promise). This Promise MUST be kept when the server is done sending or processing the response body. The Promise MUST be broken if the server is unable to or will not send the complete application body.
 
 This is not an exhaustive list, but here are a few possible reasons why this Promise MAY be broken:
 
-See also 3.0.7.
+See also 3.7.
 
   * The application server has already transmitted `Content-Length`, but the application continued to send bytes after that point.
 
   * The client hungup the connection before it finished sending the response.
 
-### 3.0.2 Raw Socket
+### 3.2 Raw Socket
 
 The `p6sgix.io` environment variable, if provided, MUST be the bare metal [IO::Socket::INET](IO::Socket::INET) used to communicate to the client. This is the interface of last resort as it sidesteps the entire P6SGI interface.
 
 If your application requires the use of this socket, please file an issue describing the nature of your application in detail. You may have a use-case that requires revisions to the P6SGI standard to cope with.
 
-### 3.0.3 Logger
+### 3.3 Logger
 
 The `p6gix.logger` environment variable, if provided, MUST be a [Routine](http://doc.perl6.org/type/Routine) defined with a signature as follows:
 
@@ -559,27 +554,27 @@ The `p6gix.logger` environment variable, if provided, MUST be a [Routine](http:/
 
 When called application MUST provide a `$level` that is one of: `debug`, `info`, `warn`, `error`, `fatal`.
 
-### 3.0.4 Sessions
+### 3.4 Sessions
 
 The `p6sgix.session` environment variable, if provided, MUST be an [Associative](http://doc.perl6.org/type/Associative) mapping arbitrary keys and values that may be read and written to by an application. The application SHOULD only use [Str](http://doc.perl6.org/type/Str) keys and values. The implementation of persisting this data is up to the application or middleware implementing the session.
 
 The `p6sgix.session.options` environment variable, if provided, MUST be an [Associative](http://doc.perl6.org/type/Associative) mapping implementation-specific keys and values. This allows the application a channel by which to instruct the session handler how to operate.
 
-### 3.0.5 Harikiri Mode
+### 3.5 Harikiri Mode
 
 The `p6sgix.harikiri` environment variable, if provided, MUST be a [Bool](http://doc.perl6.org/type/Bool). If set to `True` it signals to the application that the server supports harikiri mode, which allows the application to ask the server to terminate the current work when the request is complete.
 
 The `p6sgix.harikiri.commit` environment variable MAY be set by the application to signal to the server that the current worker should be killed after the current request has been processed.
 
-### 3.0.6 Cleanup Handlers
+### 3.6 Cleanup Handlers
 
 The `p6sgix.cleanup` environment variable, if provided, MUST be a [Bool](http://doc.perl6.org/type/Bool). If set to `True` it tells the application that the server supports running cleanup handlers after the request is complete.
 
 The `p6sgix.cleanup.handlers` environment variable MUST be provided if the `p6sgix.cleanup` flag is set. This MUST an [Array](http://doc.perl6.org/type/Array). The application adds cleanup handlers to the list by putting [Callable](http://doc.perl6.org/type/Callable)s into the Array (usually by `push`ing). Each handler will be given a copy of the `%env` as the first argument.
 
-If the server supports harikiri mode, it SHOULD allow the cleanup handlers to invoke harikiri mode if they set `p6sgix.hariki.commit` (see 3.0.5).
+If the server supports harikiri mode, it SHOULD allow the cleanup handlers to invoke harikiri mode if they set `p6sgix.hariki.commit` (see 3.5).
 
-### 3.0.7 Output Block Detection
+### 3.7 Output Block Detection
 
 The `p6sgix.body.backpressure` environment variable, if provided, MUST be a [Bool](http://doc.perl6.org/type/Bool) flag. It is set to `True` to indicate that the P6SGI server provide response backpressure detection by polling for non-blocking I/O problems. In this case, the server MUST provide the other two environment variables. If `False` or not defined, the server does not provide these two environment variables.
 
@@ -587,8 +582,33 @@ The `p6sgix.body.backpressure.supply` environment variable MUST be provided if `
 
 The `p6sgix.body.backpressure.test` environment variable MUST be provided if `p6sgix.body.backpressure` is `True`. When provided, it MUST be a [Bool](http://doc.perl6.org/type/Bool) that is `True` while output is blocked and `False` otherwise. This can be useful for detecting the initial state before the backpressure supply has emitted any value or just as a way to poll the last known status of the socket.
 
+### 3.8 Protocol Upgrade
+
+The `p6sgix.protocol.upgrade` environment variable MUST be provided if the server implements the protocol upgrade extension. It MUST be set to an [Array](http://doc.perl6.org/type/Array) of protocol names of protocols the server supports. When the client makes a protocol upgrade request using an `Upgrade` header, the application MAY request that the server upgrade to one of these supported protocols by sending a `P6SGIx-Upgrade` header back to the server with the named protocol. The server MUST negotiate the new protocol and enable any environment variables required for interacting through that protocol.
+
+Aside from the protocols named here, additional upgrade protocols may be added by other specifications or implementations.
+
+### 3.8.0 HTTP/2 Protocol Upgrade
+
+The workings of HTTP/2 are similar enough to HTTP/1.0 and HTTP/1.1 that use of a protocol upgrade may not be necessary in most or all use-cases. However, servers MAY choose to delegate this to the application using the protocol upgrade extension.
+
+Servers that support this protocol upgrade MUST place the name "h2c" and/or "h2" into the `p6sgix.protocol.upgrade` array, for support of HTTP/2 over cleartext connections and HTTP/2 over TLS, respectively.
+
+Details for HTTP/2 protocol connections TBD.
+
+### 3.8.1 WebSocket Protocol Upgrade
+
+Servers that support the WebSocket protocol upgrade MUST place the name "websocket" into the `p6sgix.protocol.upgrade` array.
+
+Details for WebSocket protocol connections TBD.
+
 Changes
 =======
+
+0.6.Draft
+---------
+
+  * Adding the Protocol Upgrade extension and started details for HTTP/2 and WebSocket upgrade handling.
 
 0.5.Draft
 ---------
