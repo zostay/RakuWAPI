@@ -261,19 +261,23 @@ Aside from the typical response, applications are permitted to return any part o
     }
 ```
 
-Calling `Promise` on the returned object returns a Promise that is kept with the required Capture. The first two elements are what are normally expected, but the third is just a list. A [List](http://doc.perl6.org/type/List), however, coerces to Supply as required.
+The server will coerce the returned object to a `Promise`, which is kept with the required Capture. The first two elements are what are normally expected, but the third is just a list. A [List](http://doc.perl6.org/type/List), however, coerces to Supply as required.
 
 The server SHOULD NOT assume that the Promise will always be kept and SHOULD handle a broken Promise as appropriate. The server SHOULD assume the Promise has been vowed a MUST NOT try to keep or break the Promise itself.
 
+#### 2.0.4.0 Response Headers
+
 Each [Pair](http://doc.perl6.org/type/Pair) in the list of headers maps a header name to a header value. The application may return the same header name multiple times. The order of multiple headers with the same name SHOULD be preserved.
 
-If the application is missing headers that are required for the Status Code given or provides headers that are forbidden, the application server SHOULD treat that as a server error.
+If the application is missing headers that are required for the status code given or provides headers that are forbidden, the application server SHOULD treat that as a server error.
 
-The server SHOULD examine the `Content-Type` header for the `charset` setting. This SHOULD be used to aid in encoding any [Str](http://doc.perl6.org/type/Str) encountered when processing the Message Body. If the application does not provide a `charset`, the server MAY choose to add this header itself using the encoding provided in `p6sgi.body.encoding` in the environment.
+If given, the server SHOULD examine the `Content-Type` header for the `charset` setting. This SHOULD be used to aid in encoding any [Str](http://doc.perl6.org/type/Str) encountered when processing the message payload. If the application does not provide a `charset`, the server MAY choose to add this header itself using the encoding provided in `p6sgi.body.encoding` in the environment.
 
-The server SHOULD examine the `Content-Length` header, if given. It MAY choose to stop consuming the Message Body once the number of bytes given has been read. It SHOULD guarantee that the body length is the same as described in the `Content-Length`.
+The server SHOULD examine the `Content-Length` header, if given. It MAY choose to stop consuming the message payload once the number of bytes given has been read.
 
-Unless the status code is one that is not permitted to have a message body, the application server MUST tap the Supply and process each emitted [Blob](http://doc.perl6.org/type/Blob) or [Cool](http://doc.perl6.org/type/Cool), until the the either the Supply is done or the server decides to quit tapping the stream for some reason.
+#### 2.0.4.1 Response Payload
+
+Unless the status code is one that is not permitted to have a message payload, the application server MUST tap the Supply and process each emitted [Blob](http://doc.perl6.org/type/Blob) or [Cool](http://doc.perl6.org/type/Cool), until the the either the Supply is done or the server decides to quit tapping the stream for some reason.
 
 The application server SHOULD continue processing emitted values until the Supply is done or until `Content-Length` bytes have been emitted. The server MAY stop tapping the Supply for various other reasons as well, such as timeouts or because the client has closed the socket, etc.
 
@@ -514,7 +518,8 @@ Applications SHOULD avoid characters that require encoding in HTTP headers.
 
 In addition to the standard specification, there are a number of extensions that servers or middleware MAY choose to implement. They are completely optional and applications and middleware SHOULD check for their presence before depending on them.
 
-### 3.0 Header Done
+3.0 Header Done
+---------------
 
 The `p6sgix.header.done` environment variable, if provided, MUST be a vowed [Promise](http://doc.perl6.org/type/Promise). This Promise MUST be kept when the server is done sending or processing the response header. The Promise MUST be broken if the server is unable to or will not send the application provided headers.
 
@@ -526,7 +531,8 @@ This is not an exhaustive list, but here are a few possible reasons why this Pro
 
   * The client hungup the connection before the headers could be sent.
 
-### 3.1 Body Done
+3.1 Body Done
+-------------
 
 The `p6sgix.body.done` environment variable, if provided, MUST be a vowed [Promise](http://doc.perl6.org/type/Promise). This Promise MUST be kept when the server is done sending or processing the response body. The Promise MUST be broken if the server is unable to or will not send the complete application body.
 
@@ -538,13 +544,15 @@ See also 3.7.
 
   * The client hungup the connection before it finished sending the response.
 
-### 3.2 Raw Socket
+3.2 Raw Socket
+--------------
 
 The `p6sgix.io` environment variable, if provided, MUST be the bare metal [IO::Socket::INET](IO::Socket::INET) used to communicate to the client. This is the interface of last resort as it sidesteps the entire P6SGI interface.
 
 If your application requires the use of this socket, please file an issue describing the nature of your application in detail. You may have a use-case that requires revisions to the P6SGI standard to cope with.
 
-### 3.3 Logger
+3.3 Logger
+----------
 
 The `p6gix.logger` environment variable, if provided, MUST be a [Routine](http://doc.perl6.org/type/Routine) defined with a signature as follows:
 
@@ -554,19 +562,22 @@ The `p6gix.logger` environment variable, if provided, MUST be a [Routine](http:/
 
 When called application MUST provide a `$level` that is one of: `debug`, `info`, `warn`, `error`, `fatal`.
 
-### 3.4 Sessions
+3.4 Sessions
+------------
 
 The `p6sgix.session` environment variable, if provided, MUST be an [Associative](http://doc.perl6.org/type/Associative) mapping arbitrary keys and values that may be read and written to by an application. The application SHOULD only use [Str](http://doc.perl6.org/type/Str) keys and values. The implementation of persisting this data is up to the application or middleware implementing the session.
 
 The `p6sgix.session.options` environment variable, if provided, MUST be an [Associative](http://doc.perl6.org/type/Associative) mapping implementation-specific keys and values. This allows the application a channel by which to instruct the session handler how to operate.
 
-### 3.5 Harikiri Mode
+3.5 Harikiri Mode
+-----------------
 
 The `p6sgix.harikiri` environment variable, if provided, MUST be a [Bool](http://doc.perl6.org/type/Bool). If set to `True` it signals to the application that the server supports harikiri mode, which allows the application to ask the server to terminate the current work when the request is complete.
 
 The `p6sgix.harikiri.commit` environment variable MAY be set by the application to signal to the server that the current worker should be killed after the current request has been processed.
 
-### 3.6 Cleanup Handlers
+3.6 Cleanup Handlers
+--------------------
 
 The `p6sgix.cleanup` environment variable, if provided, MUST be a [Bool](http://doc.perl6.org/type/Bool). If set to `True` it tells the application that the server supports running cleanup handlers after the request is complete.
 
@@ -574,7 +585,8 @@ The `p6sgix.cleanup.handlers` environment variable MUST be provided if the `p6sg
 
 If the server supports harikiri mode, it SHOULD allow the cleanup handlers to invoke harikiri mode if they set `p6sgix.hariki.commit` (see 3.5).
 
-### 3.7 Output Block Detection
+3.7 Output Block Detection
+--------------------------
 
 The `p6sgix.body.backpressure` environment variable, if provided, MUST be a [Bool](http://doc.perl6.org/type/Bool) flag. It is set to `True` to indicate that the P6SGI server provide response backpressure detection by polling for non-blocking I/O problems. In this case, the server MUST provide the other two environment variables. If `False` or not defined, the server does not provide these two environment variables.
 
@@ -582,13 +594,15 @@ The `p6sgix.body.backpressure.supply` environment variable MUST be provided if `
 
 The `p6sgix.body.backpressure.test` environment variable MUST be provided if `p6sgix.body.backpressure` is `True`. When provided, it MUST be a [Bool](http://doc.perl6.org/type/Bool) that is `True` while output is blocked and `False` otherwise. This can be useful for detecting the initial state before the backpressure supply has emitted any value or just as a way to poll the last known status of the socket.
 
-### 3.8 Protocol Upgrade
+3.8 Protocol Upgrade
+--------------------
 
 The `p6sgix.protocol.upgrade` environment variable MUST be provided if the server implements the protocol upgrade extension. It MUST be set to an [Array](http://doc.perl6.org/type/Array) of protocol names of protocols the server supports. When the client makes a protocol upgrade request using an `Upgrade` header, the application MAY request that the server upgrade to one of these supported protocols by sending a `P6SGIx-Upgrade` header back to the server with the named protocol. The server MUST negotiate the new protocol and enable any environment variables required for interacting through that protocol.
 
 Aside from the protocols named here, additional upgrade protocols may be added by other specifications or implementations.
 
-### 3.8.0 HTTP/2 Protocol Upgrade
+3.8.0 HTTP/2 Protocol Upgrade
+-----------------------------
 
 The workings of HTTP/2 are similar enough to HTTP/1.0 and HTTP/1.1 that use of a protocol upgrade may not be necessary in most or all use-cases. However, servers MAY choose to delegate this to the application using the protocol upgrade extension.
 
@@ -596,11 +610,30 @@ Servers that support this protocol upgrade MUST place the name "h2c" and/or "h2"
 
 Details for HTTP/2 protocol connections TBD.
 
-### 3.8.1 WebSocket Protocol Upgrade
+3.8.1 WebSocket Protocol Upgrade
+--------------------------------
 
 Servers that support the WebSocket protocol upgrade MUST place the name "websocket" into the `p6sgix.protocol.upgrade` array.
 
 Details for WebSocket protocol connections TBD.
+
+3.9 Transfer Encoding
+---------------------
+
+This extension is only for HTTP/1.1 protocol connections. When the server supporst this extension, it MUST provide a `p6sgix.transfer-encoding` variable listing the transfer encodings the server supports.
+
+When the application returns a header named `P6SGIx-Transfer-Encoding` with the name of one of the supported transfer encodings, the server MUST apply that transfer encoding to the message payload. If the connection is not HTTP/1.1, the server SHOULD ignore this header.
+
+### 3.9.0 Chunked Encoding
+
+When the server supports and the application requests "chunked" encoding. The application server MUST treat each emitted [Str](http://doc.perl6.org/type/Str) or [Blob](http://doc.perl6.org/type/Blob) as a chunk to be encoded according to [RFC7230](http://doc.perl6.org/type/RFC7230).
+
+### 3.9.1 Other Encodings
+
+All other encodings should be handled as required by the relevant rules for HTTP/1.1.
+
+4 Protocol Implementation
+=========================
 
 Changes
 =======
@@ -609,6 +642,8 @@ Changes
 ---------
 
   * Adding the Protocol Upgrade extension and started details for HTTP/2 and WebSocket upgrade handling.
+
+  * Adding the Transfer Encoding extension because leaving this to the application or unspecified can lead to tricky scenarios.
 
 0.5.Draft
 ---------

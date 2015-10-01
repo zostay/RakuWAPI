@@ -237,19 +237,23 @@ Aside from the typical response, applications are permitted to return any part o
         });
     }
 
-Calling C<Promise> on the returned object returns a Promise that is kept with the required Capture. The first two elements are what are normally expected, but the third is just a list. A L<List>, however, coerces to Supply as required.
+The server will coerce the returned object to a C<Promise>, which is kept with the required Capture. The first two elements are what are normally expected, but the third is just a list. A L<List>, however, coerces to Supply as required.
 
 The server SHOULD NOT assume that the Promise will always be kept and SHOULD handle a broken Promise as appropriate. The server SHOULD assume the Promise has been vowed a MUST NOT try to keep or break the Promise itself.
 
+=head4 2.0.4.0 Response Headers
+
 Each L<Pair> in the list of headers maps a header name to a header value. The application may return the same header name multiple times. The order of multiple headers with the same name SHOULD be preserved.
 
-If the application is missing headers that are required for the Status Code given or provides headers that are forbidden, the application server SHOULD treat that as a server error.
+If the application is missing headers that are required for the status code given or provides headers that are forbidden, the application server SHOULD treat that as a server error.
 
-The server SHOULD examine the C<Content-Type> header for the C<charset> setting. This SHOULD be used to aid in encoding any L<Str> encountered when processing the Message Body. If the application does not provide a C<charset>, the server MAY choose to add this header itself using the encoding provided in C<p6sgi.body.encoding> in the environment.
+If given, the server SHOULD examine the C<Content-Type> header for the C<charset> setting. This SHOULD be used to aid in encoding any L<Str> encountered when processing the message payload. If the application does not provide a C<charset>, the server MAY choose to add this header itself using the encoding provided in C<p6sgi.body.encoding> in the environment.
 
-The server SHOULD examine the C<Content-Length> header, if given. It MAY choose to stop consuming the Message Body once the number of bytes given has been read. It SHOULD guarantee that the body length is the same as described in the C<Content-Length>.
+The server SHOULD examine the C<Content-Length> header, if given. It MAY choose to stop consuming the message payload once the number of bytes given has been read.
 
-Unless the status code is one that is not permitted to have a message body, the application server MUST tap the Supply and process each emitted L<Blob> or L<Cool>, until the the either the Supply is done or the server decides to quit tapping the stream for some reason.
+=head4 2.0.4.1 Response Payload
+
+Unless the status code is one that is not permitted to have a message payload, the application server MUST tap the Supply and process each emitted L<Blob> or L<Cool>, until the the either the Supply is done or the server decides to quit tapping the stream for some reason.
 
 The application server SHOULD continue processing emitted values until the Supply is done or until C<Content-Length> bytes have been emitted. The server MAY stop tapping the Supply for various other reasons as well, such as timeouts or because the client has closed the socket, etc.
 
