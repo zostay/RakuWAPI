@@ -599,7 +599,7 @@ The `p6sgix.body.backpressure.test` environment variable MUST be provided if `p6
 
 The `p6sgix.protocol.upgrade` environment variable MUST be provided if the server implements the protocol upgrade extension. It MUST be set to an [Array](http://doc.perl6.org/type/Array) of protocol names of protocols the server supports. When the client makes a protocol upgrade request using an `Upgrade` header, the application MAY request that the server upgrade to one of these supported protocols by sending a `P6SGIx-Upgrade` header back to the server with the named protocol. The server MUST negotiate the new protocol and enable any environment variables required for interacting through that protocol.
 
-Aside from the protocols named here, additional upgrade protocols may be added by other specifications or implementations.
+Aside from the protocols named here, additional upgrade protocols may be added by other specifications or implementations. However, the common rule all such upgrades follow is that the application MUST complete work on the current protocol (generally HTTP/1.1) in the current method call. The server MUST make a new call to the application with a new environment to start processing on the new protocol as is appropriate for that protocol. This lets the application reliably process the activity for a single protocol interaction per subroutine call safely whether an upgrade is performed at the application's request or the protocol is otherwise initiated by the server (e.g., an HTTP/2 request may be initiated by a user agent without an upgrade from HTTP/1.1 or a server MAY automatically perform these upgrades in some or all circumstances depending on implementation).
 
 3.8.0 HTTP/2 Protocol Upgrade
 -----------------------------
@@ -608,19 +608,25 @@ The workings of HTTP/2 are similar enough to HTTP/1.0 and HTTP/1.1 that use of a
 
 Servers that support this protocol upgrade MUST place the name "h2c" and/or "h2" into the `p6sgix.protocol.upgrade` array, for support of HTTP/2 over cleartext connections and HTTP/2 over TLS, respectively.
 
-Details for HTTP/2 protocol connections TBD.
+The application MUST NOT tap the `p6sgix.input` stream when performing this upgrade. The application SHOULD NOT return a message payload aside from an empty [Supply](http://doc.perl6.org/type/Supply).
+
+Once upgraded the application server MUST adhere to all the requirements for HTTP/2 as described in section 4.2. The application will be called again once a web request is received on the upgraded connection and is ready for processing.
 
 3.8.1 WebSocket Protocol Upgrade
 --------------------------------
 
 Servers that support the WebSocket protocol upgrade MUST place the name "websocket" into the `p6sgix.protocol.upgrade` array.
 
-Details for WebSocket protocol connections TBD.
+The application MUST NOT tap the `p6sgix.input` stream when performing this upgrade. The application SHOULD NOT return a message payload aside from an empty [Supply](http://doc.perl6.org/type/Supply).
+
+Once upgraded the application server MUST adhere to all the requirements for WebSocket as described in section 4.3. The application will be called again immediately after the upgrade is complete to allow it to begin sending and receiving frames.
+
+Once upgraded the application
 
 3.9 Transfer Encoding
 ---------------------
 
-This extension is only for HTTP/1.1 protocol connections. When the server supporst this extension, it MUST provide a `p6sgix.transfer-encoding` variable listing the transfer encodings the server supports.
+This extension is only for HTTP/1.1 protocol connections. When the server supporst this extension, it MUST provide a `p6sgix.http11.transfer-encoding` variable listing the transfer encodings the server supports.
 
 When the application returns a header named `P6SGIx-Transfer-Encoding` with the name of one of the supported transfer encodings, the server MUST apply that transfer encoding to the message payload. If the connection is not HTTP/1.1, the server SHOULD ignore this header.
 
@@ -634,6 +640,45 @@ All other encodings should be handled as required by the relevant rules for HTTP
 
 4 Protocol Implementation
 =========================
+
+The goal of a P6SGI application server is to allow the application to operate on one of several different web communication protocols without having to deal with all of the mundane of implementing a web server. The reason this requires a standard rather than just an implementation is because we admit at the start that there are many different ways to go about interfacing an application to a server. Some are different ways of communicating, e.g., CGI versus FastCGI versus HTTP. Some are related to implementation and optimization, e.g., a new application server implementation may outperform an older one. Part of the first goal of this specification is to allow application developers to write the application once and allow the application to run on any P6SGI application server with no (or at least very few) changes required.
+
+Therefore, what is meant by "Protocol" in this section of the P6SGI standard is the ultimate protocol the application server is communicating. For example, a typical CGI application works according to the Common Gateway Interface specification, but is ultimately communicating via HTTP/1.0 (or at least that's the only applicable standard in the typical case).
+
+This section defines the additional per-protocol requirements a P6SGI server SHOULD implement for a given protocol. This section will avoid repeating the requirements given in the RFC for each protocol and focus in on the server's responsibility to the application instead.
+
+4.0 HTTP/1.0
+------------
+
+It is generally expected, but not required, that most or all application servers will implement HTTP/1.0. This assumption is so integral to the specification that nearly all the requirements stated in section 2 could be considered the protocol requirements of HTTP/1.0. No additional requirements need to be stated here.
+
+4.1 HTTP/1.1
+------------
+
+Most application servers will implement some aspects of HTTP/1.1. Again, this assumption is integral enough that most HTTP/1.1 protocol details are already mentioned above in section 2. No additional requirements need to be stated here.
+
+4.2 HTTP/2
+----------
+
+Any application server implementing HTTP/2 MUST adhere to the requirements described above with the following additional requirements:
+
+  * The `SERVER_PROTOCOL` MUST be set to "HTTP/2".
+
+  * The environment MUST contain a variable named `p6sgix.h2.push-promise`. This MUST be a [Supply](http://doc.perl6.org/type/Supply) that the application MAY use to initiate any `PUSH_PROMISE` frames related to the current response.
+
+  * The server MUST decode incoming frames and only deliver the data contained within the frames to the application in the environment with the same semantics applied as if each incoming stream were an HTTP/1.1 request.
+
+  * The server MUST encode outgoing data emitted by the application into HTTP/2 frames as appropriate.
+
+### 4.3 WebSocket
+
+Any application server implementing WebSocket MUST adhere to all the requirements described above with the following modifications:
+
+  * The `SERVER_PROTOCOL` MUST be set to "WebSocket/13".
+
+  * The server MUST decode frames received from the client and emit them each to `p6sgix.input`. The frames MUST NOT be buffered or concatenated.
+
+  * The server MUST encode frames emitted by the application in the message payload as data frames sent to the client. The frames MUST be separated out as emitted by the application without any buffering or concatenation.
 
 Changes
 =======
