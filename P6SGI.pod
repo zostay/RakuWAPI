@@ -479,7 +479,7 @@ Applications SHOULD avoid characters that require encoding in HTTP headers.
 
 In addition to the standard specification, there are a number of extensions that servers or middleware MAY choose to implement. They are completely optional and applications and middleware SHOULD check for their presence before depending on them.
 
-=head3 3.0 Header Done
+=head2 3.0 Header Done
 
 The C<p6sgix.header.done> environment variable, if provided, MUST be a vowed L<Promise>. This Promise MUST be kept when the server is done sending or processing the response header. The Promise MUST be broken if the server is unable to or will not send the application provided headers.
 
@@ -491,7 +491,7 @@ This is not an exhaustive list, but here are a few possible reasons why this Pro
 
 =item The client hungup the connection before the headers could be sent.
 
-=head3 3.1 Body Done
+=head2 3.1 Body Done
 
 The C<p6sgix.body.done> environment variable, if provided, MUST be a vowed L<Promise>. This Promise MUST be kept when the server is done sending or processing the response body. The Promise MUST be broken if the server is unable to or will not send the complete application body.
 
@@ -503,13 +503,13 @@ See also 3.7.
 
 =item The client hungup the connection before it finished sending the response.
 
-=head3 3.2 Raw Socket
+=head2 3.2 Raw Socket
 
 The C<p6sgix.io> environment variable, if provided, MUST be the bare metal L<IO::Socket::INET> used to communicate to the client. This is the interface of last resort as it sidesteps the entire P6SGI interface.
 
 If your application requires the use of this socket, please file an issue describing the nature of your application in detail. You may have a use-case that requires revisions to the P6SGI standard to cope with.
 
-=head3 3.3 Logger
+=head2 3.3 Logger
 
 The C<p6gix.logger> environment variable, if provided, MUST be a L<Routine> defined with a signature as follows:
 
@@ -517,19 +517,19 @@ The C<p6gix.logger> environment variable, if provided, MUST be a L<Routine> defi
 
 When called application MUST provide a C<$level> that is one of: `debug`, `info`, `warn`, `error`, `fatal`.
 
-=head3 3.4 Sessions
+=head2 3.4 Sessions
 
 The C<p6sgix.session> environment variable, if provided, MUST be an L<Associative> mapping arbitrary keys and values that may be read and written to by an application. The application SHOULD only use L<Str> keys and values. The implementation of persisting this data is up to the application or middleware implementing the session.
 
 The C<p6sgix.session.options> environment variable, if provided, MUST be an L<Associative> mapping implementation-specific keys and values. This allows the application a channel by which to instruct the session handler how to operate.
 
-=head3 3.5 Harikiri Mode
+=head2 3.5 Harikiri Mode
 
 The C<p6sgix.harikiri> environment variable, if provided, MUST be a L<Bool>. If set to C<True> it signals to the application that the server supports harikiri mode, which allows the application to ask the server to terminate the current work when the request is complete.
 
 The C<p6sgix.harikiri.commit> environment variable MAY be set by the application to signal to the server that the current worker should be killed after the current request has been processed.
 
-=head3 3.6 Cleanup Handlers
+=head2 3.6 Cleanup Handlers
 
 The C<p6sgix.cleanup> environment variable, if provided, MUST be a L<Bool>. If set to C<True> it tells the application that the server supports running cleanup handlers after the request is complete.
 
@@ -537,7 +537,7 @@ The C<p6sgix.cleanup.handlers> environment variable MUST be provided if the C<p6
 
 If the server supports harikiri mode, it SHOULD allow the cleanup handlers to invoke harikiri mode if they set C<p6sgix.hariki.commit> (see 3.5).
 
-=head3 3.7 Output Block Detection
+=head2 3.7 Output Block Detection
 
 The C<p6sgix.body.backpressure> environment variable, if provided, MUST be a L<Bool> flag. It is set to C<True> to indicate that the P6SGI server provide response backpressure detection by polling for non-blocking I/O problems. In this case, the server MUST provide the other two environment variables. If C<False> or not defined, the server does not provide these two environment variables.
 
@@ -545,7 +545,7 @@ The C<p6sgix.body.backpressure.supply> environment variable MUST be provided if 
 
 The C<p6sgix.body.backpressure.test> environment variable MUST be provided if C<p6sgix.body.backpressure> is C<True>. When provided, it MUST be a L<Bool> that is C<True> while output is blocked and C<False> otherwise. This can be useful for detecting the initial state before the backpressure supply has emitted any value or just as a way to poll the last known status of the socket.
 
-=head3 3.8 Protocol Upgrade
+=head2 3.8 Protocol Upgrade
 
 The C<p6sgix.protocol.upgrade> environment variable MUST be provided if the server implements the protocol upgrade extension. It MUST be set to an L<Array> of protocol names of protocols the server supports. When the client makes a protocol upgrade request using an C<Upgrade> header, the application MAY request that the server upgrade to one of these supported protocols by sending a C<P6SGIx-Upgrade> header back to the server with the named protocol. The server MUST negotiate the new protocol and enable any environment variables required for interacting through that protocol.
 
@@ -565,11 +565,27 @@ Servers that support the WebSocket protocol upgrade MUST place the name "websock
 
 Details for WebSocket protocol connections TBD.
 
+=head2 3.9 Transfer Encoding
+
+This extension is only for HTTP/1.1 protocol connections. When the server supporst this extension, it MUST provide a C<p6sgix.transfer-encoding> variable listing the transfer encodings the server supports.
+
+When the application returns a header named C<P6SGIx-Transfer-Encoding> with the name of one of the supported transfer encodings, the server MUST apply that transfer encoding to the message payload. If the connection is not HTTP/1.1, the server SHOULD ignore this header.
+
+=head3 3.9.0 Chunked Encoding
+
+When the server supports and the application requests "chunked" encoding. The application server MUST treat each emitted L<Str> or L<Blob> as a chunk to be encoded according to L<RFC7230|https://tools.ietf.org/html/draft-ietf-httpbis-p1-messaging>.
+
+=head3 3.9.1 Other Encodings
+
+All other encodings should be handled as required by the relevant rules for HTTP/1.1.
+
 =head1 Changes
 
 =head2 0.6.Draft
 
 =item Adding the Protocol Upgrade extension and started details for HTTP/2 and WebSocket upgrade handling.
+
+=item Adding the Transfer Encoding extension because leaving this to the application or unspecified can lead to tricky scenarios.
 
 =head2 0.5.Draft
 
