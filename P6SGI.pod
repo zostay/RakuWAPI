@@ -459,6 +459,8 @@ For example, here is another example that demonstrates the flexibility possible 
 
 This application will print out all the values of factorial from 1 to N where N is given as the query string. The header is returned immediately, but the lines of the body are returned as the values of factorial are calculated.
 
+The application MUST return this Promise as soon as possible. It is recommended that applications wrap themselves in a C<start {}> block to make this automatic.
+
 =head3 2.2.5 Payload and Encoding
 
 The application may emit any object to the returned L<Supply> to be part of the response payload. It is expected, however, that either these objects will be mapped into the expectations of the application server by middleware or already be in such a form.
@@ -551,7 +553,7 @@ The C<p6sgix.protocol.upgrade> environment variable MUST be provided if the serv
 
 Aside from the protocols named here, additional upgrade protocols may be added by other specifications or implementations. However, the common rule all such upgrades follow is that the application MUST complete work on the current protocol (generally HTTP/1.1) in the current method call. The server MUST make a new call to the application with a new environment to start processing on the new protocol as is appropriate for that protocol. This lets the application reliably process the activity for a single protocol interaction per subroutine call safely whether an upgrade is performed at the application's request or the protocol is otherwise initiated by the server (e.g., an HTTP/2 request may be initiated by a user agent without an upgrade from HTTP/1.1 or a server MAY automatically perform these upgrades in some or all circumstances depending on implementation).
 
-=head2 3.8.0 HTTP/2 Protocol Upgrade
+=head3 3.8.0 HTTP/2 Protocol Upgrade
 
 The workings of HTTP/2 are similar enough to HTTP/1.0 and HTTP/1.1 that use of a protocol upgrade may not be necessary in most or all use-cases. However, servers MAY choose to delegate this to the application using the protocol upgrade extension.
 
@@ -561,7 +563,7 @@ The application MUST NOT tap the C<p6sgix.input> stream when performing this upg
 
 Once upgraded the application server MUST adhere to all the requirements for HTTP/2 as described in section 4.2. The application will be called again once a web request is received on the upgraded connection and is ready for processing.
 
-=head2 3.8.1 WebSocket Protocol Upgrade
+=head3 3.8.1 WebSocket Protocol Upgrade
 
 Servers that support the WebSocket protocol upgrade MUST place the name "websocket" into the C<p6sgix.protocol.upgrade> array.
 
