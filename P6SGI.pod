@@ -627,6 +627,8 @@ Any application server implementing WebSocket MUST adhere to all the requirement
 
 =head2 0.6.Draft
 
+=item Added Protocol-specific details and modifications to the standard HTTP/1.x environment.
+
 =item Adding the Protocol Upgrade extension and started details for HTTP/2 and WebSocket upgrade handling.
 
 =item Adding the Transfer Encoding extension because leaving this to the application or unspecified can lead to tricky scenarios.

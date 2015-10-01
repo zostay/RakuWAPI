@@ -686,6 +686,8 @@ Changes
 0.6.Draft
 ---------
 
+  * Added Protocol-specific details and modifications to the standard HTTP/1.x environment.
+
   * Adding the Protocol Upgrade extension and started details for HTTP/2 and WebSocket upgrade handling.
 
   * Adding the Transfer Encoding extension because leaving this to the application or unspecified can lead to tricky scenarios.
