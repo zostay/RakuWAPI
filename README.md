@@ -599,9 +599,15 @@ The `p6sgix.body.backpressure.test` environment variable MUST be provided if `p6
 3.8 Protocol Upgrade
 --------------------
 
-The `p6sgix.protocol.upgrade` environment variable MUST be provided if the server implements the protocol upgrade extension. It MUST be set to an [Array](http://doc.perl6.org/type/Array) of protocol names of protocols the server supports. When the client makes a protocol upgrade request using an `Upgrade` header, the application MAY request that the server upgrade to one of these supported protocols by sending a `P6SGIx-Upgrade` header back to the server with the named protocol. The server MUST negotiate the new protocol and enable any environment variables required for interacting through that protocol.
+The `p6sgix.protocol.upgrade` environment variable MUST be provided if the server implements the protocol upgrade extension. It MUST be set to an [Array](http://doc.perl6.org/type/Array) of protocol names of protocols the server supports.
 
-Aside from the protocols named here, additional upgrade protocols may be added by other specifications or implementations. However, the common rule all such upgrades follow is that the application MUST complete work on the current protocol (generally HTTP/1.1) in the current method call. The server MUST make a new call to the application with a new environment to start processing on the new protocol as is appropriate for that protocol. This lets the application reliably process the activity for a single protocol interaction per subroutine call safely whether an upgrade is performed at the application's request or the protocol is otherwise initiated by the server (e.g., an HTTP/2 request may be initiated by a user agent without an upgrade from HTTP/1.1 or a server MAY automatically perform these upgrades in some or all circumstances depending on implementation).
+When the client makes a protocol upgrade request using an `Upgrade` header, the application MAY request that the server upgrade to one of these supported protocols by sending a `P6SGIx-Upgrade` header back to the server with the named protocol. The application MAY send any other headers related to the Upgrade and MAY send a message payload if the upgrade allows it. These SHOULD override any server supplied values or headers.
+
+The server MUST negotiate the new protocol and enable any environment variables required for interacting through that protocol.
+
+Aside from the protocols named here, additional upgrade protocols may be added by other specifications or implementations. However, the common rule all such upgrades follow is that the application MUST complete work on the current protocol (generally HTTP/1.1) in the current method call.
+
+The server MUST make a new call to the application with a new environment to start processing on the new protocol as is appropriate for that protocol. This lets the application reliably process the activity for a single protocol interaction per subroutine call safely whether an upgrade is performed at the application's request or the protocol is otherwise initiated by the server (e.g., an HTTP/2 request may be initiated by a user agent without an upgrade from HTTP/1.1 or a server MAY automatically perform these upgrades in some or all circumstances depending on implementation).
 
 ### 3.8.0 HTTP/2 Protocol Upgrade
 
