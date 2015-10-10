@@ -1,0 +1,20 @@
+#!smackup
+use v6;
+
+sub app(%env) {
+    start {
+        if %env<HTTP_CONNECTION> ~~ /\<Upgrade\>/ && %env<HTTP_UPGRADE> eq 'h2c' {
+            101,
+            [
+                Connection => 'Upgrade',
+                Upgrade => 'h2c'
+            ],
+            on -> $out {
+                # beginning reading HTTP/2 frames and output HTTP/2 frames
+            };
+        }
+        else {
+            ...
+        }
+    }
+}

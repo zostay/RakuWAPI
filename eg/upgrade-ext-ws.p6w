@@ -1,0 +1,23 @@
+#!smackup
+use v6;
+
+sub app(%env) {
+    start {
+if %env<SERVER_PROTOCOL> eq 'HTTP/1.1'
+&& %env<HTTP_CONNECTION> ~~ /\<Upgrade\>/ 
+&& %env<HTTP_UPGRADE> eq 'websocket' 
+&& any(|%env<p6sgix.protocol.upgrade>) ~~ 'websocket' {
+
+    101, [ P6SGIx-Upgrade => 'websocket' ], []
+}
+
+# echo service
+elsif %env<SERVER_PROTOCOL> eq 'websocket' {
+    on -> $out {
+        %env<p6sgi.input> => -> $v {
+            $out.emit($v);
+        };
+    };
+}
+    }
+}

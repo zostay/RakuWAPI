@@ -1,0 +1,22 @@
+#!smackup
+use v6;
+
+sub app(%env) {
+    start {
+        my $fh = "really-big-file.txt".IO.open(:r);
+
+        200, [ Content-Type => 'text/plain' ],
+        on {
+            %env<p6sgix.body.backpressure.supply> => -> $yes {
+                sleep 10 if $yes;
+            },
+            $fh => -> $chars {
+                # throws an exception when this promise is broken
+                %env<p6sgix.body.done>.result
+                    if %env<p6sgix.body.done>.status ~~ Broken;
+
+                .emit($chars);
+            }
+        }
+    }
+}

@@ -1,0 +1,29 @@
+#!smackup
+use v6;
+
+sub app(%env) {
+    start {
+        if %env<SERVER_PROTOCOL> eq 'HTTP/1.1'
+        && %env<HTTP_CONNECTION> ~~ /\<Upgrade\>/ 
+        && %env<HTTP_UPGRADE> eq 'h2c' 
+        && any(|%env<p6sgix.protocol.upgrade>) ~~ 'h2c' {
+
+            101, [ P6SGIx-Upgrade => 'h2c' ], []
+        }
+
+        if %env<SERVER_PROTOCOL> eq 'HTTP/2' {
+            %env<p6sgix.push-promise>.emit([
+                ':method' => 'GET',
+                ':scheme' => 'http',
+                ':path'   => 'foo.png',
+            ]);
+        }
+
+        if %env<PATH_INFO> eq '/index.html' {
+            200, [ 'Content-Type' => 'text/html' ], ...
+        }
+        elsif %env<PATH_INFO> eq '/foo.png' {
+            200, [ 'Content-Type' => 'image/png' ], ...
+        }
+    }
+}

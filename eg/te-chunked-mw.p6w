@@ -1,0 +1,51 @@
+#!smack
+use v6;
+
+constant CHUNK-SIZE = 16384;
+constant CRLF = "\x0a\x0d";
+
+sub app(%env) {
+    start {
+        my $file = "really-big-file.txt".IO;
+        200, [
+            Content-Type => 'text/plain',
+        ],
+        on -> $out {
+            my $fh = $file.open(:r);
+            while my $data = $fh.read(CHUNK-SIZE) {
+                $out.emit($data);
+            }
+            $out.done;
+
+            ()
+        };
+    }
+}
+
+sub mw(%env) {
+    nextsame.then(-> $p {
+        if %env<SERVER_PROTOCOL> eq 'HTTP/1.1'
+                && %env<TE> ~~ /\<'chunked'\>/ {
+
+            my ($s, List() $h, Supply() $payload) = $p.result;
+
+            return $s, $h, $payload
+                if $h.first(*.key eq 'Transfer-Encoding');
+
+            $h.append: Transfer-Encoding => 'chunked';
+
+            $s, $h, on -> $out {
+                $payload => -> $data {
+                    $out.emit(CRLF ~ $data.bytes.base(16) ~ CRLF);
+                    $out.emit($data);
+                },
+            };
+        }
+        else { 
+            $p.result 
+        }
+    });
+}
+
+&app.wrap(&mw);
+&app;

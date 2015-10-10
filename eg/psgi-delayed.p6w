@@ -1,0 +1,10 @@
+#!smackup
+use v6;
+
+my &app = sub (%env) {
+    # Delays response until it fetches content from the network
+    start {
+        my $content = fetch-content-from-server();
+        200, $headers, [ $content ]
+    }
+}

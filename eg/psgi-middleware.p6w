@@ -1,0 +1,20 @@
+#!smackup
+use v6;
+
+# &xheader is a piece of middleware that wraps some &app
+my &xheader = sub (%env) {
+    nextsame.then(-> $r {
+        my ($s, @h, $p) = $r.result;
+        @h.push: 'P6SGI-Used' => 1;
+        $s, @h, $p
+    });
+};
+
+# &app is a simple PSGI application
+my &app = sub (%env) {
+    200,
+    [ Content-Type => 'text/plain' ],
+    [ "Hello World" ]
+};
+ 
+&app.wrap(&xheader);

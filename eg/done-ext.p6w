@@ -1,0 +1,18 @@
+#!smackup
+use v6;
+
+sub app(%env) {
+    start {
+        200, [ Content-Type => 'text/plain' ],
+        on {
+            await %env<p6sgix.header.done>;
+            .emit("HEADER WRITTEN OUT YAY!");
+            .done;
+            await %env<p6sgix.body.done>;
+
+            %env<p6sgi.errors>.emit("BODY WRITTEN OUT YAY!");
+
+            # TODO Lame. Come up with something better.
+        }
+    }
+}

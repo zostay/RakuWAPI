@@ -1,0 +1,12 @@
+#!smackup
+use v6;
+
+my &app = sub (%env) {
+    # immediately starts the response and stream the content
+    start {
+        my $events = wait-for-events();
+
+        200, [ 'Content-Type' => 'application/json' ],
+        $events.map({ .as-json ~ "\n" });
+    }
+}

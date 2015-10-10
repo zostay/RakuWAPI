@@ -1,0 +1,17 @@
+#!smack
+use v6;
+
+sub app(%env) {
+    start {
+        200,
+        [ Content-Type => 'text/plain' ],
+        Supply.on-demand(-> $content {
+            my $acc = 1.FatRat;
+            for 1..* -> $v {
+                $content.emit($acc *= $v);
+                $content.emit("\n");
+            }
+            $content.done;
+        });
+    };
+}

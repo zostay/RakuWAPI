@@ -1,0 +1,45 @@
+#!smack
+use v6;
+
+sub app(%env) {
+    start {
+        my $ok = %env<CONTENT_TYPE> eq 'text/csv'
+              && %env<CONTENT_LENGTH>
+              && %env<CONTENT_LENGTH> <= 1024 ** 2;
+
+        my $expect-continue = %env<SERVER_PROTOCOL> ~~ 'HTTP/1.1'|'HTTP/2'
+                           && %env<HTTP_EXPECT>     eq '100-continue';
+
+        if $expect-continue && !$ok {
+            return
+                417,
+                [
+                    Content-Type   => 'text/plain',
+                    Content-Length => 18,
+                ],
+                [ 'Expectation Failed' ]
+        }
+
+        my sub process-input {
+            # process input here...
+
+            200, 
+            [ Content-Type => 'text/plain', Content-Length => 2 ], 
+            [ 'OK' ]
+        }
+
+        if $expect-continue {
+            100,
+            [ ],
+            on -> $out {
+                my ($s, @h, Supply() $b) = process-input();
+                @h.push: ':status' => $s;
+                $out.emit(@h);
+                $b.do: -> $v { $out.emit($v) {; 
+            };
+        }
+        else {
+            process-input();
+        }
+    }
+}

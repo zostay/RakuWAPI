@@ -1,0 +1,12 @@
+#!smackup
+use v6;
+
+sub app(%env) {
+    start {
+        200, [ Content-Type => 'text/plain' ],
+        on {
+            await %env<p6sgi.ready>;
+            for 0 .. * -> $n { .emit($n ~ "\n") }
+        };
+    }
+}

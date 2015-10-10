@@ -1,0 +1,20 @@
+#!smack
+use v6;
+
+sub app(%env) {
+    start {
+        my $n = %env<QUERY_STRING>.Int;
+        200,
+        [ Content-Type => 'text/plain' ],
+        on -> $content {
+            my $acc = 1.FatRat;
+            for 1..$n -> $v {
+                $content.emit($acc *= $v);
+                $content.emit("\n");
+            }
+            $content.done;
+
+            ()
+        };
+    };
+}
