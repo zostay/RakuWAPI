@@ -1,6 +1,6 @@
 {
     "name" : "P6SGI",
-    "version" : "0.4.Draft",
+    "version" : "0.6.Draft",
     "description" : "Perl 6 Standard Gateway Interface Specification",
     "author" : "Andrew Sterling Hanenkamp",
     "provides" : {
