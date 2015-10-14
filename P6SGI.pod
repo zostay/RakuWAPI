@@ -166,7 +166,7 @@ The environment MUST be an L<Associative>. The keys of this map are mostly deriv
                              |                                        | server has tapped the application's
                              |                                        | output Supply and is ready to
                              |                                        | receive emitted messages. The value
-                             |                                        | of the kept Promise is irrelevant.
+                             |                                        | of the kept Promise is irrelevent.
                              |                                        | The server SHOULD NOT break this
                              |                                        | Promise.
 
