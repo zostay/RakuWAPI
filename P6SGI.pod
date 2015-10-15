@@ -20,7 +20,7 @@ This standard has the following goals:
 
 =item Keep the interface simple so that servers and middleware are simple to implement.
 
-=item Allow the interface to flexible enough to accomodate a variety of common use-cases and simple optimzations.
+=item Allow the interface to flexible enough to accommodate a variety of common use-cases and simple optimzations.
 
 =item Provide flexibility so that unanticipated use-cases may be implemented and so that the interface may be extended by servers wishing to do so.
 
@@ -92,7 +92,7 @@ The environment MUST be an L<Associative>. The keys of this map are mostly deriv
     C<REQUEST_METHOD>        | C<< Str:D where *.chars > 0 >>         | The HTTP request method, such as
                              |                                        | "GET" or "POST".
 
-    C<SCRIPT_NAME>           | C<< Str:D where any('', m{ ^ "/" }) >> | This is the initial prtion of the
+    C<SCRIPT_NAME>           | C<< Str:D where any('', m{ ^ "/" }) >> | This is the initial portion of the
                              |                                        | URL path that refers to the
                              |                                        | application.
 
@@ -129,7 +129,7 @@ The environment MUST be an L<Associative>. The keys of this map are mostly deriv
                              |                                        | this key to the L<Int> type value.
 
     C<CONTENT_TYPE>          | C<< Str:_ >>                           | This corresponds to the Content-Type
-                             |                                        | header sent by the cilent. If no
+                             |                                        | header sent by the client. If no
                              |                                        | such header was sent the application
                              |                                        | server SHOULD set this key to the
                              |                                        | L<Str> type value.
@@ -307,7 +307,7 @@ For example, in the following snippet C<&mw> is a simple middleware application 
 
     &app.wrap(&mw);
 
-B<Note:> For those familiar with PSGI and Plack should take careful notice that Perl 6 C<wrap> has the invocant and argument swapped from the way Plack::Middlware operates. In P6SGI, the C<wrap> method is always called on the I<app> not the I<middleware>.
+B<Note:> For those familiar with PSGI and Plack should take careful notice that Perl 6 C<wrap> has the invocant and argument swapped from the way Plack::Middleware operates. In P6SGI, the C<wrap> method is always called on the I<app> not the I<middleware>.
 
 =head3 2.1.0 Middleware Application
 
@@ -334,7 +334,7 @@ This example is functionality identical to the previous example.
 
 =head3 2.1.1 Environment
 
-Middleware applications SHOULD pass on the complete environment, only modifying the bits required to perform their purpose. Middlware applications MAY add new keys to the environment as a side-effect. These additional keys MUST contain a period and SHOULD use a unique namespace.
+Middleware applications SHOULD pass on the complete environment, only modifying the bits required to perform their purpose. Middleware applications MAY add new keys to the environment as a side-effect. These additional keys MUST contain a period and SHOULD use a unique namespace.
 
 =head3 2.1.2 The Input Stream
 
@@ -582,7 +582,7 @@ Once upgraded the application
 
 =head2 3.9 Transfer Encoding
 
-This extension is only for HTTP/1.1 protocol connections. When the server supporst this extension, it MUST provide a C<p6sgix.http11.transfer-encoding> variable listing the transfer encodings the server supports.
+This extension is only for HTTP/1.1 protocol connections. When the server supports this extension, it MUST provide a C<p6sgix.http11.transfer-encoding> variable listing the transfer encodings the server supports.
 
 When the application returns a header named C<P6SGIx-Transfer-Encoding> with the name of one of the supported transfer encodings, the server MUST apply that transfer encoding to the message payload. If the connection is not HTTP/1.1, the server SHOULD ignore this header.
 
@@ -676,7 +676,7 @@ Any application server implementing WebSocket MUST adhere to all the requirement
 
 =item Middleware is given a higher priority in this revision and more explanation.
 
-=item Adding the P6SGI compiliation unit to provide basic tools that allow middleware and possibly servers to easily process all standard response forms.
+=item Adding the P6SGI compilation unit to provide basic tools that allow middleware and possibly servers to easily process all standard response forms.
 
 =item Section numbering has been added.
 
