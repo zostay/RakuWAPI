@@ -6,21 +6,21 @@
 
 This is a Proposed Draft.
 
-Version 0.6.Draft
+Version 0.7.Draft
 
 =head1 0 INTRODUCTION
 
-This document standardizes the interface to be implemented by web application developers in Perl 6. It provides a standard protocol by which application servers may communicate with web applications.
+This document standardizes an API for web application and server framework developers in Perl 6. It provides a standard protocol by which web applications and application servers may communicate with each other.
 
 This standard has the following goals:
 
-=item Standardize the interface between server and application so that web developers may focus on application development rather than the nuances of supporting each of several server platforms.
+=item Standardize the interface between server and application so that web developers may focus on application development rather than the nuances of supporting different server platforms.
 
-=item Keep the interface simple so that a web application or middleware requires no additional tools or libraries other than what exists in a standard Perl 6 environment, no module installations are required.
+=item Keep the interface simple so that a web application or middleware requires no additional tools or libraries other than what exists in a standard Perl 6 environment, and no module installations are required.
 
 =item Keep the interface simple so that servers and middleware are simple to implement.
 
-=item Allow the interface to flexible enough to accommodate a variety of common use-cases and simple optimzations.
+=item Allow the interface to be flexible enough to accommodate a variety of common use-cases and simple optimzations.
 
 =item Provide flexibility so that unanticipated use-cases may be implemented and so that the interface may be extended by servers wishing to do so.
 
@@ -30,7 +30,7 @@ Aside from that is the underlying assumption that this is a simple interface and
 
 A D<P6SGI application> is a Perl 6 routine that expects to receive an environment from an I<application server> and returns a response each time it is called by the server.
 
-A D<Web Server> is an application that processes requests and responses according to the HTTP or related protocol.
+A D<Web Server> is an application that processes requests and responses according to a web-related protocol, such as HTTP or WebSockets or similar protocol.
 
 The D<origin> is the external entity that makes a given request and/or expects a response from the application server. This can be thought of generically as a web browser, bot, or other user agent.
 
@@ -54,15 +54,17 @@ This specification is divided into three layers:
 
 =item Layer 2: Application
 
-Each layer has a specific role related the other layers. The server layer is primarily responsible for managing the application lifecycle and performing the low-level protocol handling aspects. The application layer is primarily responsible for receiving metadata and content from the server and delivering metadata and content back to the server. The middleware layer is responsible for enhancing the application or server by providing additional services and utilities.
+Each layer has a specific role related to the other layers. The server layer is responsible for managing the application lifecycle and performing communication with the origin. The application layer is responsible for receiving metadata and content from the server and delivering metadata and content back to the server. The middleware layer is responsible for enhancing the application or server by providing additional services and utilities.
 
-This specification goes through each layer in order.
+This specification goes through each layer in order. In the process, each section only specifies the requirements and recommendations for the layer that section describes. When other layers a mentioned outside of its section, the specification is deliberately vague to keep all specifics in the appropriate section. 
+
+To aid in reading this specification, the numbering subsections of 2.0, 2.1, and 2.2 are matched so that you can navigate between them to compare the requirements of each layer. For example, 2.0.1 describes the environment the server provides, 2.1.1 describes how the application interacts with that environment, and 2.2.1 describes how middleware may manipulate that environment.
 
 =head2 2.0 Layer 0: Server
 
 A P6SGI application server is a program capable of running P6SGI applications as defined by this specification.
 
-A P6SGI application server typically implements some variant of web service. This typically means implementing an HTTP/1.x protocol service or a related protocol such as CGI, FastCGI, SCGI, etc. An application server also manages the application lifecycle and executes the application, providing it with a complete environment, and processing the response from the application to determine how to respond to the origin.
+A P6SGI application server implements some kind of web service. For example, this may mean implementing an HTTP or WebSocket service or a related protocol such as CGI, FastCGI, SCGI, etc. An application server also manages the application lifecycle and executes the application, providing it with a complete environment, and processing the response from the application to determine how to respond to the origin.
 
 An application server SHOULD strive to be as flexible as possible to allow as many unusual interactions, subprotocols, and upgrade protocols to be implemented as possible within the connection.
 
@@ -70,7 +72,7 @@ An application server SHOULD strive to be as flexible as possible to allow as ma
 
 The server MUST be able to find applications.
 
-It SHOULD be able to load applications found in P6SGI script files. These are Perl 6 code files that end with the definition of a block to be used as the application routine. For example:
+It SHOULD be able to load applications found in P6SGI script files. These are Perl 6 code files that end with the definition of a routine with arity 1 to be used as the application routine. For example:
 
     use v6;
     sub app(%env) {
@@ -79,11 +81,11 @@ It SHOULD be able to load applications found in P6SGI script files. These are Pe
         }
     }
 
-These files MAY have a F<.p6w> suffix, but this is not at all required.
+These files MAY have a F<.p6w> suffix.
 
 =head3 2.0.1 The Environment
 
-The environment MUST be an L<Associative>. The keys of this map are mostly derived the old Common Gateway Interface (CGI) as well as a number of additional P6SGI-specific values. The application server MUST provide each key as the type given. All variables given in the table below MUST be supported, except for those with the C<p6sgix.> prefix.
+The environment MUST be an L<Associative>. The keys of this map are mostly derived from the old Common Gateway Interface (CGI) as well as a number of additional P6SGI-specific values. The application server MUST provide each key as the named type. All variables given in the table below MUST be supported, except for those with the C<p6sgix.> prefix.
 
 =begin table :allow<C>
 
@@ -152,7 +154,7 @@ The environment MUST be an L<Associative>. The keys of this map are mostly deriv
                              |                                        | or formally specified.
 
     C<p6sgi.version>         | C<< Version:D >>                       | This is the version of this
-                             |                                        | specification, C<v0.6.Draft>.
+                             |                                        | specification, C<v0.7.Draft>.
 
     C<p6sgi.url-scheme>      | C<< Str:D >>                           | Either "http" or "https".
 
@@ -633,6 +635,10 @@ Any application server implementing WebSocket MUST adhere to all the requirement
 =item The server MUST encode frames emitted by the application in the message payload as data frames sent to the client. The frames MUST be separated out as emitted by the application without any buffering or concatenation.
 
 =head1 Changes
+
+=head2 0.7.Draft
+
+
 
 =head2 0.6.Draft
 

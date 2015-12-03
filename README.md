@@ -8,22 +8,22 @@ STATUS
 
 This is a Proposed Draft.
 
-Version 0.6.Draft
+Version 0.7.Draft
 
 0 INTRODUCTION
 ==============
 
-This document standardizes the interface to be implemented by web application developers in Perl 6. It provides a standard protocol by which application servers may communicate with web applications.
+This document standardizes an API for web application and server framework developers in Perl 6. It provides a standard protocol by which web applications and application servers may communicate with each other.
 
 This standard has the following goals:
 
-  * Standardize the interface between server and application so that web developers may focus on application development rather than the nuances of supporting each of several server platforms.
+  * Standardize the interface between server and application so that web developers may focus on application development rather than the nuances of supporting different server platforms.
 
-  * Keep the interface simple so that a web application or middleware requires no additional tools or libraries other than what exists in a standard Perl 6 environment, no module installations are required.
+  * Keep the interface simple so that a web application or middleware requires no additional tools or libraries other than what exists in a standard Perl 6 environment, and no module installations are required.
 
   * Keep the interface simple so that servers and middleware are simple to implement.
 
-  * Allow the interface to flexible enough to accomodate a variety of common use-cases and simple optimzations.
+  * Allow the interface to be flexible enough to accommodate a variety of common use-cases and simple optimzations.
 
   * Provide flexibility so that unanticipated use-cases may be implemented and so that the interface may be extended by servers wishing to do so.
 
@@ -34,7 +34,7 @@ Aside from that is the underlying assumption that this is a simple interface and
 
 A P6SGI application is a Perl 6 routine that expects to receive an environment from an *application server* and returns a response each time it is called by the server.
 
-A Web Server is an application that processes requests and responses according to the HTTP or related protocol.
+A Web Server is an application that processes requests and responses according to a web-related protocol, such as HTTP or WebSockets or similar protocol.
 
 The origin is the external entity that makes a given request and/or expects a response from the application server. This can be thought of generically as a web browser, bot, or other user agent.
 
@@ -59,16 +59,18 @@ This specification is divided into three layers:
 
   * Layer 2: Application
 
-Each layer has a specific role related the other layers. The server layer is primarily responsible for managing the application lifecycle and performing the low-level protocol handling aspects. The application layer is primarily responsible for receiving metadata and content from the server and delivering metadata and content back to the server. The middleware layer is responsible for enhancing the application or server by providing additional services and utilities.
+Each layer has a specific role related to the other layers. The server layer is responsible for managing the application lifecycle and performing communication with the origin. The application layer is responsible for receiving metadata and content from the server and delivering metadata and content back to the server. The middleware layer is responsible for enhancing the application or server by providing additional services and utilities.
 
-This specification goes through each layer in order.
+This specification goes through each layer in order. In the process, each section only specifies the requirements and recommendations for the layer that section describes. When other layers a mentioned outside of its section, the specification is deliberately vague to keep all specifics in the appropriate section. 
+
+To aid in reading this specification, the numbering subsections of 2.0, 2.1, and 2.2 are matched so that you can navigate between them to compare the requirements of each layer. For example, 2.0.1 describes the environment the server provides, 2.1.1 describes how the application interacts with that environment, and 2.2.1 describes how middleware may manipulate that environment.
 
 2.0 Layer 0: Server
 -------------------
 
 A P6SGI application server is a program capable of running P6SGI applications as defined by this specification.
 
-A P6SGI application server typically implements some variant of web service. This typically means implementing an HTTP/1.x protocol service or a related protocol such as CGI, FastCGI, SCGI, etc. An application server also manages the application lifecycle and executes the application, providing it with a complete environment, and processing the response from the application to determine how to respond to the origin.
+A P6SGI application server implements some kind of web service. For example, this may mean implementing an HTTP or WebSocket service or a related protocol such as CGI, FastCGI, SCGI, etc. An application server also manages the application lifecycle and executes the application, providing it with a complete environment, and processing the response from the application to determine how to respond to the origin.
 
 An application server SHOULD strive to be as flexible as possible to allow as many unusual interactions, subprotocols, and upgrade protocols to be implemented as possible within the connection.
 
@@ -76,7 +78,7 @@ An application server SHOULD strive to be as flexible as possible to allow as ma
 
 The server MUST be able to find applications.
 
-It SHOULD be able to load applications found in P6SGI script files. These are Perl 6 code files that end with the definition of a block to be used as the application routine. For example:
+It SHOULD be able to load applications found in P6SGI script files. These are Perl 6 code files that end with the definition of a routine with arity 1 to be used as the application routine. For example:
 
 ```perl6
     use v6;
@@ -87,11 +89,11 @@ It SHOULD be able to load applications found in P6SGI script files. These are Pe
     }
 ```
 
-These files MAY have a .p6w suffix, but this is not at all required.
+These files MAY have a .p6w suffix.
 
 ### 2.0.1 The Environment
 
-The environment MUST be an [Associative](http://doc.perl6.org/type/Associative). The keys of this map are mostly derived the old Common Gateway Interface (CGI) as well as a number of additional P6SGI-specific values. The application server MUST provide each key as the type given. All variables given in the table below MUST be supported, except for those with the `p6sgix.` prefix.
+The environment MUST be an [Associative](http://doc.perl6.org/type/Associative). The keys of this map are mostly derived from the old Common Gateway Interface (CGI) as well as a number of additional P6SGI-specific values. The application server MUST provide each key as the named type. All variables given in the table below MUST be supported, except for those with the `p6sgix.` prefix.
 
 <table>
   <thead>
@@ -102,108 +104,108 @@ The environment MUST be an [Associative](http://doc.perl6.org/type/Associative).
     </tr>
   </thead>
   <tr>
-    <td><code>REQUEST_METHOD</code></td>
-    <td><code>Str:D where *.chars > 0</code></td>
+    <td>C&lt;REQUEST_METHOD&gt;</td>
+    <td>C&lt;&lt; Str:D where *.chars &gt; 0 &gt;&gt;</td>
     <td>The HTTP request method, such as "GET" or "POST".</td>
   </tr>
   <tr>
-    <td><code>SCRIPT_NAME</code></td>
-    <td><code>Str:D where any('', m{ ^ "/" })</code></td>
-    <td>This is the initial prtion of the URL path that refers to the application.</td>
+    <td>C&lt;SCRIPT_NAME&gt;</td>
+    <td>C&lt;&lt; Str:D where any('', m{ ^ "/" }) &gt;&gt;</td>
+    <td>This is the initial portion of the URL path that refers to the application.</td>
   </tr>
   <tr>
-    <td><code>PATH_INFO</code></td>
-    <td><code>Str:D where any('', m{ ^ "/" })</code></td>
-    <td>This is the remainder of the request URL path within the application. This value SHOULD be URI decoded by the application server according to <a href="http://www.ietf.org/rfc/rfc3875">RFC 3875</a></td>
+    <td>C&lt;PATH_INFO&gt;</td>
+    <td>C&lt;&lt; Str:D where any('', m{ ^ "/" }) &gt;&gt;</td>
+    <td>This is the remainder of the request URL path within the application. This value SHOULD be URI decoded by the application server according to L&lt;RFC 3875|http://www.ietf.org/rfc/rfc3875&gt;</td>
   </tr>
   <tr>
-    <td><code>REQUEST_URI</code></td>
-    <td><code>Str:D</code></td>
+    <td>C&lt;REQUEST_URI&gt;</td>
+    <td>C&lt;&lt; Str:D &gt;&gt;</td>
     <td>This is the exact URL sent by the client in the request line of the HTTP request. The application server SHOULD NOT perform any decoding on it.</td>
   </tr>
   <tr>
-    <td><code>QUERY_STRING</code></td>
-    <td><code>Str:D</code></td>
-    <td>This is the portion of the requested URL following the <code>?</code>, if any.</td>
+    <td>C&lt;QUERY_STRING&gt;</td>
+    <td>C&lt;&lt; Str:D &gt;&gt;</td>
+    <td>This is the portion of the requested URL following the C&lt;?&gt;, if any.</td>
   </tr>
   <tr>
-    <td><code>SERVER_NAME</code></td>
-    <td><code>Str:D where *.chars > 0</code></td>
+    <td>C&lt;SERVER_NAME&gt;</td>
+    <td>C&lt;&lt; Str:D where *.chars &gt; 0 &gt;&gt;</td>
     <td>This is the server name of the web server.</td>
   </tr>
   <tr>
-    <td><code>SERVER_PORT</code></td>
-    <td><code>Int:D where * > 0</code></td>
+    <td>C&lt;SERVER_PORT&gt;</td>
+    <td>C&lt;&lt; Int:D where * &gt; 0 &gt;&gt;</td>
     <td>This is the server port of the web server.</td>
   </tr>
   <tr>
-    <td><code>SERVER_PROTOCOL</code></td>
-    <td><code>Str:D where *.chars > 0</code></td>
+    <td>C&lt;SERVER_PROTOCOL&gt;</td>
+    <td>C&lt;&lt; Str:D where *.chars &gt; 0 &gt;&gt;</td>
     <td>This is the server protocol sent by the client. It MAY be set to "HTTP/1.0" or "HTTP/1.1" or "HTTP/2" or "WebSocket/13" or a similar value.</td>
   </tr>
   <tr>
-    <td><code>CONTENT_LENGTH</code></td>
-    <td><code>Int:_</code></td>
-    <td>This corresponds to the Content-Length header sent by the client. If no such header was sent the application server SHOULD set this key to the L<Int> type value.</td>
+    <td>C&lt;CONTENT_LENGTH&gt;</td>
+    <td>C&lt;&lt; Int:_ &gt;&gt;</td>
+    <td>This corresponds to the Content-Length header sent by the client. If no such header was sent the application server SHOULD set this key to the L&lt;Int&gt; type value.</td>
   </tr>
   <tr>
-    <td><code>CONTENT_TYPE</code></td>
-    <td><code>Str:_</code></td>
-    <td>This corresponds to the Content-Type header sent by the cilent. If no such header was sent the application server SHOULD set this key to the L<Str> type value.</td>
+    <td>C&lt;CONTENT_TYPE&gt;</td>
+    <td>C&lt;&lt; Str:_ &gt;&gt;</td>
+    <td>This corresponds to the Content-Type header sent by the client. If no such header was sent the application server SHOULD set this key to the L&lt;Str&gt; type value.</td>
   </tr>
   <tr>
-    <td><code>HTTP_*</code></td>
-    <td><code>Str:_</code></td>
-    <td>The remaining request headers are placed here. The names are prefixed with <code>HTTP_</code>, in ALL CAPS with the hyphens ("-") turned to underscores ("_"). Multiple incoming headers with the same name should be joined with a comma (", ") as described in <a href="http://www.ietf.org/rfc/rfc2616">RFC 2616</a>. The <code>HTTP_CONTENT_LENGTH</code> and <code>HTTP_CONTENT_TYPE</code> headers MUST NOT be set.</td>
+    <td>C&lt;HTTP_*&gt;</td>
+    <td>C&lt;&lt; Str:_ &gt;&gt;</td>
+    <td>The remaining request headers are placed here. The names are prefixed with C&lt;HTTP_&gt;, in ALL CAPS with the hyphens ("-") turned to underscores ("_"). Multiple incoming headers with the same name should be joined with a comma (", ") as described in L&lt;RFC 2616|http://www.ietf.org/rfc/rfc2616&gt;. The C&lt;HTTP_CONTENT_LENGTH&gt; and C&lt;HTTP_CONTENT_TYPE&gt; headers MUST NOT be set.</td>
   </tr>
   <tr>
     <td>Other CGI Keys</td>
-    <td><code>Str:_</code></td>
+    <td>C&lt;&lt; Str:_ &gt;&gt;</td>
     <td>The server SHOULD attempt to provide as many other CGI variables as possible, but no others are required or formally specified.</td>
   </tr>
   <tr>
-    <td><code>p6sgi.version</code></td>
-    <td><code>Version:D</code></td>
-    <td>This is the version of this specification, <code>v0.6.Draft</code>.</td>
+    <td>C&lt;p6sgi.version&gt;</td>
+    <td>C&lt;&lt; Version:D &gt;&gt;</td>
+    <td>This is the version of this specification, C&lt;v0.7.Draft&gt;.</td>
   </tr>
   <tr>
-    <td><code>p6sgi.url-scheme</code></td>
-    <td><code>Str:D</code></td>
+    <td>C&lt;p6sgi.url-scheme&gt;</td>
+    <td>C&lt;&lt; Str:D &gt;&gt;</td>
     <td>Either "http" or "https".</td>
   </tr>
   <tr>
-    <td><code>p6sgi.input</code></td>
-    <td><code>Supply:D</code></td>
+    <td>C&lt;p6sgi.input&gt;</td>
+    <td>C&lt;&lt; Supply:D &gt;&gt;</td>
     <td>The input stream for reading the body of the request, if any.</td>
   </tr>
   <tr>
-    <td><code>p6sgi.errors</code></td>
-    <td><code>Supply:D</code></td>
+    <td>C&lt;p6sgi.errors&gt;</td>
+    <td>C&lt;&lt; Supply:D &gt;&gt;</td>
     <td>The error stream for logging.</td>
   </tr>
   <tr>
-    <td><code>p6sgi.ready</code></td>
-    <td><code>Promise:D</code></td>
+    <td>C&lt;p6sgi.ready&gt;</td>
+    <td>C&lt;&lt; Promise:D &gt;&gt;</td>
     <td>This is a vowed Promise that MUST be kept by the server as soon as the server has tapped the application's output Supply and is ready to receive emitted messages. The value of the kept Promise is irrelevent. The server SHOULD NOT break this Promise.</td>
   </tr>
   <tr>
-    <td><code>p6sgi.multithread</code></td>
-    <td><code>Bool:D</code></td>
+    <td>C&lt;p6sgi.multithread&gt;</td>
+    <td>C&lt;&lt; Bool:D &gt;&gt;</td>
     <td>True if the app may be simultaneously invoked in another thread in the same process.</td>
   </tr>
   <tr>
-    <td><code>p6sgi.multiprocess</code></td>
-    <td><code>Bool:D</code></td>
+    <td>C&lt;p6sgi.multiprocess&gt;</td>
+    <td>C&lt;&lt; Bool:D &gt;&gt;</td>
     <td>True if the app may be simultaneously invoked in another process.</td>
   </tr>
   <tr>
-    <td><code>p6sgi.run-once</code></td>
-    <td><code>Bool:D</code></td>
+    <td>C&lt;p6sgi.run-once&gt;</td>
+    <td>C&lt;&lt; Bool:D &gt;&gt;</td>
     <td>True if the server expects the app to be invoked only once during the life of the process. This is not a guarantee.</td>
   </tr>
   <tr>
-    <td><code>p6sgi.body.encoding</code></td>
-    <td><code>Str:D</code></td>
+    <td>C&lt;p6sgi.body.encoding&gt;</td>
+    <td>C&lt;&lt; Str:D &gt;&gt;</td>
     <td>Name of the encoding the server will use for any strings it is sent.</td>
   </tr>
 </table>
@@ -334,7 +336,7 @@ For example, in the following snippet `&mw` is a simple middleware application t
     &app.wrap(&mw);
 ```
 
-**Note:** For those familiar with PSGI and Plack should take careful notice that Perl 6 `wrap` has the invocant and argument swapped from the way Plack::Middlware operates. In P6SGI, the `wrap` method is always called on the *app* not the *middleware*.
+**Note:** For those familiar with PSGI and Plack should take careful notice that Perl 6 `wrap` has the invocant and argument swapped from the way Plack::Middleware operates. In P6SGI, the `wrap` method is always called on the *app* not the *middleware*.
 
 ### 2.1.0 Middleware Application
 
@@ -363,7 +365,7 @@ This example is functionality identical to the previous example.
 
 ### 2.1.1 Environment
 
-Middleware applications SHOULD pass on the complete environment, only modifying the bits required to perform their purpose. Middlware applications MAY add new keys to the environment as a side-effect. These additional keys MUST contain a period and SHOULD use a unique namespace.
+Middleware applications SHOULD pass on the complete environment, only modifying the bits required to perform their purpose. Middleware applications MAY add new keys to the environment as a side-effect. These additional keys MUST contain a period and SHOULD use a unique namespace.
 
 ### 2.1.2 The Input Stream
 
@@ -633,13 +635,13 @@ Once upgraded the application
 3.9 Transfer Encoding
 ---------------------
 
-This extension is only for HTTP/1.1 protocol connections. When the server supporst this extension, it MUST provide a `p6sgix.http11.transfer-encoding` variable listing the transfer encodings the server supports.
+This extension is only for HTTP/1.1 protocol connections. When the server supports this extension, it MUST provide a `p6sgix.http11.transfer-encoding` variable listing the transfer encodings the server supports.
 
 When the application returns a header named `P6SGIx-Transfer-Encoding` with the name of one of the supported transfer encodings, the server MUST apply that transfer encoding to the message payload. If the connection is not HTTP/1.1, the server SHOULD ignore this header.
 
 ### 3.9.0 Chunked Encoding
 
-When the server supports and the application requests "chunked" encoding. The application server MUST treat each emitted [Str](http://doc.perl6.org/type/Str) or [Blob](http://doc.perl6.org/type/Blob) as a chunk to be encoded according to [RFC7230](http://doc.perl6.org/type/RFC7230).
+When the server supports and the application requests "chunked" encoding. The application server MUST treat each emitted [Str](http://doc.perl6.org/type/Str) or [Blob](http://doc.perl6.org/type/Blob) as a chunk to be encoded according to [RFC7230](https://tools.ietf.org/html/draft-ietf-httpbis-p1-messaging).
 
 ### 3.9.1 Other Encodings
 
@@ -690,6 +692,9 @@ Any application server implementing WebSocket MUST adhere to all the requirement
 Changes
 =======
 
+0.7.Draft
+---------
+
 0.6.Draft
 ---------
 
@@ -736,7 +741,7 @@ Changes
 
   * Middleware is given a higher priority in this revision and more explanation.
 
-  * Adding the P6SGI compiliation unit to provide basic tools that allow middleware and possibly servers to easily process all standard response forms.
+  * Adding the P6SGI compilation unit to provide basic tools that allow middleware and possibly servers to easily process all standard response forms.
 
   * Section numbering has been added.
 
