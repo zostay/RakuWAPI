@@ -47,13 +47,13 @@ for $*ARGFILES.lines -> $_ is copy {
 
     # Fixup unprocessed C<<>> and C<> tags
     .=subst(/ 
-          "C<<" ( [ <-[ > ]> | ">" <!before ">" > ]+ ) ">>" 
-        | "C<" ( <-[ > ]>+ ) ">" 
+          "C&lt;&lt;" ( [ <-[ & ]> | "&" <!before "gt;&gt;" > ]+ ) "&gt;&gt;" 
+        | "C&lt;" ( [ <-[ & ]> | "&" <!before "gt;" > ]+ ) "&gt;" 
     /, { "<code>{($0 // $1).trim}</code>" }, :g);
 
     # Fixup unprocessed links
     .=subst(/
-        'L<' ( <[ \w \s ]>+ ) '|' ( <-[ \> ]>+ ) '>'
+        'L&lt;' ( <[ \w \s ]>+ ) '|' ( [ <-[ & ]> | "&" <!before "gt;" > ]+ ) '&gt;'
     /, { qq|<a href=\"$1\">{$0}</a>| }, :g);
 
     # Pod::To::Markdown does not handle links well at all
