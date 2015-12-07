@@ -85,7 +85,7 @@ These files MAY have a F<.p6w> suffix.
 
 =head3 2.0.1 The Environment
 
-The environment MUST be an L<Associative>. The keys of this map are mostly derived from the old Common Gateway Interface (CGI) as well as a number of additional P6SGI-specific values. The application server MUST provide each key as the named type. All variables given in the table below MUST be supported, except for those with the C<p6sgix.> prefix.
+The environment MUST be an L<Associative>. The keys of this map are mostly derived from the old Common Gateway Interface (CGI) as well as a number of additional P6SGI-specific values. The application server MUST provide each key as the named type. All variables given in the table below MUST be supported, except for those with the C<p6wx.> prefix.
 
 =begin table :allow<C>
 
@@ -95,16 +95,16 @@ The environment MUST be an L<Associative>. The keys of this map are mostly deriv
                              |                                        | "GET" or "POST".
 
     C<SCRIPT_NAME>           | C<< Str:D where any('', m{ ^ "/" }) >> | This is the initial portion of the
-                             |                                        | URL path that refers to the
+                             |                                        | URI path that refers to the
                              |                                        | application.
 
     C<PATH_INFO>             | C<< Str:D where any('', m{ ^ "/" }) >> | This is the remainder of the request
-                             |                                        | URL path within the application.
+                             |                                        | URI path within the application.
                              |                                        | This value SHOULD be URI decoded by
                              |                                        | the application server according to
                              |                                        | L<RFC 3875|http://www.ietf.org/rfc/rfc3875>
 
-    C<REQUEST_URI>           | C<< Str:D >>                           | This is the exact URL sent by the
+    C<REQUEST_URI>           | C<< Str:D >>                           | This is the exact URI sent by the
                              |                                        | client in the request line of the
                              |                                        | HTTP request. The application server
                              |                                        | SHOULD NOT perform any decoding on
@@ -113,16 +113,14 @@ The environment MUST be an L<Associative>. The keys of this map are mostly deriv
     C<QUERY_STRING>          | C<< Str:D >>                           | This is the portion of the requested
                              |                                        | URL following the C<?>, if any.
 
-    C<SERVER_NAME>           | C<< Str:D where *.chars > 0 >>         | This is the server name of the web
-                             |                                        | server.
+    C<SERVER_NAME>           | C<< Str:D where *.chars > 0 >>         | This is the name of the web server.
 
-    C<SERVER_PORT>           | C<< Int:D where * > 0 >>               | This is the server port of the web
+    C<SERVER_PORT>           | C<< Int:D where * > 0 >>               | This is the port number of the web
                              |                                        | server.
 
     C<SERVER_PROTOCOL>       | C<< Str:D where *.chars > 0 >>         | This is the server protocol sent by
-                             |                                        | the client. It MAY be set to "HTTP/1.0"
-                             |                                        | or "HTTP/1.1" or "HTTP/2" or
-                             |                                        | "WebSocket/13" or a similar value.
+                             |                                        | the client, e.g. "HTTP/1.0"
+                             |                                        | or "HTTP/1.1".
 
     C<CONTENT_LENGTH>        | C<< Int:_ >>                           | This corresponds to the
                              |                                        | Content-Length header sent by the
@@ -141,8 +139,9 @@ The environment MUST be an L<Associative>. The keys of this map are mostly deriv
                              |                                        | with C<HTTP_>, in ALL CAPS with the
                              |                                        | hyphens ("-") turned to underscores
                              |                                        | ("_"). Multiple incoming headers
-                             |                                        | with the same name should be joined
-                             |                                        | with a comma (", ") as described in
+                             |                                        | with the same name SHOULD have their 
+                             |                                        | values joined with a comma (", ") as
+                             |                                        | described in
                              |                                        | L<RFC 2616|http://www.ietf.org/rfc/rfc2616>.
                              |                                        | The C<HTTP_CONTENT_LENGTH> and
                              |                                        | C<HTTP_CONTENT_TYPE> headers MUST
@@ -153,17 +152,17 @@ The environment MUST be an L<Associative>. The keys of this map are mostly deriv
                              |                                        | possible, but no others are required
                              |                                        | or formally specified.
 
-    C<p6sgi.version>         | C<< Version:D >>                       | This is the version of this
+    C<p6w.version>           | C<< Version:D >>                       | This is the version of this
                              |                                        | specification, C<v0.7.Draft>.
 
-    C<p6sgi.url-scheme>      | C<< Str:D >>                           | Either "http" or "https".
+    C<p6w.url-scheme>        | C<< Str:D >>                           | Either "http" or "https".
 
-    C<p6sgi.input>           | C<< Supply:D >>                        | The input stream for reading the
+    C<p6w.input>             | C<< Supply:D >>                        | The input stream for reading the
                              |                                        | body of the request, if any.
 
-    C<p6sgi.errors>          | C<< Supply:D >>                        | The error stream for logging.
+    C<p6w.errors>            | C<< Supplier:D >>                      | The error stream for logging.
 
-    C<p6sgi.ready>           | C<< Promise:D >>                       | This is a vowed Promise that MUST be
+    C<p6w.ready>             | C<< Promise:D >>                       | This is a vowed Promise that MUST be
                              |                                        | kept by the server as soon as the
                              |                                        | server has tapped the application's
                              |                                        | output Supply and is ready to
@@ -172,20 +171,26 @@ The environment MUST be an L<Associative>. The keys of this map are mostly deriv
                              |                                        | The server SHOULD NOT break this
                              |                                        | Promise.
 
-    C<p6sgi.multithread>     | C<< Bool:D >>                          | True if the app may be
+    C<p6w.multithread>       | C<< Bool:D >>                          | True if the app may be
                              |                                        | simultaneously invoked in another
                              |                                        | thread in the same
                              |                                        | process.
 
-    C<p6sgi.multiprocess>    | C<< Bool:D >>                          | True if the app may be simultaneously
+    C<p6w.multiprocess>      | C<< Bool:D >>                          | True if the app may be simultaneously
                              |                                        | invoked in another process.
 
-    C<p6sgi.run-once>        | C<< Bool:D >>                          | True if the server expects the app
+    C<p6w.run-once>          | C<< Bool:D >>                          | True if the server expects the app
                              |                                        | to be invoked only once during the
                              |                                        | life of the process. This is not a
                              |                                        | guarantee.
 
-    C<p6sgi.body.encoding>   | C<< Str:D >>                           | Name of the encoding the server will
+    C<p6w.response.protocol> | C<< Set:D >>                           | This is a L<Set> containing the names
+                             |                                        | of response protocols the server is 
+                             |                                        | able to process from the applicaiton. 
+                             |                                        | This specification defines "HTTP" and 
+                             |                                        | "WebSocket" protocols.
+
+    C<p6w.body.encoding>     | C<< Str:D >>                           | Name of the encoding the server will
                              |                                        | use for any strings it is sent.
 
 =end table
@@ -196,25 +201,31 @@ For those familiar with Perl 5 PSGI, you may want to take care when working with
 
 The server or middleware or the application may store its own data in the environment as well. These keys MUST contain at least one dot, SHOULD be prefixed with a unique name.
 
-The following prefixes are reserved for use by this standard:
+The following prefixes are reserved and SHOULD NOT be used unless defined here and then only according to the requirements of this specification:
 
-=item C<p6sgi.> is for P6SGI core standard environment.
+=item C<p6w.> is for P6SGI core standard environment.
 
-=item C<p6sgix.> is for P6SGI standard extensions to the environment.
+=item C<p6wx.> is for P6SGI standard extensions to the environment.
 
 =head3 2.0.2 The Input Stream
 
-The input stream is set in the C<p6sgi.input> key of the environment. The server MUST provide a L<Supply> that emits L<Blob> objects containing the content of the request payload, if any. When the message payload is completely received, the server MUST call C<done> on the Supply. If there is an error processing the request payload, such as an early termination of the body by the client, the server MUST call C<quit> on the Supply with an appropriate exception.
-
-The C<p6sgi.input> Supply MUST either be an on-demand Supply or the server MUST not begin emitting values to the Supply until after the C<p6sgi.ready> L<Promise> has been kept.
+The input stream is set in the C<p6w.input> key of the environment. The server MUST provide a I<sane> L<Supply> that emits L<Blob> objects containing the content of the request payload, if any.
 
 =head3 2.0.3 The Error Stream
 
-The error stream MUST be given in the environment via C<p6sgi.errors>. This MUST be a L<Supply> the server provides emitting errors. The application MAY call C<emit> on the Supply zero or more times, passing any object that may be stringified. The server SHOULD write these log entries to a suitable log file or to STDERR or wherever appropriate. If written to a typical file handle, it should automatically append a newline to each emitted message.
+The error stream MUST be given in the environment via C<p6w.errors>. This MUST be a L<Supplier> the server provides for emitting errors. The application MAY call C<emit> on the Supplier zero or more times, passing any object that may be stringified. The server SHOULD write these log entries to a suitable log file or to C<$*ERR> or wherever appropriate. If written to a typical file handle, it should automatically append a newline to each emitted message.
 
 =head3 2.0.4 Application Response
 
-A P6SGI application typically returns a L<Promise>. This Promise is kept with a L<Capture> which contains 3 positional arguments: the status code, the headers, and the message body, respectively.
+The application server supplies a L<Set> of strings to the applicaiton in C<p6w.response.protocol> that specifies the way in which the application server expects the application to response. This specification defines the following response protocols: "HTTP" and "WebSocket". Application servers SHOULD support both of these protocols when appropriate for the C<SERVER_PROTOCOL>.
+
+The way the server responds to these two protocols are handled is defined below.
+
+=head5 2.0.4.0 HTTP Responses
+
+The "HTTP" response protocol is appropriate when the C<SERVER_PROTOCOL> is HTTP/1.0 or HTTP/1.1 or HTTP/2.
+
+The P6SGI application is expected to return a L<Promise>. The application will keep this Promise when it has a response to return. It will be kept with a L<Capture> which contains 3 positional arguments: the status code, the headers, and the message body, respectively.
 
 =item The status code is returned as an integer matching one of the standard HTTP status codes (e.g., 200 for success, 500 for error, 404 for not found, etc.).
 
@@ -243,17 +254,17 @@ The server will coerce the returned object to a C<Promise>, which is kept with t
 
 The server SHOULD NOT assume that the Promise will always be kept and SHOULD handle a broken Promise as appropriate. The server SHOULD assume the Promise has been vowed a MUST NOT try to keep or break the Promise itself.
 
-=head4 2.0.4.0 Response Headers
+=head5 2.0.4.0.1 HTTP Response Headers
 
 Each L<Pair> in the list of headers maps a header name to a header value. The application may return the same header name multiple times. The order of multiple headers with the same name SHOULD be preserved.
 
 If the application is missing headers that are required for the status code given or provides headers that are forbidden, the application server SHOULD treat that as a server error.
 
-If given, the server SHOULD examine the C<Content-Type> header for the C<charset> setting. This SHOULD be used to aid in encoding any L<Str> encountered when processing the message payload. If the application does not provide a C<charset>, the server MAY choose to add this header itself using the encoding provided in C<p6sgi.body.encoding> in the environment.
+If given, the server SHOULD examine the C<Content-Type> header for the C<charset> setting. This SHOULD be used to aid in encoding any L<Str> encountered when processing the message payload. If the application does not provide a C<charset>, the server MAY choose to add this header itself using the encoding provided in C<p6w.body.encoding> in the environment.
 
 The server SHOULD examine the C<Content-Length> header, if given. It MAY choose to stop consuming the message payload once the number of bytes given has been read.
 
-=head4 2.0.4.1 Response Payload
+=head5 2.0.4.0.2 HTTP Response Payload
 
 Unless the status code is one that is not permitted to have a message payload, the application server MUST tap the Supply and process each emitted L<Blob> or L<Cool>, until the the either the Supply is done or the server decides to quit tapping the stream for some reason.
 
@@ -261,7 +272,7 @@ The application server SHOULD continue processing emitted values until the Suppl
 
 If the Supply is quit instead of being done, the server SHOULD attempt to handle the error as appropriate.
 
-=head3 2.0.5 Payload and Encoding
+=head5 2.0.4.0.3 HTTP Payload and Encoding
 
 It is up to the server how to handle encoded characters given by the application within the headers.
 
@@ -279,9 +290,9 @@ A P6SGI application server processes requests from an origin, passes the process
 
 In the modern web, an application may want to implement a variety of complex HTTP interactions. These use-cases are not described by the typical HTTP request-response roundtrip. For example, an application may implement a WebSocket API or an interactive Accept-Continue response or stream data to or from the origin. As such, application servers SHOULD make a best effort to be implemented in such a way as to make this variety applications possible.
 
-The application server SHOULD pass control to the application as soon as the headers have been received and the environment can be constructed. The application server MAY continue processing the message body while the application server begins its work. The server SHOULD NOT emit the contents of the request payload via C<p6sgi.input> yet. The server MUST NOT emit to C<p6sgi.input> at this point unless the L<Supply> there is provided on-demand.
+The application server SHOULD pass control to the application as soon as the headers have been received and the environment can be constructed. The application server MAY continue processing the message body while the application server begins its work. The server SHOULD NOT emit the contents of the request payload via C<p6w.input> yet. The server MUST NOT emit to C<p6w.input> at this point unless the L<Supply> there is provided on-demand.
 
-Once the application has returned the response headers and the response payload to the server. The server MUST tap the L<Supply> representing the response payload as soon as possible. Immediately after tapping the Supply, the application server MUST keep the L<Promise> (with no value) in C<p6sgi.ready>. The application server SHOULD NOT break this Promise. Immediately after keeping the Promise in C<p6sgi.ready>, the server SHOULD start emitting the contents of the request payload, if any, to C<p6sgi.input>.
+Once the application has returned the response headers and the response payload to the server. The server MUST tap the L<Supply> representing the response payload as soon as possible. Immediately after tapping the Supply, the application server MUST keep the L<Promise> (with no value) in C<p6w.ready>. The application server SHOULD NOT break this Promise. Immediately after keeping the Promise in C<p6w.ready>, the server SHOULD start emitting the contents of the request payload, if any, to C<p6w.input>.
 
 The server SHOULD return the application response headers back to the origin as soon as they are received. After which, the server SHOULD return each chunk emitted by the response body from the application as soon as possible.
 
@@ -364,7 +375,7 @@ Special care needs to be taken when middleware needs to process the application 
 
 =item1 Middleware SHOULD examine the charset value of the Content-Type header and prefer that encoding.
 
-=item1 If no charset is present or the middleware does not implementing charset handling, the middleware MUST encode using the value in C<p6sgi.body.encoding>.
+=item1 If no charset is present or the middleware does not implementing charset handling, the middleware MUST encode using the value in C<p6w.body.encoding>.
 
 The application is permitted to emit any object as part of the response payload so long as some middleware maps those objects into the types the application server is required to support: L<Cool>, L<Blob>, L<List> of L<Pairs>, and L<Associative>. The latter two must be appropriate for the protocol being communicated.
 
@@ -408,17 +419,17 @@ It is recommended that such files identify themselves with the suffix F<.p6w> wh
 
 The one and only argument passed to the application is an L<Associative> containing the environment. The environment variables that MUST be set are defined in section 2.0.1. Additional variables are probably defined by your application server, so please see its documentation for details.
 
-The application MAY store additional values in the environment as it sees fit. This allows the application to communicate with a server or middleware or just to store information useful for the duration of the request. If the application modifies the environment, the variables set MUST contain a period and SHOULD start with a unique name that is not C<p6sgi.> or C<p6sgix.> as these are reserved.
+The application MAY store additional values in the environment as it sees fit. This allows the application to communicate with a server or middleware or just to store information useful for the duration of the request. If the application modifies the environment, the variables set MUST contain a period and SHOULD start with a unique name that is not C<p6w.> or C<p6wx.> as these are reserved.
 
 =head3 2.2.2 The Input Stream
 
-During a POST, PUT, or other operation, the client may send along a request payload to your application. The application MAY choose to read the body using the input stream provided in the C<p6sgi.input> key of the environment. This is a L<Supply>, which may emit any kind of object. The server will provide a Supply that emits zero or more L<Blob>s, but the application middleware may map that information as required. It is expected that the application will be written with the kind of data it may receive in mind.
+During a POST, PUT, or other operation, the client may send along a request payload to your application. The application MAY choose to read the body using the input stream provided in the C<p6w.input> key of the environment. This is a L<Supply>, which may emit any kind of object. The server will provide a Supply that emits zero or more L<Blob>s, but the application middleware may map that information as required. It is expected that the application will be written with the kind of data it may receive in mind.
 
 On normal termination of the payload, the Supply will finish with a C<done> signal. On error, it will finish with a C<quit>.
 
 =head3 2.2.3 The Error Stream
 
-The application server is required to provide a C<p6sgi.errors> variable in the environment with a L<Supply> object. The application MAY emit any errors or messages here using any object that stringifies. The application SHOULD NOT terminate such messages with a newline as the server will do so if necessary.
+The application server is required to provide a C<p6w.errors> variable in the environment with a L<Supply> object. The application MAY emit any errors or messages here using any object that stringifies. The application SHOULD NOT terminate such messages with a newline as the server will do so if necessary.
 
 =head3 2.2.4 Application Response
 
@@ -472,7 +483,7 @@ The server is expected to process the following emitted objects:
 
 =item L<Blob>. When sending the response payload to the server, the application SHOULD prefer to use Blob objects for the main data payload. This allows the application to fully control the encoding of any text being sent.
 
-=item L<Cool>. It is also possible for the application to use Cool instances, but this puts the server in charge of stringifying and encoding the response. The server is only required to encode the data according to the encoding specified in the C<p6sgi.body.encoding> key of the environment. Application servers and middleware recommended to examine the C<charset> of the Content-Type header returned by the application, but are not required to do so.
+=item L<Cool>. It is also possible for the application to use Cool instances, but this puts the server in charge of stringifying and encoding the response. The server is only required to encode the data according to the encoding specified in the C<p6w.body.encoding> key of the environment. Application servers and middleware recommended to examine the C<charset> of the Content-Type header returned by the application, but are not required to do so.
 
 =item L<List> of L<Pair>s. Some response payloads may require an additional set of trailing headers. This allows for additional headers to be sent after the payload.
 
@@ -486,7 +497,7 @@ In addition to the standard specification, there are a number of extensions that
 
 =head2 3.0 Header Done
 
-The C<p6sgix.header.done> environment variable, if provided, MUST be a vowed L<Promise>. This Promise MUST be kept when the server is done sending or processing the response header. The Promise MUST be broken if the server is unable to or will not send the application provided headers.
+The C<p6wx.header.done> environment variable, if provided, MUST be a vowed L<Promise>. This Promise MUST be kept when the server is done sending or processing the response header. The Promise MUST be broken if the server is unable to or will not send the application provided headers.
 
 This is not an exhaustive list, but here are a few possible reasons why this Promise MAY be broken:
 
@@ -498,7 +509,7 @@ This is not an exhaustive list, but here are a few possible reasons why this Pro
 
 =head2 3.1 Body Done
 
-The C<p6sgix.body.done> environment variable, if provided, MUST be a vowed L<Promise>. This Promise MUST be kept when the server is done sending or processing the response body. The Promise MUST be broken if the server is unable to or will not send the complete application body.
+The C<p6wx.body.done> environment variable, if provided, MUST be a vowed L<Promise>. This Promise MUST be kept when the server is done sending or processing the response body. The Promise MUST be broken if the server is unable to or will not send the complete application body.
 
 This is not an exhaustive list, but here are a few possible reasons why this Promise MAY be broken:
 
@@ -510,7 +521,7 @@ See also 3.7.
 
 =head2 3.2 Raw Socket
 
-The C<p6sgix.io> environment variable, if provided, MUST be the bare metal L<IO::Socket::INET> used to communicate to the client. This is the interface of last resort as it sidesteps the entire P6SGI interface.
+The C<p6wx.io> environment variable, if provided, MUST be the bare metal L<IO::Socket::INET> used to communicate to the client. This is the interface of last resort as it sidesteps the entire P6SGI interface.
 
 If your application requires the use of this socket, please file an issue describing the nature of your application in detail. You may have a use-case that requires revisions to the P6SGI standard to cope with.
 
@@ -524,35 +535,35 @@ When called application MUST provide a C<$level> that is one of: `debug`, `info`
 
 =head2 3.4 Sessions
 
-The C<p6sgix.session> environment variable, if provided, MUST be an L<Associative> mapping arbitrary keys and values that may be read and written to by an application. The application SHOULD only use L<Str> keys and values. The implementation of persisting this data is up to the application or middleware implementing the session.
+The C<p6wx.session> environment variable, if provided, MUST be an L<Associative> mapping arbitrary keys and values that may be read and written to by an application. The application SHOULD only use L<Str> keys and values. The implementation of persisting this data is up to the application or middleware implementing the session.
 
-The C<p6sgix.session.options> environment variable, if provided, MUST be an L<Associative> mapping implementation-specific keys and values. This allows the application a channel by which to instruct the session handler how to operate.
+The C<p6wx.session.options> environment variable, if provided, MUST be an L<Associative> mapping implementation-specific keys and values. This allows the application a channel by which to instruct the session handler how to operate.
 
 =head2 3.5 Harikiri Mode
 
-The C<p6sgix.harikiri> environment variable, if provided, MUST be a L<Bool>. If set to C<True> it signals to the application that the server supports harikiri mode, which allows the application to ask the server to terminate the current work when the request is complete.
+The C<p6wx.harikiri> environment variable, if provided, MUST be a L<Bool>. If set to C<True> it signals to the application that the server supports harikiri mode, which allows the application to ask the server to terminate the current work when the request is complete.
 
-The C<p6sgix.harikiri.commit> environment variable MAY be set by the application to signal to the server that the current worker should be killed after the current request has been processed.
+The C<p6wx.harikiri.commit> environment variable MAY be set by the application to signal to the server that the current worker should be killed after the current request has been processed.
 
 =head2 3.6 Cleanup Handlers
 
-The C<p6sgix.cleanup> environment variable, if provided, MUST be a L<Bool>. If set to C<True> it tells the application that the server supports running cleanup handlers after the request is complete.
+The C<p6wx.cleanup> environment variable, if provided, MUST be a L<Bool>. If set to C<True> it tells the application that the server supports running cleanup handlers after the request is complete.
 
-The C<p6sgix.cleanup.handlers> environment variable MUST be provided if the C<p6sgix.cleanup> flag is set. This MUST an L<Array>. The application adds cleanup handlers to the list by putting L<Callable>s into the Array (usually by C<push>ing). Each handler will be given a copy of the C<%env> as the first argument.
+The C<p6wx.cleanup.handlers> environment variable MUST be provided if the C<p6wx.cleanup> flag is set. This MUST an L<Array>. The application adds cleanup handlers to the list by putting L<Callable>s into the Array (usually by C<push>ing). Each handler will be given a copy of the C<%env> as the first argument.
 
-If the server supports harikiri mode, it SHOULD allow the cleanup handlers to invoke harikiri mode if they set C<p6sgix.hariki.commit> (see 3.5).
+If the server supports harikiri mode, it SHOULD allow the cleanup handlers to invoke harikiri mode if they set C<p6wx.hariki.commit> (see 3.5).
 
 =head2 3.7 Output Block Detection
 
-The C<p6sgix.body.backpressure> environment variable, if provided, MUST be a L<Bool> flag. It is set to C<True> to indicate that the P6SGI server provide response backpressure detection by polling for non-blocking I/O problems. In this case, the server MUST provide the other two environment variables. If C<False> or not defined, the server does not provide these two environment variables.
+The C<p6wx.body.backpressure> environment variable, if provided, MUST be a L<Bool> flag. It is set to C<True> to indicate that the P6SGI server provide response backpressure detection by polling for non-blocking I/O problems. In this case, the server MUST provide the other two environment variables. If C<False> or not defined, the server does not provide these two environment variables.
 
-The C<p6sgix.body.backpressure.supply> environment variable MUST be provided if C<p6sgix.body.backpressure> is C<True>. When provided, it MUST be a live L<Supply> that emits C<True> and C<False> values. C<True> is emitted whenever the server detects a blocked output socket. C<False> is emitted whenever the server detects the previously blocked socket is no longer blocked.
+The C<p6wx.body.backpressure.supply> environment variable MUST be provided if C<p6wx.body.backpressure> is C<True>. When provided, it MUST be a live L<Supply> that emits C<True> and C<False> values. C<True> is emitted whenever the server detects a blocked output socket. C<False> is emitted whenever the server detects the previously blocked socket is no longer blocked.
 
-The C<p6sgix.body.backpressure.test> environment variable MUST be provided if C<p6sgix.body.backpressure> is C<True>. When provided, it MUST be a L<Bool> that is C<True> while output is blocked and C<False> otherwise. This can be useful for detecting the initial state before the backpressure supply has emitted any value or just as a way to poll the last known status of the socket.
+The C<p6wx.body.backpressure.test> environment variable MUST be provided if C<p6wx.body.backpressure> is C<True>. When provided, it MUST be a L<Bool> that is C<True> while output is blocked and C<False> otherwise. This can be useful for detecting the initial state before the backpressure supply has emitted any value or just as a way to poll the last known status of the socket.
 
 =head2 3.8 Protocol Upgrade
 
-The C<p6sgix.protocol.upgrade> environment variable MUST be provided if the server implements the protocol upgrade extension. It MUST be set to an L<Array> of protocol names of protocols the server supports.
+The C<p6wx.protocol.upgrade> environment variable MUST be provided if the server implements the protocol upgrade extension. It MUST be set to an L<Array> of protocol names of protocols the server supports.
 
 When the client makes a protocol upgrade request using an C<Upgrade> header, the application MAY request that the server upgrade to one of these supported protocols by sending a C<P6SGIx-Upgrade> header back to the server with the named protocol. The application MAY send any other headers related to the Upgrade and MAY send a message payload if the upgrade allows it. These SHOULD override any server supplied values or headers.
 
@@ -566,17 +577,17 @@ The server MUST make a new call to the application with a new environment to sta
 
 The workings of HTTP/2 are similar enough to HTTP/1.0 and HTTP/1.1 that use of a protocol upgrade may not be necessary in most or all use-cases. However, servers MAY choose to delegate this to the application using the protocol upgrade extension.
 
-Servers that support this protocol upgrade MUST place the name "h2c" and/or "h2" into the C<p6sgix.protocol.upgrade> array, for support of HTTP/2 over cleartext connections and HTTP/2 over TLS, respectively.
+Servers that support this protocol upgrade MUST place the name "h2c" and/or "h2" into the C<p6wx.protocol.upgrade> array, for support of HTTP/2 over cleartext connections and HTTP/2 over TLS, respectively.
 
-The application MUST NOT tap the C<p6sgix.input> stream when performing this upgrade. The application SHOULD NOT return a message payload aside from an empty L<Supply>.
+The application MUST NOT tap the C<p6wx.input> stream when performing this upgrade. The application SHOULD NOT return a message payload aside from an empty L<Supply>.
 
 Once upgraded the application server MUST adhere to all the requirements for HTTP/2 as described in section 4.2. The application will be called again once a web request is received on the upgraded connection and is ready for processing.
 
 =head3 3.8.1 WebSocket Protocol Upgrade
 
-Servers that support the WebSocket protocol upgrade MUST place the name "websocket" into the C<p6sgix.protocol.upgrade> array.
+Servers that support the WebSocket protocol upgrade MUST place the name "websocket" into the C<p6wx.protocol.upgrade> array.
 
-The application MUST NOT tap the C<p6sgix.input> stream when performing this upgrade. The application SHOULD NOT return a message payload aside from an empty L<Supply>.
+The application MUST NOT tap the C<p6wx.input> stream when performing this upgrade. The application SHOULD NOT return a message payload aside from an empty L<Supply>.
 
 Once upgraded the application server MUST adhere to all the requirements for WebSocket as described in section 4.3. The application will be called again immediately after the upgrade is complete to allow it to begin sending and receiving frames.
 
@@ -584,7 +595,7 @@ Once upgraded the application
 
 =head2 3.9 Transfer Encoding
 
-This extension is only for HTTP/1.1 protocol connections. When the server supports this extension, it MUST provide a C<p6sgix.http11.transfer-encoding> variable listing the transfer encodings the server supports.
+This extension is only for HTTP/1.1 protocol connections. When the server supports this extension, it MUST provide a C<p6wx.http11.transfer-encoding> variable listing the transfer encodings the server supports.
 
 When the application returns a header named C<P6SGIx-Transfer-Encoding> with the name of one of the supported transfer encodings, the server MUST apply that transfer encoding to the message payload. If the connection is not HTTP/1.1, the server SHOULD ignore this header.
 
@@ -618,7 +629,7 @@ Any application server implementing HTTP/2 MUST adhere to the requirements descr
 
 =item The C<SERVER_PROTOCOL> MUST be set to "HTTP/2".
 
-=item The environment MUST contain a variable named C<p6sgix.h2.push-promise>. This MUST be a L<Supply> that the application MAY use to initiate any C<PUSH_PROMISE> frames related to the current response.
+=item The environment MUST contain a variable named C<p6wx.h2.push-promise>. This MUST be a L<Supply> that the application MAY use to initiate any C<PUSH_PROMISE> frames related to the current response.
 
 =item The server MUST decode incoming frames and only deliver the data contained within the frames to the application in the environment with the same semantics applied as if each incoming stream were an HTTP/1.1 request.
 
@@ -630,7 +641,7 @@ Any application server implementing WebSocket MUST adhere to all the requirement
 
 =item The C<SERVER_PROTOCOL> MUST be set to "WebSocket/13".
 
-=item The server MUST decode frames received from the client and emit them each to C<p6sgix.input>. The frames MUST NOT be buffered or concatenated.
+=item The server MUST decode frames received from the client and emit them each to C<p6wx.input>. The frames MUST NOT be buffered or concatenated.
 
 =item The server MUST encode frames emitted by the application in the message payload as data frames sent to the client. The frames MUST be separated out as emitted by the application without any buffering or concatenation.
 
@@ -638,7 +649,11 @@ Any application server implementing WebSocket MUST adhere to all the requirement
 
 =head2 0.7.Draft
 
+=item Some grammar fixes, typo fixes, and general verbiage cleanup.
 
+=item Renaming C<p6sgi.*> to C<p6w.*> and C<p6sgix.*> to C<p6wx.*>.
+
+=item The errors stream is now a C<Supplier> rather than a C<Supply> because of recent changes to the Supply interface in Perl 6.
 
 =head2 0.6.Draft
 
