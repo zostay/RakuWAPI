@@ -545,7 +545,7 @@ In addition to the standard specification, there are a number of extensions that
 3.0 Header Done
 ---------------
 
-The `p6wx.header.done` environment variable, if provided, MUST be a vowed [Promise](http://doc.perl6.org/type/Promise). This Promise MUST be kept when the server is done sending or processing the response header. The Promise MUST be broken if the server is unable to or will not send the application provided headers.
+The `p6wx.header.done` environment variable, if provided, MUST be a vowed [Promise](http://doc.perl6.org/type/Promise). This Promise MUST be kept when the server is done sending or processing the response header. The Promise MUST be broken if the server is unable or unwilling to send the application provided headers.
 
 This is not an exhaustive list, but here are a few possible reasons why this Promise MAY be broken:
 
@@ -558,11 +558,9 @@ This is not an exhaustive list, but here are a few possible reasons why this Pro
 3.1 Body Done
 -------------
 
-The `p6wx.body.done` environment variable, if provided, MUST be a vowed [Promise](http://doc.perl6.org/type/Promise). This Promise MUST be kept when the server is done sending or processing the response body. The Promise MUST be broken if the server is unable to or will not send the complete application body.
+The `p6wx.body.done` environment variable, if provided, MUST be a vowed [Promise](http://doc.perl6.org/type/Promise). This Promise MUST be kept when the server is done sending or processing the response body. The Promise MUST be broken if the server is unable or unwilling to send the complete application body.
 
 This is not an exhaustive list, but here are a few possible reasons why this Promise MAY be broken:
-
-See also 3.7.
 
   * The application server has already transmitted `Content-Length`, but the application continued to send bytes after that point.
 
@@ -578,13 +576,13 @@ If your application requires the use of this socket, please file an issue descri
 3.3 Logger
 ----------
 
-The `p6gix.logger` environment variable, if provided, MUST be a [Routine](http://doc.perl6.org/type/Routine) defined with a signature as follows:
+The `p6wx.logger` environment variable, if provided, MUST be a [Routine](http://doc.perl6.org/type/Routine) defined with a signature as follows:
 
 ```perl6
-    sub (Str:D :$level, Str:D :$message);
+    sub (Str:D $message, Str:D :$level = 'info');
 ```
 
-When called application MUST provide a `$level` that is one of: `debug`, `info`, `warn`, `error`, `fatal`.
+When called application MUST provide a `$level` that is one of: `"debug"`, `"info"`, `"warn"`, `"error"`, `"fatal"`.
 
 3.4 Sessions
 ------------
@@ -605,7 +603,7 @@ The `p6wx.harikiri.commit` environment variable MAY be set by the application to
 
 The `p6wx.cleanup` environment variable, if provided, MUST be a [Bool](http://doc.perl6.org/type/Bool). If set to `True` it tells the application that the server supports running cleanup handlers after the request is complete.
 
-The `p6wx.cleanup.handlers` environment variable MUST be provided if the `p6wx.cleanup` flag is set. This MUST an [Array](http://doc.perl6.org/type/Array). The application adds cleanup handlers to the list by putting [Callable](http://doc.perl6.org/type/Callable)s into the Array (usually by `push`ing). Each handler will be given a copy of the `%env` as the first argument.
+The `p6wx.cleanup.handlers` environment variable MUST be provided if the `p6wx.cleanup` flag is set. This MUST an [Array](http://doc.perl6.org/type/Array). The application adds cleanup handlers to the array by putting [Callable](http://doc.perl6.org/type/Callable)s into the Array (usually by `push`ing). Each handler will be given a copy of the `%env` as the first argument. The server MUST run these handlers, but only after the application has completely finished returning the response and any response payload.
 
 If the server supports harikiri mode, it SHOULD allow the cleanup handlers to invoke harikiri mode if they set `p6wx.hariki.commit` (see 3.5).
 
@@ -614,14 +612,14 @@ If the server supports harikiri mode, it SHOULD allow the cleanup handlers to in
 
 The `p6wx.body.backpressure` environment variable, if provided, MUST be a [Bool](http://doc.perl6.org/type/Bool) flag. It is set to `True` to indicate that the P6SGI server provide response backpressure detection by polling for non-blocking I/O problems. In this case, the server MUST provide the other two environment variables. If `False` or not defined, the server does not provide these two environment variables.
 
-The `p6wx.body.backpressure.supply` environment variable MUST be provided if `p6wx.body.backpressure` is `True`. When provided, it MUST be a live [Supply](http://doc.perl6.org/type/Supply) that emits `True` and `False` values. `True` is emitted whenever the server detects a blocked output socket. `False` is emitted whenever the server detects the previously blocked socket is no longer blocked.
+The `p6wx.body.backpressure.supply` environment variable MUST be provided if `p6wx.body.backpressure` is `True`. When provided, it MUST be a live [Supply](http://doc.perl6.org/type/Supply) that periodically emits `True` and `False` values. `True` is emitted when the server polls for backpressure and detects a blocked output socket. `False` is emitted when the server polls for backpressure and detects the previously blocked socket is no longer blocked.
 
-The `p6wx.body.backpressure.test` environment variable MUST be provided if `p6wx.body.backpressure` is `True`. When provided, it MUST be a [Bool](http://doc.perl6.org/type/Bool) that is `True` while output is blocked and `False` otherwise. This can be useful for detecting the initial state before the backpressure supply has emitted any value or just as a way to poll the last known status of the socket.
+The `p6wx.body.backpressure.test` environment variable MUST be provided if `p6wx.body.backpressure` is `True`. When provided, it MUST be a [Bool](http://doc.perl6.org/type/Bool) that is `True` while output has last been detected as blocked and `False` otherwise. This can be useful for detecting the initial state before the backpressure supply has emitted any value or just as a way to poll the last known status of the socket.
 
 3.8 Protocol Upgrade
 --------------------
 
-The `p6wx.protocol.upgrade` environment variable MUST be provided if the server implements the protocol upgrade extension. It MUST be set to an [Array](http://doc.perl6.org/type/Array) of protocol names of protocols the server supports.
+The `p6wx.protocol.upgrade` environment variable MUST be provided if the server implements the protocol upgrade extension. It MUST be set to an [Set](http://doc.perl6.org/type/Set) of protocol names of protocols the server supports.
 
 When the client makes a protocol upgrade request using an `Upgrade` header, the application MAY request that the server upgrade to one of these supported protocols by sending a `P6SGIx-Upgrade` header back to the server with the named protocol. The application MAY send any other headers related to the Upgrade and MAY send a message payload if the upgrade allows it. These SHOULD override any server supplied values or headers.
 
@@ -635,7 +633,7 @@ The server MUST make a new call to the application with a new environment to sta
 
 The workings of HTTP/2 are similar enough to HTTP/1.0 and HTTP/1.1 that use of a protocol upgrade may not be necessary in most or all use-cases. However, servers MAY choose to delegate this to the application using the protocol upgrade extension.
 
-Servers that support this protocol upgrade MUST place the name "h2c" and/or "h2" into the `p6wx.protocol.upgrade` array, for support of HTTP/2 over cleartext connections and HTTP/2 over TLS, respectively.
+Servers that support this protocol upgrade MUST place the name "h2c" and/or "h2" into the `p6wx.protocol.upgrade` set, for support of HTTP/2 over cleartext connections and HTTP/2 over TLS, respectively.
 
 The application MUST NOT tap the `p6wx.input` stream when performing this upgrade. The application SHOULD NOT return a message payload aside from an empty [Supply](http://doc.perl6.org/type/Supply).
 
@@ -643,13 +641,11 @@ Once upgraded the application server MUST adhere to all the requirements for HTT
 
 ### 3.8.1 WebSocket Protocol Upgrade
 
-Servers that support the WebSocket protocol upgrade MUST place the name "websocket" into the `p6wx.protocol.upgrade` array.
+Servers that support the WebSocket protocol upgrade MUST place the name "websocket" into the `p6wx.protocol.upgrade` set.
 
 The application MUST NOT tap the `p6wx.input` stream when performing this upgrade. The application SHOULD NOT return a message payload aside from an empty [Supply](http://doc.perl6.org/type/Supply).
 
-Once upgraded the application server MUST adhere to all the requirements for WebSocket as described in section 4.3. The application will be called again immediately after the upgrade is complete to allow it to begin sending and receiving frames.
-
-Once upgraded the application
+Once upgraded the application server MUST adhere to all the requirements for WebSocket as described in section 2.0.4.1. The application will be called again immediately after the upgrade is complete to allow it to begin sending and receiving frames.
 
 3.9 Transfer Encoding
 ---------------------
@@ -727,6 +723,8 @@ Changes
   * Breaking sections 2.0.4, 2.1.4, and 2.2.4 up to discuss the difference between the HTTP and WebSocket protocol response requirements.
 
   * Moving 2.0.5, 2.1.5, and 2.2.5 under 2.*.4 because of the protocol changes made in 2.*.4.
+
+  * Changed `p62x.protocol.upgrade` from an [Array](http://doc.perl6.org/type/Array) to a [Set](http://doc.perl6.org/type/Set) of supported protocol names.
 
 0.6.Draft
 ---------
