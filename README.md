@@ -208,9 +208,9 @@ The environment MUST be an [Associative](http://doc.perl6.org/type/Associative).
     <td>True if the server expects the app to be invoked only once during the life of the process. This is not a guarantee.</td>
   </tr>
   <tr>
-    <td><code>p6w.response.protocol</code></td>
+    <td><code>p6w.protocol</code></td>
     <td><code>Set:D</code></td>
-    <td>This is a L&lt;Set&gt; containing the names of response protocols the server is able to process from the applicaiton. This specification defines "HTTP" and "WebSocket" protocols.</td>
+    <td>This is a L&lt;Set&gt; containing the names of response protocols the server is able to process from the applicaiton. This specification defines "http" and "ws" protocols.</td>
   </tr>
   <tr>
     <td><code>p6w.body.encoding</code></td>
@@ -241,74 +241,9 @@ The error stream MUST be given in the environment via `p6w.errors`. This MUST be
 
 ### 2.0.4 Application Response
 
-The application server supplies a [Set](http://doc.perl6.org/type/Set) of strings to the applicaiton in `p6w.response.protocol` that specifies the way in which the application server expects the application to response. This specification defines the following response protocols: "HTTP" and "WebSocket". Application servers SHOULD support both of these protocols when appropriate for the `SERVER_PROTOCOL`.
+The application server supplies a [Set](http://doc.perl6.org/type/Set) of strings to the applicaiton in `p6w.protocol` that specifies the way in which the application server expects the application to response. This specification defines the following response protocols: "http" and "ws". Application servers SHOULD support both of these protocols when appropriate for the `SERVER_PROTOCOL`.
 
-The way the server handles these two protocols responses is defined below.
-
-##### 2.0.4.0 HTTP Responses
-
-The "HTTP" response protocol is appropriate when the `SERVER_PROTOCOL` is HTTP/1.0, HTTP/1.1, and HTTP/2.
-
-The P6SGI application is expected to return a [Promise](http://doc.perl6.org/type/Promise). The application will keep this Promise when it has a response to return. It will be kept with a [Capture](http://doc.perl6.org/type/Capture) containing 3 positional arguments: the status code, the headers, and the message body, respectively.
-
-  * The status code is returned as an integer matching one of the standard HTTP status codes (e.g., 200 for success, 500 for error, 404 for not found, etc.).
-
-  * The headers are returned as a List of Pairs mapping header names to header values.
-
-  * The response payload is returned as a [Supply](http://doc.perl6.org/type/Supply) that emits zero or more objects. The server SHOULD handle anything emitted as part of the message payload. Any [Blob](http://doc.perl6.org/type/Blob) encountered SHOULD be forwarded on to the origin as is. Servers SHOULD handle [List](http://doc.perl6.org/type/List)s of [Pair](http://doc.perl6.org/type/Pair)s by turning them into trailing headers. Any other positional or list SHOULD be ignored, possibly with a warning. Servers MAY handle [Associative](http://doc.perl6.org/type/Associative) objects containing protocol-specific messages and options. Servers SHOULD ignore any other associative or map objects, possibly with a warning. Any other [Mu](http://doc.perl6.org/type/Mu) object should be stringified and encoded and then passed on to the origin. If the object cannot be stringified, the server SHOULD handle that as a server error.
-
-Here's an example of a typical application:
-
-```perl6
-    sub app(%env) {
-        start {
-            200, [ Content-Type => 'text/plain' ], Supply.from-list([ 'Hello World' ])
-        };
-    }
-```
-
-Servers MUST be able to handle a standard response like this as well as any response whose Promise is kept with positional elements that may be coerced into the required forms. For example, the following is also acceptable:
-
-```perl6
-    sub app(%env) {
-        my enum HttpStatus (OK => 200, NotFound => 404, ServerError => 500);
-        start {
-            OK, [ Content-Type => 'text/plain' ], [ 'Hello World' ]
-        }
-    }
-```
-
-The server will coerce the first element from an enumeration into an [Int](http://doc.perl6.org/type/Int), the list of pairs is as normally expected, and the final list containing the payload will be automatically coerced into a Supply (since Perl provides a built-in coercion for that). The following sections assume that the required coercion has taken place.
-
-The server SHOULD NOT assume that the Promise will always be kept and SHOULD handle a broken Promise as appropriate. The server SHOULD assume the Promise has been vowed a MUST NOT try to keep or break the Promise itself.
-
-##### 2.0.4.0.0 HTTP Response Headers
-
-Each [Pair](http://doc.perl6.org/type/Pair) in the list of headers maps a header name to a header value. The application may return the same header name multiple times. The order of multiple headers with the same name SHOULD be preserved.
-
-If the application is missing headers that are required for the status code given or provides headers that are forbidden, the application server SHOULD treat that as a server error.
-
-If given, the server SHOULD examine the `Content-Type` header for the `charset` setting. This SHOULD be used to aid in encoding any string or other stringified object encountered when processing the message payload.
-
-##### 2.0.4.0.1 HTTP Response Payload
-
-Unless the status code is one that is not permitted to have a message payload, the application server MUST tap the payload [Supply](http://doc.perl6.org/type/Supply) and process each emitted object, until either the Supply is done or the server decides to quit tapping the stream for some reason.
-
-The application server SHOULD continue processing emitted values until the Supply is done or until `Content-Length` bytes have been emitted. The server MAY stop tapping the Supply for various other reasons as well, such as timeouts or because the client has closed the socket, etc.
-
-If the Supply is quit instead of being done, the server SHOULD attempt to handle the error as appropriate.
-
-##### 2.0.4.0.2 HTTP Payload and Encoding
-
-It is up to the server how to handle non-ASCII characters given by the application within the headers.
-
-Within the body, however, any [Mu](http://doc.perl6.org/type/Mu) object (that is not [Positional](http://doc.perl6.org/type/Positional) or [Associative](http://doc.perl6.org/type/Associative)) emitted from the [Supply](http://doc.perl6.org/type/Supply) MUST be stringified (if possible) and then encoded. If the application has specified a `charset` with the `Content-Type` header, the server SHOULD honor that character encoding. If none is given or the server does not honor the `Content-Type` header, it MUST encode any stringified object with the encoding named in `p6w.body.encoding`.
-
-Any [Blob](http://doc.perl6.org/type/Blob) encountered in the body SHOULD be sent on as is, treating the data as plain binary.
-
-Any [List](http://doc.perl6.org/type/List) of [Pair](http://doc.perl6.org/type/Pair)s is treated as a trailing header.
-
-Any [Associative](http://doc.perl6.org/type/Associative) defines a custom message which allows the application to communicate special configuration or implementaiton-specific messages to the server.
+The way the server handles these two protocols responses is defined in section 4.0.
 
 #### 2.0.4.1 WebSocket Response
 
@@ -412,11 +347,7 @@ See sections 2.0.3 and 2.2.3.
 
 As with an application, middleware MUST return a valid P6SGI response to the server.
 
-### 2.1.4.0 HTTP Payload and Encoding
-
-If a middleware application does not need to perform any payload processing, it SHOULD ignore the [Supply](http://doc.perl6.org/type/Supply) returned by the application and return it to the caller as-is.
-
-Otherwise, all the encoding issues in 2.0.4.0 and 2.2.4.0 need to be considered.
+See section 4 for details on protocl handling.
 
 2.2 Layer 2: Application
 ------------------------
@@ -475,67 +406,9 @@ The application server is required to provide a `p6w.errors` variable in the env
 
 ### 2.2.4 Application Response
 
-The application MUST return a valid P6SGI response to the server. The format required for this response is determined by examining the `p6w.response.protocol` variable in the environment. This specification defines the response required when this variable is set to "HTTP" or "WebSocket".
+The application MUST return a valid P6SGI response to the server. The format required for this response is determined by examining the `p6w.protocol` variable in the environment. This specification defines the response required when this variable is set to "http" or "ws".
 
-### 2.2.4.0 HTTP Response
-
-A trivial HTTP P6SGI application could be implemented like this:
-
-```perl6
-    sub app(%env) {
-        start {
-            200,
-            [ Content-Type => 'text/plain' ],
-            [ "Hello World" ],
-        };
-    }
-```
-
-An application MUST return a [Promise](http://doc.perl6.org/type/Promise). This Promise MUST be kept with a Capture or something that can be treated as a positional Capture (e.g., a [List](http://doc.perl6.org/type/List) or an [Array](http://doc.perl6.org/type/Array)). It MUST contain 3 positional arguments, which are, respectively, the status code, the list of headers, and the message body. These are each defined as follows:
-
-  * The status code MUST be an [Int](http://doc.perl6.org/type/Int) or object that coerces to an Int. It MUST be a valid HTTP status code.
-
-  * The headers MUST be a [List](http://doc.perl6.org/type/List) of [Pair](http://doc.perl6.org/type/Pair)s naming the headers to the application intends to return. The application MAY return the same header name multiple times.
-
-  * The message body MUST be a [Supply](http://doc.perl6.org/type/Supply) that typically emits [Cool](http://doc.perl6.org/type/Cool) and [Blob](http://doc.perl6.org/type/Blob) and [List](http://doc.perl6.org/type/List) of [Pair](http://doc.perl6.org/type/Pair) and [Associative](http://doc.perl6.org/type/Associative) objects or an object that coerces into such a Supply (e.g., a List or an Array).
-
-For example, here we demonstrate some of the flexibility possible in the application response:
-
-```perl6
-    sub app(%env) {
-        start {
-            my $n = %env<QUERY_STRING>.Int;
-            200,
-            [ Content-Type => 'text/plain' ],
-            supply {
-                my $acc = 1.FatRat;
-                for 1..$n -> $v {
-                    emit $acc *= $v;
-                    emit "\n";
-                }
-                done;
-            },
-        };
-    }
-```
-
-This application will print out all the values of factorial from 1 to N where N is given as the query string. The header is returned immediately, but the lines of the body are returned as the values of factorial are calculated.
-
-The application MUST return this Promise as soon as possible. It is recommended that applications wrap all operations within a `start {}` block to make this automatic.
-
-### 2.2.4.0.1 HTTP Payload and Encoding
-
-The application may emit any object to the returned [Supply](http://doc.perl6.org/type/Supply) to be part of the response payload. It is expected, however, that either these objects will be mapped into the expectations of the application server by middleware or already be in such a form.
-
-The server is expected to process the following emitted objects:
-
-  * [Blob](http://doc.perl6.org/type/Blob). When sending the response payload to the server, the application SHOULD prefer to use Blob objects for the main data payload. This allows the application to fully control the encoding of any text being sent.
-
-  * [List](http://doc.perl6.org/type/List) of [Pair](http://doc.perl6.org/type/Pair)s. Some response payloads may require an additional set of trailing headers. This allows for additional headers to be sent after the payload.
-
-  * [Associative](http://doc.perl6.org/type/Associative). Some web protocols require custom options and messages. These are passed from application to server using Associative objects (usually a [Hash](http://doc.perl6.org/type/Hash)).
-
-  * [Mu](http://doc.perl6.org/type/Mu). Any other Mu may be processed by the server so long as it stringifies, but this puts the server in charge of stringifying and encoding the response. The server is only required to encode the data according to the encoding specified in the `p6w.body.encoding` key of the environment. Application servers and middleware are exhorted to examine the `charset` of the Content-Type header returned by the application, but are not required to do so.
+See section 4 on how different application protocols are handled.
 
 3 Extensions
 ============
@@ -565,6 +438,8 @@ This is not an exhaustive list, but here are a few possible reasons why this Pro
   * The application server has already transmitted `Content-Length`, but the application continued to send bytes after that point.
 
   * The client hungup the connection before it finished sending the response.
+
+  * An application initiated an HTTP/2 push-promise, which the server had begun to fulfill when it received a cancel message from the client.
 
 3.2 Raw Socket
 --------------
@@ -662,37 +537,116 @@ When the server supports and the application requests "chunked" encoding. The ap
 
 All other encodings should be handled as required by the relevant rules for HTTP/1.1.
 
+### 3.10 HTTP/2 Push Promises
+
+When `p6w.protocol` is "http" and the `SERVER_PROTOCOL` is "HTTP/2", servers SHOULD support the HTTP/2 push promises extension. However, applications SHOULD check to make sure that the `p6wx.h2.push-promise` variable is set before using this extension.
+
+This extension is implemented by providing a variable named `p6wx.h2.push-promise`. When provided, this MUST be a [Supplier](http://doc.perl6.org/type/Supplier).
+
+TBD PUSH_PROMISE message structure.
+
+Upon receiving a message to `p6wx.h2.push-promise`, the server SHOULD schedule a followup call to the application to fulfill the push-promise as if the push-promise were an incoming request from the client. (The push-promise could be canceled by the client, so the call to the application might not actually happen.)
+
 4 Protocol Implementation
 =========================
 
-The goal of a P6SGI application server is to allow the application to operate on one of several different web communication protocols without having to deal with all of the mundane of implementing a web server. The reason this requires a standard rather than just an implementation is because we admit at the start that there are many different ways to go about interfacing an application to a server. Some are different ways of communicating, e.g., CGI versus FastCGI versus HTTP. Some are related to implementation and optimization, e.g., a new application server implementation may outperform an older one. Part of the first goal of this specification is to allow application developers to write the application once and allow the application to run on any P6SGI application server with no (or at least very few) changes required.
+The goal of a P6SGI application server is to allow the application to focus on building web applications without having to implement the mundane details of web protocols. In times past, this was simply a matter of implementing HTTP/1.x or some kind of front-end to HTTP/1.x (such as CGI or FastCGI). While HTTP/1.x is still very important to the web today, new protocols have also become important to modern web applications, such as HTTP/2 and WebSocket.
 
-Therefore, what is meant by "Protocol" in this section of the P6SGI standard is the ultimate protocol the application server is communicating. For example, a typical CGI application works according to the Common Gateway Interface specification, but is ultimately communicating via HTTP/1.0 (or at least that's the only applicable standard in the typical case).
+These protocols may have different interfaces. We want to provide a means by which servers and applications may implement these alternate protocols, which each may have different requirements. To facilitate this, P6SGI provides the `p6w.protocol` variable in the environment. The protocol defined here tells the application what the server is providing and how the application is expected to respond.
 
-This section defines the additional per-protocol requirements a P6SGI server SHOULD implement for a given protocol. This section will avoid repeating the requirements given in the RFC for each protocol and focus in on the server's responsibility to the application instead.
+This specification defines two protocols "http" and "ws", which are used for handling HTTP-style request-response protocols and WebSocket-style generic sockets.
 
-4.0 HTTP/1.0
-------------
+4.0 HTTP Protocol
+-----------------
 
-It is generally expected, but not required, that most or all application servers will implement HTTP/1.0. This assumption is so integral to the specification that nearly all the requirements stated in section 2 could be considered the protocol requirements of HTTP/1.0. No additional requirements need to be stated here.
+The "http" protocol should be used for any HTTP-style client-server web protocol, this include HTTP/1.x and HTTP/2 connections over plain text and TLS or SSL.
 
-4.1 HTTP/1.1
-------------
+### 4.0.0 Response
 
-Most application servers will implement some aspects of HTTP/1.1. Again, this assumption is integral enough that most HTTP/1.1 protocol details are already mentioned above in section 2. No additional requirements need to be stated here.
+Here is an example application that implements the "http" protocol:
 
-4.2 HTTP/2
-----------
+```perl6
+    sub app(%env) {
+        start {
+            200,
+            [ Content-Type => 'text/plain' ],
+            Supply.from-list([ "Hello World" ]),
+        };
+    }
+```
 
-Any application server implementing HTTP/2 MUST adhere to the requirements described above with the following additional requirements:
+An application MUST return a [Promise](http://doc.perl6.org/type/Promise). This Promise MUST be kept with a [Capture](http://doc.perl6.org/type/Capture) (or something that becomes one on return). It MUST contain 3 positional elements, which are the status code, the list of ehaders, and the message payload.
 
-  * The `SERVER_PROTOCOL` MUST be set to "HTTP/2".
+  * The status code MUST be an [Int](http://doc.perl6.org/type/Int) or object that coerces to an Int. It MUST be a valid HTTP status code.
 
-  * The environment MUST contain a variable named `p6wx.h2.push-promise`. This MUST be a [Supply](http://doc.perl6.org/type/Supply) that the application MAY use to initiate any `PUSH_PROMISE` frames related to the current response.
+  * The headers MUST be a [List](http://doc.perl6.org/type/List) of [Pair](http://doc.perl6.org/type/Pair)s or an object that when coerced into a List becomes a List of Pairs. These pairs name the headers to return with the response. Header names MAY be repeated.
 
-  * The server MUST decode incoming frames and only deliver the data contained within the frames to the application in the environment with the same semantics applied as if each incoming stream were an HTTP/1.1 request.
+  * The message payload MUST be a *sane* [Supply](http://doc.perl6.org/type/Supply) or an object that coerces into a *sane* Supply.
 
-  * The server MUST encode outgoing data emitted by the application into HTTP/2 frames as appropriate.
+Here is a more interesting example application demonstrating some of the power of this interface:
+
+```perl6
+    sub app(%env) {
+        start {
+            my $n = %env<QUERY_STRING>.Int;
+            200,
+            [ Content-Type => 'text/plain' ],
+            supply {
+                my $acc = 1.FatRat;
+                for 1..$n -> $v {
+                    emit $acc *= $v;
+                    emit "\n";
+                }
+                done;
+            },
+        };
+    }
+```
+
+The example application above will print out all the values of factorial from 1 to N where N is given in the query string. The header is returned immediately, but the lines of the body are returned as the values of factorial are calculated. The asynchronous interface is concise and efficient.
+
+And here is an example demonstrating a couple ways in which coercion can be used by an application:
+
+```perl6
+    sub app(%env) {
+        my enum HttpStatus (OK => 200, NotFound => 404, ServerError => 500);
+        start {
+            OK, [ Content-Type => 'text/plain' ], [ 'Hello World' ]
+        }
+    }
+```
+
+In this example, the status is returned using an enumeration which coerces to an appropriate integer value. The payload is returned as a list, which is automatically coerced into a Supply.
+
+Applications SHOULD return a Promise as soon as possible. It is recommended that applications wrap all operations within a `start {}` block to make this automatic.
+
+Application servers SHOULD NOT assume that the returned [Promise](http://doc.perl6.org/type/Promise) will be kept. It SHOULD assume that the Promise has been vowed and MUST NOT try to keep or break the Promise from the application.
+
+### 4.0.1 Status Code
+
+### 4.0.2 Response Headers
+
+### 4.0.3 Message Payload
+
+Applications MUST return a *sane* [Supply](http://doc.perl6.org/type/Supply) that emits nothing for requests whose response must be empty.
+
+For any other request, the application MAY emit zero or more messages in the returned payload Supply. The messages MUST be handled as follows:
+
+  * [Blob](http://doc.perl6.org/type/Blob). Any Blob emitted by the application SHOULD be treated as binary data to be passed through to the origin.
+
+  * [List](http://doc.perl6.org/type/List) of [Pair](http://doc.perl6.org/type/Pair)s. Some response payloads may contain trailing headers. Any List of Pairs emitted should be treated as trailing headers.
+
+  * [Associative](http://doc.perl6.org/type/Associative). Any Associative object emitted should be treated as a message to communicate between layers of the application, middleware, and server. These should be ignored and passed on by middleware to the next layer unless consumed by the current middleware. Any message that reaches the application server but is not consumed by the application server MAY result in a warning being reported, but SHOULD otherwise be ignored.
+
+  * [Mu](http://doc.perl6.org/type/Mu). Any other Mu SHOULD be stringified, if possible, and encoded by the application server. If an object given cannot be stringified, the server SHOULD report a warning.
+
+### 4.0.4 Encoding
+
+The application server SHOULD handle encoding of strings or stringified objects emitted to it. When performing encoding, the application server SHOULD honor the `charset` set within the `Content-Type` header, if given. If it does not honor the `charset`, it MUST encode any strings in the response payload according to the encoding named in `p6w.body.encoding`.
+
+### 4.0.5 HTTP/2 Handling
+
+When a server supports HTTP/2 it SHOULD implement the HTTP/2 Push Promise Extension defined in section 3.10. An application server MAY want to consider implementing HTTP/2 protocol upgrades using the extension described in section 3.8.
 
 ### 4.3 WebSocket
 
@@ -718,13 +672,13 @@ Changes
 
   * Eliminating the requirement that things emitted in the response payload be [Cool](http://doc.perl6.org/type/Cool) if they are to be stringified and encoded. Any stringifiable [Mu](http://doc.perl6.org/type/Mu) is permitted.
 
-  * Adding `p6w.response.protocol` to handle server-to-application notification of the required response protocol.
+  * Adding `p6w.protocol` to handle server-to-application notification of the required response protocol.
 
   * Breaking sections 2.0.4, 2.1.4, and 2.2.4 up to discuss the difference between the HTTP and WebSocket protocol response requirements.
 
   * Moving 2.0.5, 2.1.5, and 2.2.5 under 2.*.4 because of the protocol changes made in 2.*.4.
 
-  * Changed `p62x.protocol.upgrade` from an [Array](http://doc.perl6.org/type/Array) to a [Set](http://doc.perl6.org/type/Set) of supported protocol names.
+  * Changed `p6wx.protocol.upgrade` from an [Array](http://doc.perl6.org/type/Array) to a [Set](http://doc.perl6.org/type/Set) of supported protocol names.
 
 0.6.Draft
 ---------
