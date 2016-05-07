@@ -466,12 +466,12 @@ The `p6wx.session` environment variable, if provided, MUST be an [Associative](h
 
 The `p6wx.session.options` environment variable, if provided, MUST be an [Associative](http://doc.perl6.org/type/Associative) mapping implementation-specific keys and values. This allows the application a channel by which to instruct the session handler how to operate.
 
-3.5 Harikiri Mode
+3.5 Harakiri Mode
 -----------------
 
-The `p6wx.harikiri` environment variable, if provided, MUST be a [Bool](http://doc.perl6.org/type/Bool). If set to `True` it signals to the application that the server supports harikiri mode, which allows the application to ask the server to terminate the current work when the request is complete.
+The `p6wx.harakiri` environment variable, if provided, MUST be a [Bool](http://doc.perl6.org/type/Bool). If set to `True` it signals to the application that the server supports harakiri mode, which allows the application to ask the server to terminate the current work when the request is complete.
 
-The `p6wx.harikiri.commit` environment variable MAY be set by the application to signal to the server that the current worker should be killed after the current request has been processed.
+The `p6wx.harakiri.commit` environment variable MAY be set by the application to signal to the server that the current worker should be killed after the current request has been processed.
 
 3.6 Cleanup Handlers
 --------------------
@@ -480,7 +480,7 @@ The `p6wx.cleanup` environment variable, if provided, MUST be a [Bool](http://do
 
 The `p6wx.cleanup.handlers` environment variable MUST be provided if the `p6wx.cleanup` flag is set. This MUST an [Array](http://doc.perl6.org/type/Array). The application adds cleanup handlers to the array by putting [Callable](http://doc.perl6.org/type/Callable)s into the Array (usually by `push`ing). Each handler will be given a copy of the `%env` as the first argument. The server MUST run these handlers, but only after the application has completely finished returning the response and any response payload.
 
-If the server supports harikiri mode, it SHOULD allow the cleanup handlers to invoke harikiri mode if they set `p6wx.hariki.commit` (see 3.5).
+If the server supports harakiri mode, it SHOULD allow the cleanup handlers to invoke harakiri mode if they set `p6wx.harakiri.commit` (see 3.5).
 
 3.7 Output Block Detection
 --------------------------
@@ -648,7 +648,16 @@ The application server SHOULD handle encoding of strings or stringified objects 
 
 When a server supports HTTP/2 it SHOULD implement the HTTP/2 Push Promise Extension defined in section 3.10. An application server MAY want to consider implementing HTTP/2 protocol upgrades using the extension described in section 3.8.
 
-### 4.3 WebSocket
+4.1 WebSocket
+-------------
+
+The "ws" protocol is appropriate for WebSocket-style peer-to-peer TCP connections.
+
+### 4.1.0 Response
+
+The 
+
+When `p6w.protocol` is "ws" the 
 
 Any application server implementing WebSocket MUST adhere to all the requirements described above with the following modifications:
 
