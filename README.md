@@ -150,12 +150,12 @@ The environment MUST be an [Associative](http://doc.perl6.org/type/Associative).
   <tr>
     <td><code>CONTENT_LENGTH</code></td>
     <td><code>Int:_</code></td>
-    <td>This corresponds to the Content-Length header sent by the client. If no such header was sent the application server SHOULD set this key to the <a href="Int">http://doc.perl6.org/type/Int</a> type value.</td>
+    <td>This corresponds to the Content-Length header sent by the client. If no such header was sent the application server SHOULD set this key to the <a href="http://doc.perl6.org/type/Int"> type value.</td>
   </tr>
   <tr>
     <td><code>CONTENT_TYPE</code></td>
     <td><code>Str:_</code></td>
-    <td>This corresponds to the Content-Type header sent by the client. If no such header was sent the application server SHOULD set this key to the <a href="Str">http://doc.perl6.org/type/Str</a> type value.</td>
+    <td>This corresponds to the Content-Type header sent by the client. If no such header was sent the application server SHOULD set this key to the <a href="http://doc.perl6.org/type/Str"> type value.</td>
   </tr>
   <tr>
     <td><code>HTTP_*</code></td>
@@ -210,7 +210,7 @@ The environment MUST be an [Associative](http://doc.perl6.org/type/Associative).
   <tr>
     <td><code>p6w.protocol</code></td>
     <td><code>Set:D</code></td>
-    <td>This is a <a href="Set">http://doc.perl6.org/type/Set</a> containing the names of response protocols the server is able to process from the applicaiton. This specification defines "http" and "ws" protocols.</td>
+    <td>This is a <a href="http://doc.perl6.org/type/Set"> containing the names of response protocols the server is able to process from the applicaiton. This specification defines "http" and "ws" protocols.</td>
   </tr>
   <tr>
     <td><code>p6w.body.encoding</code></td>
