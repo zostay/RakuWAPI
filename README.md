@@ -715,6 +715,8 @@ Changes
 
   * Changed `p6wx.protocol.upgrade` from an [Array](http://doc.perl6.org/type/Array) to a [Set](http://doc.perl6.org/type/Set) of supported protocol names.
 
+  * Added Section 4 to describe protocol-specific features of the specification.
+
 0.6.Draft
 ---------
 

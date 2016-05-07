@@ -659,6 +659,8 @@ The application server SHOULD handle encoding of strings or stringified objects 
 
 =item Changed C<p6wx.protocol.upgrade> from an L<Array> to a L<Set> of supported protocol names.
 
+=item Added Section 4 to describe protocol-specific features of the specification.
+
 =head2 0.6.Draft
 
 =item Added Protocol-specific details and modifications to the standard HTTP/1.x environment.
