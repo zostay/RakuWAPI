@@ -69,7 +69,7 @@ for $*ARGFILES.lines -> $_ is copy {
 
     .=subst(/
         'L&lt;' ( <[ \w : ]>+ ) '&gt;'
-    /, { qq|<a href=\"{url($0)}\">$0</a>| }, :g);
+    /, { qq|<a href=\"{url($0)}\">{$0}</a>| }, :g);
 
     # Find links [word](word) and make them [word](http://doc.perl6.org/type/word)
     .=subst(/
