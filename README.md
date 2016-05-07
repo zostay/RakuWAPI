@@ -245,10 +245,6 @@ The application server supplies a [Set](http://doc.perl6.org/type/Set) of string
 
 The way the server handles these two protocols responses is defined in section 4.0.
 
-#### 2.0.4.1 WebSocket Response
-
-TBD
-
 ### 2.0.5 Application Lifecycle
 
 A P6SGI application server processes requests from an origin, passes the processed request information to the application, waits for the application's response, and then returns the response to the origin. In the simplest example this means handling an HTTP roundtrip. It may also mean implementing a related protocol like CGI or FastCGI or SCGI or something else entirely.
@@ -655,17 +651,47 @@ The "ws" protocol is appropriate for WebSocket-style peer-to-peer TCP connection
 
 ### 4.1.0 Response
 
-The 
+Any application server implementing WebSocket MUST adhere to all the requirements described above with the following modifications when calling the application for a WebSocket:
 
-When `p6w.protocol` is "ws" the 
+  * The `REQUEST_METHOD` MUST be set to the HTTP method used when the WebSocket connection was negotiated, i.e., usually "GET". Similarly, `SCRIPT_NAME`, `PATH_INFO`, `REQUEST_URI`, `QUERY_STRING`, `SERVER_NAME`, `SERVER_PORT`, `CONTENT_TYPE`, and `HTTP_*` variables in the environment MUST be set to the values from the original upgrade request sent from the origin.
 
-Any application server implementing WebSocket MUST adhere to all the requirements described above with the following modifications:
+  * The `SERVER_PROTOCOL` MUST be set to "WebSocket/13" or a similar string representing the version of WebSocket is in use.
 
-  * The `SERVER_PROTOCOL` MUST be set to "WebSocket/13".
+  * The `CONTENT_LENGTH` SHOULD be set to an undefined [Int](http://doc.perl6.org/type/Int).
 
-  * The server MUST decode frames received from the client and emit them each to `p6wx.input`. The frames MUST NOT be buffered or concatenated.
+  * The `p6w.url-scheme` MUST be set to "ws" for plain text WebSocket connections or "wss" for encrypted WebSocket connections.
+
+  * The `p6w.protocol` MUST be set to "ws".
+
+  * The server MUST decode frames received from the client and emit each of them to `p6wx.input`. The frames MUST NOT be buffered or concatenated.
+
+  * The server's supplied `p6wx.input` [Supply](http://doc.perl6.org/type/Supply) must be *sane*. The server SHOULD signal `done` through the Supply when the client closes the WebSocket connection normally and `quit` on abnormal termination of the connection.
 
   * The server MUST encode frames emitted by the application in the message payload as data frames sent to the client. The frames MUST be separated out as emitted by the application without any buffering or concatenation.
+
+The application MUST return a [Promise](http://doc.perl6.org/type/Promise) that is kept with a [Supply](http://doc.perl6.org/type/Supply). The application MAY break this Promise. The application will emit frames to send back to the origin using the promised Supply.
+
+### 4.1.1 Status Code
+
+Status codes are not applicable to WebSocket responses.
+
+### 4.1.2 Response Headers
+
+Response headers are not applicable to WebSocket responses.
+
+### 4.1.3 Message Payload
+
+Applications MUST return a *sane* [Supply](http://doc.perl6.org/type/Supply) that emits an object for every frame it wishes to return to the origin. The application MAY emit zero or more messages to this supply. The application MAY emit `done` to signal that the connection should be terminated with the client.
+
+The messages MUST be framed and returned to the origin by the application server as follows, based on message type:
+
+  * [Blob](http://doc.perl6.org/type/Blob). Any Blob emitted by the application SHOULD be treated as binary data, framed exacctly as is, and returned to the client.
+
+  * [Mu](http://doc.perl6.org/type/Mu). Any other Mu SHOULD be stringified, if possible, and encoded by the application server. If an object given cannot be stringified, the server SHOULD report a warning.
+
+### 4.1.4 Encoding
+
+The application server SHOULD handle encoding of strings or stringified objects emitted to it. The server MUST encode any strings in the message payload according to the encoding named in `p6w.body.encoding`>
 
 Changes
 =======

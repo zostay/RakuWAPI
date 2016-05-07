@@ -225,10 +225,6 @@ The application server supplies a L<Set> of strings to the applicaiton in C<p6w.
 
 The way the server handles these two protocols responses is defined in section 4.0.
 
-=head4 2.0.4.1 WebSocket Response
-
-TBD
-
 =head3 2.0.5 Application Lifecycle
 
 A P6SGI application server processes requests from an origin, passes the processed request information to the application, waits for the application's response, and then returns the response to the origin. In the simplest example this means handling an HTTP roundtrip. It may also mean implementing a related protocol like CGI or FastCGI or SCGI or something else entirely.
@@ -595,15 +591,53 @@ The application server SHOULD handle encoding of strings or stringified objects 
 
 When a server supports HTTP/2 it SHOULD implement the HTTP/2 Push Promise Extension defined in section 3.10. An application server MAY want to consider implementing HTTP/2 protocol upgrades using the extension described in section 3.8.
 
-=head3 4.3 WebSocket
+=head2 4.1 WebSocket
 
-Any application server implementing WebSocket MUST adhere to all the requirements described above with the following modifications:
+The "ws" protocol is appropriate for WebSocket-style peer-to-peer TCP connections.
 
-=item The C<SERVER_PROTOCOL> MUST be set to "WebSocket/13".
+=head3 4.1.0 Response
 
-=item The server MUST decode frames received from the client and emit them each to C<p6wx.input>. The frames MUST NOT be buffered or concatenated.
+Any application server implementing WebSocket MUST adhere to all the requirements described above with the following modifications when calling the application for a WebSocket:
+
+=item The C<REQUEST_METHOD> MUST be set to the HTTP method used when the WebSocket connection was negotiated, i.e., usually "GET". Similarly, C<SCRIPT_NAME>, C<PATH_INFO>, C<REQUEST_URI>, C<QUERY_STRING>, C<SERVER_NAME>, C<SERVER_PORT>, C<CONTENT_TYPE>, and C<HTTP_*> variables in the environment MUST be set to the values from the original upgrade request sent from the origin.
+
+=item The C<SERVER_PROTOCOL> MUST be set to "WebSocket/13" or a similar string representing the version of WebSocket is in use.
+
+=item The C<CONTENT_LENGTH> SHOULD be set to an undefined L<Int>.
+
+=item The C<p6w.url-scheme> MUST be set to "ws" for plain text WebSocket connections or "wss" for encrypted WebSocket connections.
+
+=item The C<p6w.protocol> MUST be set to "ws".
+
+=item The server MUST decode frames received from the client and emit each of them to C<p6wx.input>. The frames MUST NOT be buffered or concatenated.
+
+=item The server's supplied C<p6wx.input> L<Supply> must be I<sane>. The server SHOULD signal C<done> through the Supply when the client closes the WebSocket connection normally and C<quit> on abnormal termination of the connection.
 
 =item The server MUST encode frames emitted by the application in the message payload as data frames sent to the client. The frames MUST be separated out as emitted by the application without any buffering or concatenation.
+
+The application MUST return a L<Promise> that is kept with a L<Supply>. The application MAY break this Promise. The application will emit frames to send back to the origin using the promised Supply.
+
+=head3 4.1.1 Status Code
+
+Status codes are not applicable to WebSocket responses.
+
+=head3 4.1.2 Response Headers
+
+Response headers are not applicable to WebSocket responses.
+
+=head3 4.1.3 Message Payload
+
+Applications MUST return a I<sane> L<Supply> that emits an object for every frame it wishes to return to the origin. The application MAY emit zero or more messages to this supply. The application MAY emit C<done> to signal that the connection should be terminated with the client.
+
+The messages MUST be framed and returned to the origin by the application server as follows, based on message type:
+
+=item L<Blob>. Any Blob emitted by the application SHOULD be treated as binary data, framed exacctly as is, and returned to the client.
+
+=item L<Mu>. Any other Mu SHOULD be stringified, if possible, and encoded by the application server. If an object given cannot be stringified, the server SHOULD report a warning.
+
+=head3 4.1.4 Encoding
+
+The application server SHOULD handle encoding of strings or stringified objects emitted to it. The server MUST encode any strings in the message payload according to the encoding named in C<p6w.body.encoding>>
 
 =head1 Changes
 
