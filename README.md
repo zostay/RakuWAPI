@@ -539,7 +539,9 @@ When `p6w.protocol` is "http" and the `SERVER_PROTOCOL` is "HTTP/2", servers SHO
 
 This extension is implemented by providing a variable named `p6wx.h2.push-promise`. When provided, this MUST be a [Supplier](http://doc.perl6.org/type/Supplier).
 
-TBD PUSH_PROMISE message structure.
+When the application wishes to invoke a server push, it MUST emit a message describing the request the server is pushing. The application server will receive this request and make a new, separate call to the application to fulfill that request.
+
+Push-promise messages are sent as an [Array](http://doc.perl6.org/type/Array) of [Pair](http://doc.perl6.org/type/Pair)s. This is a set of headers to send with the PUSH_PROMISE frame, including HTTP/2 pseudo-headers like ":path" and ":authority".
 
 Upon receiving a message to `p6wx.h2.push-promise`, the server SHOULD schedule a followup call to the application to fulfill the push-promise as if the push-promise were an incoming request from the client. (The push-promise could be canceled by the client, so the call to the application might not actually happen.)
 
@@ -618,11 +620,7 @@ Applications SHOULD return a Promise as soon as possible. It is recommended that
 
 Application servers SHOULD NOT assume that the returned [Promise](http://doc.perl6.org/type/Promise) will be kept. It SHOULD assume that the Promise has been vowed and MUST NOT try to keep or break the Promise from the application.
 
-### 4.0.1 Status Code
-
-### 4.0.2 Response Headers
-
-### 4.0.3 Message Payload
+### 4.0.1 Message Payload
 
 Applications MUST return a *sane* [Supply](http://doc.perl6.org/type/Supply) that emits nothing for requests whose response must be empty.
 
@@ -636,11 +634,11 @@ For any other request, the application MAY emit zero or more messages in the ret
 
   * [Mu](http://doc.perl6.org/type/Mu). Any other Mu SHOULD be stringified, if possible, and encoded by the application server. If an object given cannot be stringified, the server SHOULD report a warning.
 
-### 4.0.4 Encoding
+### 4.0.2 Encoding
 
 The application server SHOULD handle encoding of strings or stringified objects emitted to it. When performing encoding, the application server SHOULD honor the `charset` set within the `Content-Type` header, if given. If it does not honor the `charset`, it MUST encode any strings in the response payload according to the encoding named in `p6w.body.encoding`.
 
-### 4.0.5 HTTP/2 Handling
+### 4.0.3 HTTP/2 Handling
 
 When a server supports HTTP/2 it SHOULD implement the HTTP/2 Push Promise Extension defined in section 3.10. An application server MAY want to consider implementing HTTP/2 protocol upgrades using the extension described in section 3.8.
 
@@ -671,15 +669,7 @@ Any application server implementing WebSocket MUST adhere to all the requirement
 
 The application MUST return a [Promise](http://doc.perl6.org/type/Promise) that is kept with a [Supply](http://doc.perl6.org/type/Supply). The application MAY break this Promise. The application will emit frames to send back to the origin using the promised Supply.
 
-### 4.1.1 Status Code
-
-Status codes are not applicable to WebSocket responses.
-
-### 4.1.2 Response Headers
-
-Response headers are not applicable to WebSocket responses.
-
-### 4.1.3 Message Payload
+### 4.1.1 Message Payload
 
 Applications MUST return a *sane* [Supply](http://doc.perl6.org/type/Supply) that emits an object for every frame it wishes to return to the origin. The application MAY emit zero or more messages to this supply. The application MAY emit `done` to signal that the connection should be terminated with the client.
 
@@ -689,9 +679,9 @@ The messages MUST be framed and returned to the origin by the application server
 
   * [Mu](http://doc.perl6.org/type/Mu). Any other Mu SHOULD be stringified, if possible, and encoded by the application server. If an object given cannot be stringified, the server SHOULD report a warning.
 
-### 4.1.4 Encoding
+### 4.1.2 Encoding
 
-The application server SHOULD handle encoding of strings or stringified objects emitted to it. The server MUST encode any strings in the message payload according to the encoding named in `p6w.body.encoding`>
+The application server SHOULD handle encoding of strings or stringified objects emitted to it. The server MUST encode any strings in the message payload according to the encoding named in `p6w.body.encoding`.
 
 Changes
 =======
