@@ -46,9 +46,9 @@ for $*ARGFILES.lines -> $_ is copy {
     }
 
     # Fixup unprocessed C<<>> and C<> tags
-    .=subst(/ 
-          "C&lt;&lt;" ( [ <-[ & ]> | "&" <!before "gt;&gt;" > ]+ ) "&gt;&gt;" 
-        | "C&lt;" ( [ <-[ & ]> | "&" <!before "gt;" > ]+ ) "&gt;" 
+    .=subst(/
+          "C&lt;&lt;" ( [ <-[ & ]> | "&" <!before "gt;&gt;" > ]+ ) "&gt;&gt;"
+        | "C&lt;" ( [ <-[ & ]> | "&" <!before "gt;" > ]+ ) "&gt;"
     /, { "<code>{($0 // $1).trim}</code>" }, :g);
 
     # Fixup unprocessed links
@@ -67,10 +67,14 @@ for $*ARGFILES.lines -> $_ is copy {
         }
     }
 
+    .=subst(/
+        'L&lt;' ( <[ \w : ]>+ ) '&gt;'
+    /, { qq|<a href=\"$0\">{url($0)}</a>| }, :g);
+
     # Find links [word](word) and make them [word](http://doc.perl6.org/type/word)
     .=subst(/
         '[' ( \w+ ) '](' $0 ')'
     /, { "[$0]({url($0)})" }, :g);
-         
+
     .say;
 }
