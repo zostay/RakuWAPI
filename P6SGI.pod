@@ -188,11 +188,11 @@ The environment MUST be an L<Associative>. The keys of this map are mostly deriv
                              |                                        | life of the process. This is not a
                              |                                        | guarantee.
 
-    C<p6w.protocol>          | C<< Set:D >>                           | This is a L<Set> containing the names
-                             |                                        | of response protocols the server is 
-                             |                                        | able to process from the application. 
-                             |                                        | This specification defines "http" and 
-                             |                                        | "ws" protocols.
+    C<p6w.protocol>          | C<< Str:D >>                           | This is a string naming the
+                             |                                        | response protocols the server is 
+                             |                                        | expecting from the application for 
+                             |                                        | call. This specification defines
+                             |                                        | "http", "ws", and "socket" protocols.
 
     C<p6w.body.encoding>     | C<< Str:D >>                           | Name of the encoding the server will
                              |                                        | use for any strings it is sent.
@@ -221,7 +221,7 @@ The error stream MUST be given in the environment via C<p6w.errors>. This MUST b
 
 =head3 2.0.4 Application Response
 
-The application server supplies a L<Set> of strings to the application in C<p6w.protocol> that specifies the way in which the application server expects the application to response. This specification defines the following response protocols: "http" and "ws". Application servers SHOULD support both of these protocols when appropriate for the C<SERVER_PROTOCOL>.
+The application server supplies a L<Set> of strings to the application in C<p6w.protocol> that specifies the way in which the application server expects the application to response. This specification defines the following response protocols: "http", "ws", and "socket". Application servers SHOULD support both of these protocols when appropriate for the C<SERVER_PROTOCOL>.
 
 The way the server handles these two protocols responses is defined in section 4.0.
 
@@ -370,7 +370,7 @@ The application server is required to provide a C<p6w.errors> variable in the en
 
 =head3 2.2.4 Application Response
 
-The application MUST return a valid P6SGI response to the server. The format required for this response is determined by examining the C<p6w.protocol> variable in the environment. This specification defines the response required when this variable is set to "http" or "ws".
+The application MUST return a valid P6SGI response to the server. The format required for this response is determined by examining the C<p6w.protocol> variable in the environment. This specification defines the response required when this variable is set to "http" or "ws" or "socket".
 
 See section 4 on how different application protocols are handled.
 
@@ -462,7 +462,7 @@ The workings of HTTP/2 are similar enough to HTTP/1.0 and HTTP/1.1 that use of a
 
 Servers that support this protocol upgrade MUST place the name "h2c" and/or "h2" into the C<p6wx.protocol.upgrade> set, for support of HTTP/2 over cleartext connections and HTTP/2 over TLS, respectively.
 
-The application MUST NOT tap the C<p6wx.input> stream when performing this upgrade. The application SHOULD NOT return a message payload aside from an empty L<Supply>.
+The application MUST NOT tap the C<p6w.input> stream when performing this upgrade. The application SHOULD NOT return a message payload aside from an empty L<Supply>.
 
 Once upgraded the application server MUST adhere to all the requirements for HTTP/2 as described in section 4.2. The application will be called again once a web request is received on the upgraded connection and is ready for processing.
 
@@ -470,7 +470,7 @@ Once upgraded the application server MUST adhere to all the requirements for HTT
 
 Servers that support the WebSocket protocol upgrade MUST place the name "websocket" into the C<p6wx.protocol.upgrade> set.
 
-The application MUST NOT tap the C<p6wx.input> stream when performing this upgrade. The application SHOULD NOT return a message payload aside from an empty L<Supply>.
+The application MUST NOT tap the C<p6w.input> stream when performing this upgrade. The application SHOULD NOT return a message payload aside from an empty L<Supply>.
 
 Once upgraded the application server MUST adhere to all the requirements for WebSocket as described in section 2.0.4.1. The application will be called again immediately after the upgrade is complete to allow it to begin sending and receiving frames.
 
@@ -506,7 +506,13 @@ The goal of a P6SGI application server is to allow the application to focus on b
 
 These protocols may have different interfaces. We want to provide a means by which servers and applications may implement these alternate protocols, which each may have different requirements. To facilitate this, P6SGI provides the C<p6w.protocol> variable in the environment. The protocol defined here tells the application what the server is providing and how the application is expected to respond.
 
-This specification defines two protocols "http" and "ws", which are used for handling HTTP-style request-response protocols and WebSocket-style generic sockets.
+This specification defines the following protocols:
+
+=item B<http> for HTTP-style request-response protocols
+
+=item B<ws> for WebSocket-style generic socket protocols
+
+=item B<socket> for raw, plain socket protocols
 
 =head2 4.0 HTTP Protocol
 
@@ -607,9 +613,9 @@ Any application server implementing WebSocket MUST adhere to all the requirement
 
 =item The C<p6w.protocol> MUST be set to "ws".
 
-=item The server MUST decode frames received from the client and emit each of them to C<p6wx.input>. The frames MUST NOT be buffered or concatenated.
+=item The server MUST decode frames received from the client and emit each of them to C<p6w.input>. The frames MUST NOT be buffered or concatenated.
 
-=item The server's supplied C<p6wx.input> L<Supply> must be I<sane>. The server SHOULD signal C<done> through the Supply when the client closes the WebSocket connection normally and C<quit> on abnormal termination of the connection.
+=item The server's supplied C<p6w.input> L<Supply> must be I<sane>. The server SHOULD signal C<done> through the Supply when the client closes the WebSocket connection normally and C<quit> on abnormal termination of the connection.
 
 =item The server MUST encode frames emitted by the application in the message payload as data frames sent to the client. The frames MUST be separated out as emitted by the application without any buffering or concatenation.
 
@@ -628,6 +634,78 @@ The messages MUST be framed and returned to the origin by the application server
 =head3 4.1.2 Encoding
 
 The application server SHOULD handle encoding of strings or stringified objects emitted to it. The server MUST encode any strings in the message payload according to the encoding named in C<p6w.body.encoding>.
+
+=head2 4.2 Socket Protocol
+
+The "socket" protocol can be provided by any application server wishing to allow the application to basically take over any socket connection. This should generally replace the need for a separate raw I/O socket extension.
+
+The socket provided sends and receives data directly to and from the application without any framing, buffering, or modification. 
+
+=head2 4.2.0 Response
+
+Here's an example application that implements the "socket" protocol to create a fairly naïve HTTP server:
+
+    sub app(%env) {
+        start {
+            supply {
+                whenever %env<p6w.input> -> $msg {
+                    my $req = parse-http-request($msg);
+
+                    if $req.method eq 'GET' {
+                        emit "200 OK HTTP/1.0\r\n";
+                        emit "\r\n";
+                        emit "Custom HTTP Server";
+                    }
+                }
+            };
+        }
+    }
+
+The socket protocol behaves very much like "ws", but with fewer specified details in the environment. Some of the mandatory environment are not mandatory for the socket protocol.
+
+The following parts of the environment SHOULD be provided as undefined values:
+
+=item REQUEST_METHOD
+
+=item SCRIPT_NAME
+
+=item PATH_INFO
+
+=item REQUEST_URI
+
+=item QUERY_STRING
+
+=item SERVER_NAME
+
+=item SERVER_PORT
+
+=item CONTENT_TYPE
+
+=item HTTP_*
+
+=item p6w.url-scheme
+
+=item p6w.ready
+
+=item p6w.body.encoding
+
+=item SERVER_PROTOCOL
+
+The C<p6w.protocol> must be set to "socket".
+
+The application server MUST provide data sent by the origin to the application through the C<p6w.input> supply as it arrives.
+
+The application server MUST forward on data emitted by the application in the returned payload supply as it arrives. The application server MUST send no other data to the origin over that socket once the application is handed control. The application server MUST close the connection with the origin when the application server sends the "done" message to the supply.
+
+The application server MAY tunnel the connection through another socket, stream, file handle, or what-not. That is, the application MAY NOT assume the communication is being performed over any particular medium. The application server SHOULD transmit the data to the origin as faithfully as possible, keeping the intent of the application as much as possible.
+
+=head3 4.1.1 Message Payload
+
+Applications MUST return a I<sane> L<Supply> which emits a string of bytes for every message to be sent. The messages returned on this stream MUST be L<Blob> objects. 
+
+=head3 4.1.2 Encoding
+
+The application server SHOULD reject any object other than a L<Blob> sent as part of the message payload. The application server is not expected to perform any encoding or stringification of messages.
 
 =head1 Changes
 
@@ -649,7 +727,7 @@ The application server SHOULD handle encoding of strings or stringified objects 
 
 =item Changed C<p6wx.protocol.upgrade> from an L<Array> to a L<Set> of supported protocol names.
 
-=item Added Section 4 to describe protocol-specific features of the specification.
+=item Added Section 4 to describe protocol-specific features of the specification. Section 4.0 is for HTTP, 4.1 is for WebSocket, and 4.2 is for Socket.
 
 =head2 0.6.Draft
 
