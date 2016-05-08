@@ -190,7 +190,7 @@ The environment MUST be an L<Associative>. The keys of this map are mostly deriv
 
     C<p6w.protocol>          | C<< Set:D >>                           | This is a L<Set> containing the names
                              |                                        | of response protocols the server is 
-                             |                                        | able to process from the applicaiton. 
+                             |                                        | able to process from the application. 
                              |                                        | This specification defines "http" and 
                              |                                        | "ws" protocols.
 
@@ -221,7 +221,7 @@ The error stream MUST be given in the environment via C<p6w.errors>. This MUST b
 
 =head3 2.0.4 Application Response
 
-The application server supplies a L<Set> of strings to the applicaiton in C<p6w.protocol> that specifies the way in which the application server expects the application to response. This specification defines the following response protocols: "http" and "ws". Application servers SHOULD support both of these protocols when appropriate for the C<SERVER_PROTOCOL>.
+The application server supplies a L<Set> of strings to the application in C<p6w.protocol> that specifies the way in which the application server expects the application to response. This specification defines the following response protocols: "http" and "ws". Application servers SHOULD support both of these protocols when appropriate for the C<SERVER_PROTOCOL>.
 
 The way the server handles these two protocols responses is defined in section 4.0.
 
@@ -366,7 +366,7 @@ During a POST, PUT, or other operation, the client may send along a request payl
 
 =head3 2.2.3 The Error Stream
 
-The application server is required to provide a C<p6w.errors> variable in the environment with a L<Supplier> object. The application MAY emit any errors or messages here using any object that stringifies. The application SHOULD NOT terminate such messages with a newline as the server will do so if necessary. The applicaiton SHOULD NOT call C<done> or C<quit> on this object.
+The application server is required to provide a C<p6w.errors> variable in the environment with a L<Supplier> object. The application MAY emit any errors or messages here using any object that stringifies. The application SHOULD NOT terminate such messages with a newline as the server will do so if necessary. The application SHOULD NOT call C<done> or C<quit> on this object.
 
 =head3 2.2.4 Application Response
 

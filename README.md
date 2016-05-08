@@ -210,7 +210,7 @@ The environment MUST be an [Associative](http://doc.perl6.org/type/Associative).
   <tr>
     <td><code>p6w.protocol</code></td>
     <td><code>Set:D</code></td>
-    <td>This is a <a href="http://doc.perl6.org/type/Set">Set</a> containing the names of response protocols the server is able to process from the applicaiton. This specification defines "http" and "ws" protocols.</td>
+    <td>This is a <a href="http://doc.perl6.org/type/Set">Set</a> containing the names of response protocols the server is able to process from the application. This specification defines "http" and "ws" protocols.</td>
   </tr>
   <tr>
     <td><code>p6w.body.encoding</code></td>
@@ -241,7 +241,7 @@ The error stream MUST be given in the environment via `p6w.errors`. This MUST be
 
 ### 2.0.4 Application Response
 
-The application server supplies a [Set](http://doc.perl6.org/type/Set) of strings to the applicaiton in `p6w.protocol` that specifies the way in which the application server expects the application to response. This specification defines the following response protocols: "http" and "ws". Application servers SHOULD support both of these protocols when appropriate for the `SERVER_PROTOCOL`.
+The application server supplies a [Set](http://doc.perl6.org/type/Set) of strings to the application in `p6w.protocol` that specifies the way in which the application server expects the application to response. This specification defines the following response protocols: "http" and "ws". Application servers SHOULD support both of these protocols when appropriate for the `SERVER_PROTOCOL`.
 
 The way the server handles these two protocols responses is defined in section 4.0.
 
@@ -398,7 +398,7 @@ During a POST, PUT, or other operation, the client may send along a request payl
 
 ### 2.2.3 The Error Stream
 
-The application server is required to provide a `p6w.errors` variable in the environment with a [Supplier](http://doc.perl6.org/type/Supplier) object. The application MAY emit any errors or messages here using any object that stringifies. The application SHOULD NOT terminate such messages with a newline as the server will do so if necessary. The applicaiton SHOULD NOT call `done` or `quit` on this object.
+The application server is required to provide a `p6w.errors` variable in the environment with a [Supplier](http://doc.perl6.org/type/Supplier) object. The application MAY emit any errors or messages here using any object that stringifies. The application SHOULD NOT terminate such messages with a newline as the server will do so if necessary. The application SHOULD NOT call `done` or `quit` on this object.
 
 ### 2.2.4 Application Response
 
