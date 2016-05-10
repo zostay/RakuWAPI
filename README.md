@@ -770,6 +770,33 @@ The application server SHOULD reject any object other than a [Blob](http://doc.p
 
 For applications that need more control over their environment, the P6SGI specification provides a mechanism for advanced configuration. This mechanism gives the application additional and extensible control over its lifecycle and a means to communicate with the application server earlier in the process.
 
+For example, here is an application returning an advanced configuration object:
+
+```perl6
+    use v6;
+    class :: is MyApp {
+        method setup-app(%env) {
+            if %env<p6w.version> < v1 {
+                die "This application requires an v0.7.Draft or better appserver.";
+            }
+
+            self.connect-db;
+        }
+
+        method provide-app(%env) {
+            given %env<p6w.protocol> {
+                when 'http' { &.http-app }
+                when 'ws'   { &.ws-app }
+                default     { die "unsupported appserver protocol" }
+            }
+        }
+
+        method teardown-app(%env) {
+            self.disconnect-db;
+        }
+    }
+```
+
 5.0 Configuration Object
 ------------------------
 
