@@ -779,7 +779,7 @@ The application server MUST be able to accept applications defined using an obje
 
   * If the application object provides a `to-app` method, the application server MUST call that method prior to needing an application routine. It will pass no arguments to that call. The object returned will be used as the application routine. The application MUST return a Callable to be used to handle requests to the application.
 
-  * If the application object provides a `provide-app` method, the application server MUST call that method prior to every call to the application routine. It will pass a single argument: the application environment to the method. The return value will be used as the application routine to use for only that request. The application MUST return a Callable to be used to handle that request to the application.
+  * If the application object provides a `provide-app` method, the application server MUST call that method prior to every call to the application routine. It will pass a single argument: the request environment (i.e., the full request environment, not the more limited application environment) to the method. The return value will be used as the application routine to use for only that request. The application MUST return a Callable to be used to handle that request to the application.
 
   * If the application object provides a `teardown-app` method, the application server MUST call that method as late as possible. It MUST be called after the very last call to the applicaiton routine, and after all calls to `setup-app`, `to-app`, and `provide-app`. The application server MUST call it with a single argument: the application environment.
 
@@ -788,7 +788,7 @@ The calls made by the application server to these four methods MUST be made sync
 5.1 Application Environment
 ---------------------------
 
-The application environment differs from the request environment described in 2.0.1, 2.1.1, and 2.2.1 in that it only includes the global values. The application environment passed to `setup-app`, `teardown-app`, and `provide-app` MUST include at least the following keys and the corresponding values defined in 2.0.1:
+The application environment differs from the request environment described in 2.0.1, 2.1.1, and 2.2.1 in that it only includes the global values. The application environment passed to `setup-app` and `teardown-app` MUST include at least the following keys and the corresponding values defined in 2.0.1:
 
   * p6w.version
 
