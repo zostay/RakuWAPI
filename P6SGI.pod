@@ -87,7 +87,7 @@ It SHOULD be able to load applications found in P6SGI script files. These are Pe
 
 These files MAY have a F<.p6w> suffix.
 
-=head3 2.0.1 The Environment
+=head3 2.0.1 Request Environment
 
 The environment MUST be an L<Associative>. The keys of this map are mostly derived from the old Common Gateway Interface (CGI) as well as a number of additional P6SGI-specific values. The application server MUST provide each key as the named type. All variables given in the table below MUST be supported, except for those with the C<p6wx.> prefix.
 
@@ -298,7 +298,7 @@ This method resembles that which would normally be used in PSGI, which is to def
 
 This example is functionality identical to the previous example.
 
-=head3 2.1.1 Environment
+=head3 2.1.1 Request Environment
 
 Middleware applications SHOULD pass on the complete environment, only modifying the bits required to perform their purpose. Middleware applications MAY add new keys to the environment as a side-effect. These additional keys MUST contain a period and SHOULD use a unique namespace.
 
@@ -354,7 +354,7 @@ In this example, we load some libraries from our imaginary main application, we 
 
 It is recommended that such files identify themselves with the suffix F<.p6w> whenever a file suffix is useful.
 
-=head3 2.2.1 The Environment
+=head3 2.2.1 Request Environment
 
 The one and only argument passed to the application is an L<Associative> object containing the environment. The environment variables that MUST be set are defined in section 2.0.1. Additional variables may be provided by your application server and middleware.
 
@@ -707,6 +707,40 @@ Applications MUST return a I<sane> L<Supply> which emits a string of bytes for e
 
 The application server SHOULD reject any object other than a L<Blob> sent as part of the message payload. The application server is not expected to perform any encoding or stringification of messages.
 
+=head1 5 Advanced Configuration
+
+For applications that need more control over their environment, the P6SGI specification provides a mechanism for advanced configuration. This mechanism gives the application additional and extensible control over its lifecycle and a means to communicate with the application server earlier in the process.
+
+=head2 5.0 Configuration Object
+
+The application server MUST be able to accept applications defined using an object other than a L<Callable>. When an object that is not Callable is used, the application server MUST perform the following:
+
+=item If the application object provides a C<setup-app> method, the application server MUST call that method as soon as possible. It MUST be called before the first call to the application routine and before any calls to C<teardown-app>, C<to-app>, and C<provide-app>. It will pass a single argument: the application environment (see below). The application server SHOULD ignore the return value of this method call.
+
+=item If the application object provides a C<to-app> method, the application server MUST call that method prior to needing an application routine. It will pass no arguments to that call. The object returned will be used as the application routine. The application MUST return a Callable to be used to handle requests to the application.
+
+=item If the application object provides a C<provide-app> method, the application server MUST call that method prior to every call to the application routine. It will pass a single argument: the application environment to the method. The return value will be used as the application routine to use for only that request. The application MUST return a Callable to be used to handle that request to the application.
+
+=item If the application object provides a C<teardown-app> method, the application server MUST call that method as late as possible. It MUST be called after the very last call to the applicaiton routine, and after all calls to C<setup-app>, C<to-app>, and C<provide-app>. The application server MUST call it with a single argument: the application environment.
+
+The calls made by the application server to these four methods MUST be made synchronously. The C<setup-app>, C<to-app>, and C<teardown-app> calls MUST only be made once per process.
+
+=head2 5.1 Application Environment
+
+The application environment differs from the request environment described in 2.0.1, 2.1.1, and 2.2.1 in that it only includes the global values. The application environment passed to C<setup-app>, C<teardown-app>, and C<provide-app> MUST include at least the following keys and the corresponding values defined in 2.0.1:
+
+=item p6w.version
+
+=item p6w.errors
+
+=item p6w.multithread
+
+=item p6w.multiprocess
+
+=item p6w.run-once
+
+It is recommended that any other global values or global extension settings (particularly the flags signalling whether an extension is supported) also be included.
+
 =head1 Changes
 
 =head2 0.7.Draft
@@ -728,6 +762,8 @@ The application server SHOULD reject any object other than a L<Blob> sent as par
 =item Changed C<p6wx.protocol.upgrade> from an L<Array> to a L<Set> of supported protocol names.
 
 =item Added Section 4 to describe protocol-specific features of the specification. Section 4.0 is for HTTP, 4.1 is for WebSocket, and 4.2 is for Socket.
+
+=item Added Section 5 to describe advanced application configuration using an object.
 
 =head2 0.6.Draft
 
