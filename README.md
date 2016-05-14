@@ -97,7 +97,7 @@ These files MAY have a .p6w suffix.
 
 ### 2.0.1 Request Environment
 
-The environment MUST be an [Associative](http://doc.perl6.org/type/Associative). The keys of this map are mostly derived from the old Common Gateway Interface (CGI) as well as a number of additional P6SGI-specific values. The application server MUST provide each key as the named type. All variables given in the table below MUST be supported, except for those with the `p6wx.` prefix.
+The environment MUST be an [Associative](http://doc.perl6.org/type/Associative). The keys of this map are mostly derived from the old Common Gateway Interface (CGI) as well as a number of additional P6SGI-specific values. The application server MUST provide each key as the named type. All variables given in the table below MUST be supported.
 
 <table>
   <thead>
@@ -208,14 +208,24 @@ The environment MUST be an [Associative](http://doc.perl6.org/type/Associative).
     <td>True if the server expects the app to be invoked only once during the life of the process. This is not a guarantee.</td>
   </tr>
   <tr>
-    <td><code>p6w.protocol</code></td>
-    <td><code>Str:D</code></td>
-    <td>This is a string naming the response protocols the server is expecting from the application for call. This specification defines "http", "ws", and "socket" protocols.</td>
-  </tr>
-  <tr>
     <td><code>p6w.body.encoding</code></td>
     <td><code>Str:D</code></td>
     <td>Name of the encoding the server will use for any strings it is sent.</td>
+  </tr>
+  <tr>
+    <td><code>p6w.protocol</code></td>
+    <td><code>Str:D</code></td>
+    <td>This is a string naming the response protocols the server is expecting from the application for call.</td>
+  </tr>
+  <tr>
+    <td><code>p6w.protocol.support</code></td>
+    <td><code>Set:D</code></td>
+    <td>This is a <a href="http://doc.perl6.org/type/Set">Set</a> of strings naming the protocols supported by the application server.</td>
+  </tr>
+  <tr>
+    <td><code>p6w.protocol.enabled</code></td>
+    <td><code>SetHash:D</code></td>
+    <td>This is a mutable set of strings naming the actual protocols to be used by the application server. This SHOULD be modified by the application to only include those protocols supported.</td>
   </tr>
 </table>
 
@@ -241,9 +251,7 @@ The error stream MUST be given in the environment via `p6w.errors`. This MUST be
 
 ### 2.0.4 Application Response
 
-The application server supplies a [Set](http://doc.perl6.org/type/Set) of strings to the application in `p6w.protocol` that specifies the way in which the application server expects the application to response. This specification defines the following response protocols: "http", "ws", and "socket". Application servers SHOULD support both of these protocols when appropriate for the `SERVER_PROTOCOL`.
-
-The way the server handles these two protocols responses is defined in section 4.0.
+The way the server handles responses is defined in section 4. Typically, all application servers will support the HTTP protocol as described within section 4.0. Application servers SHOULD support all protocols defined in this specification along with the Protocol extension defined in section 3.4.
 
 ### 2.0.5 Application Lifecycle
 
@@ -402,7 +410,7 @@ The application server is required to provide a `p6w.errors` variable in the env
 
 ### 2.2.4 Application Response
 
-The application MUST return a valid P6SGI response to the server. The format required for this response is determined by examining the `p6w.protocol` variable in the environment. This specification defines the response required when this variable is set to "http" or "ws" or "socket".
+The application MUST return a valid P6SGI response to the server. 
 
 See section 4 on how different application protocols are handled.
 
@@ -508,7 +516,7 @@ Servers that support this protocol upgrade MUST place the name "h2c" and/or "h2"
 
 The application MUST NOT tap the `p6w.input` stream when performing this upgrade. The application SHOULD NOT return a message payload aside from an empty [Supply](http://doc.perl6.org/type/Supply).
 
-Once upgraded the application server MUST adhere to all the requirements for HTTP/2 as described in section 4.2. The application will be called again once a web request is received on the upgraded connection and is ready for processing.
+Once upgraded the application server MUST adhere to all the requirements for HTTP/2 as described in section 4.0. The application will be called again once a web request is received on the upgraded connection and is ready for processing.
 
 ### 3.8.1 WebSocket Protocol Upgrade
 
@@ -535,7 +543,7 @@ All other encodings should be handled as required by the relevant rules for HTTP
 
 ### 3.10 HTTP/2 Push Promises
 
-When `p6w.protocol` is "http" and the `SERVER_PROTOCOL` is "HTTP/2", servers SHOULD support the HTTP/2 push promises extension. However, applications SHOULD check to make sure that the `p6wx.h2.push-promise` variable is set before using this extension.
+When the `SERVER_PROTOCOL` is "HTTP/2", servers SHOULD support the HTTP/2 push promises extension. However, applications SHOULD check to make sure that the `p6wx.h2.push-promise` variable is set before using this extension.
 
 This extension is implemented by providing a variable named `p6wx.h2.push-promise`. When provided, this MUST be a [Supplier](http://doc.perl6.org/type/Supplier).
 
@@ -545,29 +553,49 @@ Push-promise messages are sent as an [Array](http://doc.perl6.org/type/Array) of
 
 Upon receiving a message to `p6wx.h2.push-promise`, the server SHOULD schedule a followup call to the application to fulfill the push-promise as if the push-promise were an incoming request from the client. (The push-promise could be canceled by the client, so the call to the application might not actually happen.)
 
-4 Protocol Implementation
-=========================
+4 Application Protocol Implementation
+=====================================
 
 The goal of a P6SGI application server is to allow the application to focus on building web applications without having to implement the mundane details of web protocols. In times past, this was simply a matter of implementing HTTP/1.x or some kind of front-end to HTTP/1.x (such as CGI or FastCGI). While HTTP/1.x is still very important to the web today, new protocols have also become important to modern web applications, such as HTTP/2 and WebSocket.
 
-These protocols may have different interfaces. We want to provide a means by which servers and applications may implement these alternate protocols, which each may have different requirements. To facilitate this, P6SGI provides the `p6w.protocol` variable in the environment. The protocol defined here tells the application what the server is providing and how the application is expected to respond.
+These protocols may have different interfaces that do not lend themselves to the request-response pattern specifed by PSGI. Therefore, we provide a means by which servers and applications may implement these alternate protocols, which each may have different requirements. These protocols are called "application protocols" to differentiate them from network protocols. Rather than providing a protocol for HTTP, we provide a "request-response" protocol. The underlying network protocol may be HTTP or it may be something else.
+
+The application and application server MUST agree upon the application protocol or else they will not be able to communicate. For many applications, just implementing the basic protocol request-response protocol is enough. However, to allow for advanced applications P6SGI provides additional tools to help application and application server to communicate. This is handled via the `p6w.protocol`, `p6w.protocol.support`, and `p6w.protocol.enabled` values in the environment.
+
+The application SHOULD check for a defined value in `p6w.protocol` to determine both that the server supports this extension and to determine which application protocol the application MUST response with. The application SHOULD NOT make assumptions about the network protocol based upon the `p6w.protocol` value for the current request. If the application needs to make a decision based upon the network protocol, the application SHOULD check the `SERVER_PROTOCOL`.
+
+The application MAY check the `p6w.protocol.support` to discover which protocols are supported by the application server. An application that is not able to support all supported protocols SHOULD modify `p6w.protocol.enabled` to only include protocols supported by the application as early as possible. The application SHOULD do this in the `setup-app` advanced configuration hook, if the application is using advanced configuration. For example,
+
+```perl6
+    class {
+        constant SUPPORTED-PROTOCOLS = set('request-response');
+        method setup-app(%env) {
+            %env<p6w.protocol.enabled> ∩= SUPPORTED-PROTOCOLS;
+        }
+        ...
+    }
+```
+
+The application server MUST provide the `p6w.protocol.support` and `p6w.protocol.enabled` values as part of the application environment. The application server MUST NOT use any protocol that is not a member of the `p6w.protocol.enabled` set. If a protocol becomes disabled in the middle of a request, the request MUST continue, but subsequent requests MUST NOT use that protocol unless it is later enabled.
 
 This specification defines the following protocols:
 
-  * **http** for HTTP-style request-response protocols
+  * **request-response** for request-response protocols, including HTTP
 
-  * **ws** for WebSocket-style generic socket protocols
+  * **framed-socket** for framed-socket protocols, such as WebSocket
 
-  * **socket** for raw, plain socket protocols
+  * **psgi** for legacy PSGI applications
 
-4.0 HTTP Protocol
------------------
+  * **socket** for raw, plain socket protocols, which send and receive data with no expectation of special server handling
 
-The "http" protocol should be used for any HTTP-style client-server web protocol, this include HTTP/1.x and HTTP/2 connections over plain text and TLS or SSL.
+4.0 Request-Response Protocol
+-----------------------------
+
+The "request-response" protocol SHOULD be used for any HTTP-style client-server web protocol, this include HTTP/1.x and HTTP/2 connections over plain text and TLS or SSL.
 
 ### 4.0.0 Response
 
-Here is an example application that implements the "http" protocol:
+Here is an example application that implements the "request-response" protocol:
 
 ```perl6
     sub app(%env) {
@@ -579,7 +607,7 @@ Here is an example application that implements the "http" protocol:
     }
 ```
 
-An application MUST return a [Promise](http://doc.perl6.org/type/Promise). This Promise MUST be kept with a [Capture](http://doc.perl6.org/type/Capture) (or something that becomes one on return). It MUST contain 3 positional elements, which are the status code, the list of ehaders, and the message payload.
+An application MUST return a [Promise](http://doc.perl6.org/type/Promise). This Promise MUST be kept with a [Capture](http://doc.perl6.org/type/Capture) (or something that becomes one on return) or broken. The Capture MUST contain 3 positional elements, which are the status code, the list of ehaders, and the message payload.
 
   * The status code MUST be an [Int](http://doc.perl6.org/type/Int) or object that coerces to an Int. It MUST be a valid HTTP status code.
 
@@ -648,10 +676,10 @@ The application server SHOULD handle encoding of strings or stringified objects 
 
 When a server supports HTTP/2 it SHOULD implement the HTTP/2 Push Promise Extension defined in section 3.10. An application server MAY want to consider implementing HTTP/2 protocol upgrades using the extension described in section 3.8.
 
-4.1 WebSocket
--------------
+4.1 Framed-Socket Protocol
+--------------------------
 
-The "ws" protocol is appropriate for WebSocket-style peer-to-peer TCP connections.
+The "framed-socket" protocol is appropriate for WebSocket-style peer-to-peer TCP connections. The following sections assume a WebSocket connection, but MAY be adapted for use with other framed message exchanges, such as message queues or chat servers.
 
 ### 4.1.0 Response
 
@@ -665,7 +693,7 @@ Any application server implementing WebSocket MUST adhere to all the requirement
 
   * The `p6w.url-scheme` MUST be set to "ws" for plain text WebSocket connections or "wss" for encrypted WebSocket connections.
 
-  * The `p6w.protocol` MUST be set to "ws".
+  * The `p6w.protocol` MUST be set to "framed-socket".
 
   * The server MUST decode frames received from the client and emit each of them to `p6w.input`. The frames MUST NOT be buffered or concatenated.
 
@@ -681,7 +709,7 @@ Applications MUST return a *sane* [Supply](http://doc.perl6.org/type/Supply) tha
 
 The messages MUST be framed and returned to the origin by the application server as follows, based on message type:
 
-  * [Blob](http://doc.perl6.org/type/Blob). Any Blob emitted by the application SHOULD be treated as binary data, framed exacctly as is, and returned to the client.
+  * [Blob](http://doc.perl6.org/type/Blob). Any Blob emitted by the application SHOULD be treated as binary data, framed exactly as is, and returned to the client.
 
   * [Mu](http://doc.perl6.org/type/Mu). Any other Mu SHOULD be stringified, if possible, and encoded by the application server. If an object given cannot be stringified, the server SHOULD report a warning.
 
@@ -689,14 +717,33 @@ The messages MUST be framed and returned to the origin by the application server
 
 The application server SHOULD handle encoding of strings or stringified objects emitted to it. The server MUST encode any strings in the message payload according to the encoding named in `p6w.body.encoding`.
 
-4.2 Socket Protocol
+4.2 PSGI Protocol
+-----------------
+
+To handle legacy applications, this specification defines the "psgi" protocol. If `p6w.protocol.enabled` has both "psgi" and "request-response" enabled, the "request-response" protocol SHOULD be preferred.
+
+### 4.2.0 Response
+
+The application should return a 3-element [Capture](http://doc.perl6.org/type/Capture) directly. The first element being the numeric status code, the second being an array of pairs naming the headers to sent, and finally an array of strings containing the body.
+
+### 4.2.1 Payload
+
+The payload should always be delivered as an array of strings.
+
+### 4.2.2 Encoding
+
+The server is required to encode these, but the mechanism used is not defined by this specification.
+
+4.3 Socket Protocol
 -------------------
 
-The "socket" protocol can be provided by any application server wishing to allow the application to basically take over any socket connection. This should generally replace the need for a separate raw I/O socket extension.
+The "socket" protocol can be provided by any application server wishing to allow the application to basically take over any socket connection. This allows the application to implement any arbitrary protocol.
 
 The socket provided sends and receives data directly to and from the application without any framing, buffering, or modification. 
 
-4.2.0 Response
+The "socket" protocol SHOULD only be used when it is enabled in `p6w.protocol.enabled` and no other protocol enabled there can fulfill the current application call.
+
+4.3.0 Response
 --------------
 
 Here's an example application that implements the "socket" protocol to create a fairly naïve HTTP server:
@@ -719,7 +766,7 @@ Here's an example application that implements the "socket" protocol to create a 
     }
 ```
 
-The socket protocol behaves very much like "ws", but with fewer specified details in the environment. Some of the mandatory environment are not mandatory for the socket protocol.
+The socket protocol behaves very much like "framed-socket", but with fewer specified details in the environment. Some of the mandatory environment are not mandatory for the socket protocol.
 
 The following parts of the environment SHOULD be provided as undefined values:
 
@@ -757,11 +804,11 @@ The application server MUST forward on data emitted by the application in the re
 
 The application server MAY tunnel the connection through another socket, stream, file handle, or what-not. That is, the application MAY NOT assume the communication is being performed over any particular medium. The application server SHOULD transmit the data to the origin as faithfully as possible, keeping the intent of the application as much as possible.
 
-### 4.1.1 Message Payload
+### 4.3.1 Message Payload
 
 Applications MUST return a *sane* [Supply](http://doc.perl6.org/type/Supply) which emits a string of bytes for every message to be sent. The messages returned on this stream MUST be [Blob](http://doc.perl6.org/type/Blob) objects. 
 
-### 4.1.2 Encoding
+### 4.3.2 Encoding
 
 The application server SHOULD reject any object other than a [Blob](http://doc.perl6.org/type/Blob) sent as part of the message payload. The application server is not expected to perform any encoding or stringification of messages.
 
@@ -785,9 +832,9 @@ For example, here is an application returning an advanced configuration object:
 
         method provide-app(%env) {
             given %env<p6w.protocol> {
-                when 'http' { &.http-app }
-                when 'ws'   { &.ws-app }
-                default     { die "unsupported appserver protocol" }
+                when 'request-response' { &.http-app }
+                when 'framed-socket'    { &.ws-app }
+                default                 { die "unsupported appserver protocol" }
             }
         }
 
@@ -804,9 +851,9 @@ The application server MUST be able to accept applications defined using an obje
 
   * If the application object provides a `setup-app` method, the application server MUST call that method as soon as possible. It MUST be called before the first call to the application routine and before any calls to `teardown-app`, `to-app`, and `provide-app`. It will pass a single argument: the application environment (see below). The application server SHOULD ignore the return value of this method call.
 
-  * If the application object provides a `to-app` method, the application server MUST call that method prior to needing an application routine. It will pass no arguments to that call. The object returned will be used as the application routine. The application MUST return a Callable to be used to handle requests to the application.
-
   * If the application object provides a `provide-app` method, the application server MUST call that method prior to every call to the application routine. It will pass a single argument: the request environment (i.e., the full request environment, not the more limited application environment) to the method. The return value will be used as the application routine to use for only that request. The application MUST return a Callable to be used to handle that request to the application.
+
+  * If the application object provides a `to-app` method, the application server MUST call that method prior to needing an application routine. It will pass no arguments to that call. The object returned will be used as the application routine. The application MUST return a Callable to be used to handle requests to the application.
 
   * If the application object provides a `teardown-app` method, the application server MUST call that method as late as possible. It MUST be called after the very last call to the applicaiton routine, and after all calls to `setup-app`, `to-app`, and `provide-app`. The application server MUST call it with a single argument: the application environment.
 
@@ -827,6 +874,10 @@ The application environment differs from the request environment described in 2.
 
   * p6w.run-once
 
+  * p6w.protocol.support
+
+  * p6w.protocol.enabled
+
 It is recommended that any other global values or global extension settings (particularly the flags signalling whether an extension is supported) also be included.
 
 Changes
@@ -843,7 +894,7 @@ Changes
 
   * Eliminating the requirement that things emitted in the response payload be [Cool](http://doc.perl6.org/type/Cool) if they are to be stringified and encoded. Any stringifiable [Mu](http://doc.perl6.org/type/Mu) is permitted.
 
-  * Adding `p6w.protocol` to handle server-to-application notification of the required response protocol.
+  * Adding `p6w.protocol`, `p6w.protocol.support`, and `p6w.protocol.enabled` to handle server-to-application notification of the required response protocol.
 
   * Breaking sections 2.0.4, 2.1.4, and 2.2.4 up to discuss the difference between the HTTP and WebSocket protocol response requirements.
 
@@ -851,7 +902,7 @@ Changes
 
   * Changed `p6wx.protocol.upgrade` from an [Array](http://doc.perl6.org/type/Array) to a [Set](http://doc.perl6.org/type/Set) of supported protocol names.
 
-  * Added Section 4 to describe protocol-specific features of the specification. Section 4.0 is for HTTP, 4.1 is for WebSocket, and 4.2 is for Socket.
+  * Added Section 4 to describe protocol-specific features of the specification. Section 4.0 is for HTTP, 4.1 is for WebSocket, and 4.3 is for Socket.
 
   * Added Section 5 to describe advanced application configuration using an object.
 
