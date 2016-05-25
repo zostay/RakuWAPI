@@ -154,6 +154,8 @@ The configuration environment MUST be made available to the application during e
                              |                                        | preserved for the lifetime of the 
                              |                                        | application.
 
+=end table
+
 =head4 2.0.1.1 Runtime Environment
 
 Many of the call environment variables are derived from the old Common Gateway Interface (CGI). This environment MUST be given when the application is being called, i.e., whenever the runtime routine is called.
