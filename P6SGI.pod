@@ -118,41 +118,40 @@ The configuration environment MUST be made available to the application during e
 
 =begin table :allow<C L>
 
- Variable                 | Constraint                             | Description
- =========================|========================================|======================================
- 
- C<p6w.version>           | C<< Version:D >>                       | This is the version of this
-                          |                                        | specification, C<v0.7.Draft>.
- 
- C<p6w.errors>            | C<< Supplier:D >>                      | The error stream for logging.
- 
- C<p6w.multithread>       | C<< Bool:D >>                          | True if the app may be
-                          |                                        | simultaneously invoked in another
-                          |                                        | thread in the same
-                          |                                        | process.
- 
- C<p6w.multiprocess>      | C<< Bool:D >>                          | True if the app may be simultaneously
-                          |                                        | invoked in another process.
- 
- C<p6w.run-once>          | C<< Bool:D >>                          | True if the server expects the app
-                          |                                        | to be invoked only once during the
-                          |                                        | life of the process. This is not a
-                          |                                        | guarantee.
- 
- C<p6w.protocol.support>  | C<< Set:D >>                           | This is a L<Set> of strings naming the
-                          |                                        | protocols supported by the application 
-                          |                                        | server.
- 
- C<p6w.protocol.enabled>  | C<< SetHash:D >>                       | This is a mutable set of strings
-                          |                                        | naming the actual protocols to be
-                          |                                        | used by the application server. This
-                          |                                        | SHOULD be modified by the application
-                          |                                        | to only include those protocols
-                          |                                        | supported. The values of this set and 
-                          |                                        | any changes made during the 
-                          |                                        | application lifecycle MUST be 
-                          |                                        | preserved for the lifetime of the 
-                          |                                        | application.
+    Variable                 | Constraint                             | Description
+    =========================|========================================|======================================
+    C<p6w.version>           | C<< Version:D >>                       | This is the version of this
+                             |                                        | specification, C<v0.7.Draft>.
+    
+    C<p6w.errors>            | C<< Supplier:D >>                      | The error stream for logging.
+    
+    C<p6w.multithread>       | C<< Bool:D >>                          | True if the app may be
+                             |                                        | simultaneously invoked in another
+                             |                                        | thread in the same
+                             |                                        | process.
+    
+    C<p6w.multiprocess>      | C<< Bool:D >>                          | True if the app may be simultaneously
+                             |                                        | invoked in another process.
+    
+    C<p6w.run-once>          | C<< Bool:D >>                          | True if the server expects the app
+                             |                                        | to be invoked only once during the
+                             |                                        | life of the process. This is not a
+                             |                                        | guarantee.
+    
+    C<p6w.protocol.support>  | C<< Set:D >>                           | This is a L<Set> of strings naming the
+                             |                                        | protocols supported by the application 
+                             |                                        | server.
+    
+    C<p6w.protocol.enabled>  | C<< SetHash:D >>                       | This is a mutable set of strings
+                             |                                        | naming the actual protocols to be
+                             |                                        | used by the application server. This
+                             |                                        | SHOULD be modified by the application
+                             |                                        | to only include those protocols
+                             |                                        | supported. The values of this set and 
+                             |                                        | any changes made during the 
+                             |                                        | application lifecycle MUST be 
+                             |                                        | preserved for the lifetime of the 
+                             |                                        | application.
 
 =end table
 
