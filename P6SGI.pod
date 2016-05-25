@@ -72,11 +72,11 @@ An application server SHOULD strive to be as flexible as possible to allow as ma
 
 One important aspect of this specification that is not defined is the meaning of a server error. At times it is suggested that certain states be treated as a server error, but what that actually means to a given implementation is deliberatly undefined. That is a complex topic which varies by implementation and by the state the server is in when such a state is discovered. The server SHOULD log such events and SHOULD use the appropriate means of communication provided to notify the application that a server error has occurred while responding.
 
-=head3 2.0.0 Locating Applications
+=head3 2.0.0 Application Definition
 
-The server MUST be able to find applications.
+A P6SGI application is defined as a class or object, which must be implemented according to a particular interface. The application server MUST provide a means by which an application is loaded. The application server SHOULD be able to load them by executing a P6SGI script file.
 
-It SHOULD be able to load applications found in P6SGI script files. These are Perl 6 code files that end with the definition of a routine with arity 1 to be used as the application routine. For example:
+For example, here is a simple application:
 
     use v6;
     sub app(%env) {
@@ -85,13 +85,80 @@ It SHOULD be able to load applications found in P6SGI script files. These are Pe
         }
     }
 
-These files MAY have a F<.p6w> suffix.
+For full details on how an application is defined, see Section 2.2.0. For details on how a server interacts with the application, see Section 2.0.4.
 
-=head3 2.0.1 Request Environment
+=head3 2.0.1 The Environment
 
-The environment MUST be an L<Associative>. The keys of this map are mostly derived from the old Common Gateway Interface (CGI) as well as a number of additional P6SGI-specific values. The application server MUST provide each key as the named type. All variables given in the table below MUST be supported.
+The environment is delivered to the application via hashes, they MUST be L<Associative>. The application server makes the environment available to the application at runtime. The environment is used to:
 
-=begin table :allow<C>
+1. Communicate server capabilities to the application,
+2. Allow the application to communicate with the server, and
+3. Allow the application to respond to calls to the application.
+
+Each variable or key in the environment is described as belonging to one of two roles:
+
+* A D<configuration environment variable> describes global capabilities and configuration information to application.
+* A D<runtime environment variable> describes per-call information related to the particular request.
+
+Calls to the runtime routine MUST be provided with all required environment variables belonging to either of these roles in the passed environment hash. However, calls to the configuration routine (see 2.0.4) MUST include the configuration envrionment and SHOULD NOT include runtime environment in the passed environment hash.
+
+The server MAY provide variables in the environment in either role in addition to the ones defined here, but they MUST contain a period and SHOULD be given a unique prefix to avoid name clashes.
+
+The following prefixes are reserved and SHOULD NOT be used unless defined by this specification and only according to the definition given here.
+
+=item C<p6w.> is for P6SGI core standard environment.
+
+=item C<p6wx.> is for P6SGI standard extensions to the environment.
+
+In the tables below, a type constraint is given for each variable. The application server MUST provide each key as the named type. All variables given in the tables with 2.0.1.0 and 2.0.1.1 MUST be provided.
+
+=head4 2.0.1.0 Configuration Environment
+
+The configuration environment MUST be made available to the application during every call made to the application, both to the configuration routine and the runtime routine.
+
+=begin table :allow<C L>
+
+    Variable                 | Constraint                             | Description
+    =========================|========================================|======================================
+  
+    C<p6w.version>           | C<< Version:D >>                       | This is the version of this
+                             |                                        | specification, C<v0.7.Draft>.
+
+    C<p6w.errors>            | C<< Supplier:D >>                      | The error stream for logging.
+
+    C<p6w.multithread>       | C<< Bool:D >>                          | True if the app may be
+                             |                                        | simultaneously invoked in another
+                             |                                        | thread in the same
+                             |                                        | process.
+
+    C<p6w.multiprocess>      | C<< Bool:D >>                          | True if the app may be simultaneously
+                             |                                        | invoked in another process.
+
+    C<p6w.run-once>          | C<< Bool:D >>                          | True if the server expects the app
+                             |                                        | to be invoked only once during the
+                             |                                        | life of the process. This is not a
+                             |                                        | guarantee.
+
+    C<p6w.protocol.support>  | C<< Set:D >>                           | This is a L<Set> of strings naming the
+                             |                                        | protocols supported by the application 
+                             |                                        | server.
+
+    C<p6w.protocol.enabled>  | C<< SetHash:D >>                       | This is a mutable set of strings
+                             |                                        | naming the actual protocols to be
+                             |                                        | used by the application server. This
+                             |                                        | SHOULD be modified by the application
+                             |                                        | to only include those protocols
+                             |                                        | supported. The values of this set and 
+                             |                                        | any changes made during the 
+                             |                                        | application lifecycle MUST be 
+                             |                                        | preserved for the lifetime of the 
+                             |                                        | application.
+
+=head4 2.0.1.1 Runtime Environment
+
+Many of the call environment variables are derived from the old Common Gateway Interface (CGI). This environment MUST be given when the application is being called, i.e., whenever the runtime routine is called.
+
+=begin table :allow<C L>
 
     Variable                 | Constraint                             | Description
     =========================|========================================|======================================
@@ -156,15 +223,10 @@ The environment MUST be an L<Associative>. The keys of this map are mostly deriv
                              |                                        | possible, but no others are required
                              |                                        | or formally specified.
 
-    C<p6w.version>           | C<< Version:D >>                       | This is the version of this
-                             |                                        | specification, C<v0.7.Draft>.
-
     C<p6w.url-scheme>        | C<< Str:D >>                           | Either "http" or "https".
 
     C<p6w.input>             | C<< Supply:D >>                        | The input stream for reading the
                              |                                        | body of the request, if any.
-
-    C<p6w.errors>            | C<< Supplier:D >>                      | The error stream for logging.
 
     C<p6w.ready>             | C<< Promise:D >>                       | This is a vowed Promise that MUST be
                              |                                        | kept by the server as soon as the
@@ -175,19 +237,6 @@ The environment MUST be an L<Associative>. The keys of this map are mostly deriv
                              |                                        | The server SHOULD NOT break this
                              |                                        | Promise.
 
-    C<p6w.multithread>       | C<< Bool:D >>                          | True if the app may be
-                             |                                        | simultaneously invoked in another
-                             |                                        | thread in the same
-                             |                                        | process.
-
-    C<p6w.multiprocess>      | C<< Bool:D >>                          | True if the app may be simultaneously
-                             |                                        | invoked in another process.
-
-    C<p6w.run-once>          | C<< Bool:D >>                          | True if the server expects the app
-                             |                                        | to be invoked only once during the
-                             |                                        | life of the process. This is not a
-                             |                                        | guarantee.
-
     C<p6w.body.encoding>     | C<< Str:D >>                           | Name of the encoding the server will
                              |                                        | use for any strings it is sent.
 
@@ -196,142 +245,98 @@ The environment MUST be an L<Associative>. The keys of this map are mostly deriv
                              |                                        | expecting from the application for 
                              |                                        | call.
 
-    C<p6w.protocol.support>  | C<< Set:D >>                           | This is a L<Set> of strings naming the
-                             |                                        | protocols supported by the application 
-                             |                                        | server.
-
-    C<p6w.protocol.enabled>  | C<< SetHash:D >>                       | This is a mutable set of strings
-                             |                                        | naming the actual protocols to be
-                             |                                        | used by the application server. This
-                             |                                        | SHOULD be modified by the application
-                             |                                        | to only include those protocols
-                             |                                        | supported.
-
-
 =end table
 
 In the environment, either C<SCRIPT_NAME> or C<PATH_INFO> must be set to a non-empty string. When C<REQUEST_URI> is "/", the C<PATH_INFO> SHOULD be "/" and C<SCRIPT_NAME> SHOULD be the empty string. C<SCRIPT_NAME> MUST NOT be set to "/".
 
-For those familiar with Perl 5 PSGI, you may want to take care when working with some of these values. A few look very similar, but are subtly different.
-
-The server or middleware or the application may store its own data in the environment as well. These keys MUST contain at least one dot, SHOULD be prefixed with a unique name.
-
-The following prefixes are reserved and SHOULD NOT be used unless defined here and then only according to the requirements of this specification:
-
-=item C<p6w.> is for P6SGI core standard environment.
-
-=item C<p6wx.> is for P6SGI standard extensions to the environment.
-
 =head3 2.0.2 The Input Stream
 
-The input stream is set in the C<p6w.input> key of the environment. This represents the request payload sent from the origin. The server MUST provide a I<sane> L<Supply> that emits L<Blob> objects containing the content of the request payload, if any.
+The input stream is set in the C<p6w.input> key of the runtime environment. This represents the request payload sent from the origin. Unless otherwise indicated as part of the protocol definition, the server MUST provide a I<sane> L<Supply> that emits L<Blob> objects containing the content of the request payload. It MAY emit nothing and just signal C<done> if the request payload is empty.
 
 =head3 2.0.3 The Error Stream
 
-The error stream MUST be given in the environment via C<p6w.errors>. This MUST be a L<Supplier> the server provides for emitting errors. The application MAY call C<emit> on the Supplier zero or more times, passing any object that may be stringified. The server SHOULD write these log entries to a suitable log file or to C<$*ERR> or wherever appropriate. If written to a typical file handle, it should automatically append a newline to each emitted message.
+The error stream MUST be given in the configuration environment via C<p6w.errors>. This MUST be a L<Supplier> the server provides for emitting errors. The application MAY call C<emit> on the Supplier zero or more times, passing any object that may be stringified. The server SHOULD write these log entries to a suitable log file or to C<$*ERR> or wherever appropriate. If written to a typical file handle, it should automatically append a newline to each emitted message.
 
-=head3 2.0.4 Application Response
+=head3 2.0.4 Application Lifecycle
 
-The way the server handles responses is defined in section 4. Typically, all application servers will support the HTTP protocol as described within section 4.0. Application servers SHOULD support all protocols defined in this specification along with the Protocol extension defined in section 3.4.
+After the application has been defined, it will be called each time the application server needs to respond to the origin. What that means will vary depending on which protocol is needed to appropriately respond to the origin.
 
-=head3 2.0.5 Application Lifecycle
+These requirements, however, are in held in common regardless of protocol, the application server requirements are as follows:
 
-A P6SGI application server processes requests from an origin, passes the processed request information to the application, waits for the application's response, and then returns the response to the origin. In the simplest example this means handling an HTTP roundtrip. It may also mean implementing a related protocol like CGI or FastCGI or SCGI or something else entirely.
+1. The application server MUST check the return value of the application. If the application return value is L<Callable>, the application has returned a configuration routine. Otherwise, the application has returned a runtime routine.
+2. If the application returned a runtime routine, as detected in the previous step, the application server MUST call this routine and pass the configuration environment in a hash as the first argument to the routine. The return value of this routine is the runtime routine for the application.
+3. Prior to each call to runtime routine, the application server MUST set the C<p6w.protocol> variable to the name of the protocol the server will use to communicate with the application.
+4. The server MUST pass the merger of the configuration and runtime environments in a hash as the first argument to the runtime routine.
+5. The server MUST receive the return value of runtime routine and process it according to the application protocol in use for this call, the one matching the protocol set in step 3.
 
-In the modern web, an application may want to implement a variety of complex HTTP interactions. These use-cases are not described by the typical HTTP request-response roundtrip. For example, an application may implement a WebSocket API or an interactive Accept-Continue response or stream data to or from the origin. As such, application servers SHOULD make a best effort to be implemented in such a way as to make this variety applications possible.
+The server MUST NOT call the application with C<p6w.protocol> set to a protocol that has been previously disabled by the application via the C<p6w.protocol.enabled> setting.
 
-The application server SHOULD pass control to the application as soon as the headers have been received and the environment can be constructed. The application server MAY continue processing the message body while the application server begins its work. The server SHOULD NOT emit the contents of the request payload via C<p6w.input> yet. The server MUST NOT emit to C<p6w.input> at this point unless the L<Supply> is provided on-demand.
-
-Once the application has returned the response headers and the response payload to the server. The server MUST tap the L<Supply> representing the response payload as soon as possible. Immediately after tapping the Supply, the application server MUST keep the L<Promise> (with no value) in C<p6w.ready>. The application server SHOULD NOT break this Promise. Immediately after keeping the Promise in C<p6w.ready>, the server SHOULD start emitting the contents of the request payload, if any, to C<p6w.input>.
-
-The server SHOULD return the application response headers back to the origin as soon as they are received. After which, the server SHOULD return each chunk emitted by the response body from the application as soon as possible.
+For details on how each protocol handles the application call, see section 4.
 
 =head2 2.1 Layer 1: Middleware
 
-P6SGI middleware is a P6SGI application that wraps another P6SGI application. Middleware is used to perform any kind of pre-processing, post-processing, or side-effects that might be added onto an application. Possible uses include logging, encoding, validation, security, debugging, routing, interface adaptation, and header manipulation.
+P6SGI middleware is simply an application that wraps another application. Middleware is used to perform any kind of pre-processing, post-processing, or side-effects that might be added onto an application. Possible uses include logging, encoding, validation, security, debugging, routing, interface adaptation, and header manipulation.
 
-For example, in the following snippet C<&mw> is a simple middleware application that adds a custom header:
+For example, in the following snippet, C<mw> is a middleware application that adds a custom header:
 
-    my &app = sub (%env) {
-        start {
-            200,
-            [ Content-Type => 'text/plain' ],
-            Supply.from-list([ 'Hello World' ])
-        };
+    sub app(%env) { start { 200, [ Content-Type => 'text/plain' ], [ 'Hello World' ] } }
+    sub mw(&wrappee is copy, %config) returns Callable {
+        &wrappee = wrappee(%config) if &wrappee.returns ~~ Callable;
+        sub (%env) {
+            wrappee(%env).then(
+                -> $p {
+                    my @r = $p.result;
+                    @r[1].push: 'P6SGI-Used' => 'True';
+                    @r
+                }
+            );
+        }
     }
+    my &mw-app = &mw.assuming(&app);
 
-    my &mw = sub (%env) {
-        callsame.then(-> $p {
-            my @res = $p.result;
-            @res[1].push: P6SGI-Used => 'True';
-            @res;
-        });
-    };
+=head3 2.1.0 Middleware Definition
 
-    &app.wrap(&mw);
+The way in which middleware is defined and applied is left up to the middleware author. The example in the previous section uses a combination of priming and defining a closure. This is, by no means, the only way to define P6SGI middleware in Perl 6.
 
-B<Note:> For those familiar with PSGI and Plack should take careful notice that Perl 6 C<wrap> has the invocant and argument swapped from the way Plack::Middleware operates. As this method is built-in to Perl 6, in P6SGI, the C<wrap> method is always called on the I<app> not the I<middleware>.
+What is important in middleware definition is the following:
 
-=head3 2.1.0 Middleware Application
+1. A middleware application MUST be a P6SGI application, viz., it MUST be a configuration routine or a runtime routine as defined in section 2.2.0.
+2. Middleware SHOULD be defined as a configuration routine, even if it doesn't need to access the configuration environment prior to runtime. This allows the middleware to wrap both configuration routines and runtime routines.
+3. When defined as a configuration routine, Middleware MUST check to see if the application being wrapped returns a configuration routine or a runtime routine by testing whether the return value of the routine is L<Callable>. If the wrapped application is a configuration routine, the middleware MUST call it with the configuration environment. The middleware routine MUST return a runtime routine, usually after wrapping it as well. (Though, it is possible for middleware to wrap just the configuration routine without wrapping the runtime routine.)
 
-The way middleware is applied to an application varies. There are two basic mechanisms that may be used: the C<wrap> method and the closure method. There Is More Than One Way To Do It: Other mechanisms are possible, but left as an exercise for the reader.
+Otherwise, There Is More Than One Way To Do It.
 
-In either case, the usual way of executing middleware will be to perform whatever preprocessing the middleware requires, then call the wrapped application (which might itself be middleware), and call C<then> on the return value to respond when the application's response becomes available and return another promise. A safe idiom for this is:
+=head3 2.1.1 The Environment
 
-    my &mw = sub (%env) {
-        start { preprocess(%env) }.then({
-            await app(%env).then(-> $p {
-                postprocess(%env, $p.result);
-            });
-        });
-    };
+Middleware applications SHOULD interact with the environment (both configuration and runtime environment) as needed. They MAY set or modify variables in the environment. Middleware applications SHOULD maintain the typing required for the server in Sections 2.0.1.0 and 2.0.1.1 above, as modified by extensions and the application protocol in use. 
 
-=head4 2.1.0.0 Wrap Method
-
-This is the method demonstrated in the example above. Perl 6 provides a C<wrap> method which may be used to apply another subroutine as an aspect of the subroutine being wrapped. In this case, the original application may be called using C<callsame> or C<callwith>.
-
-The disadvantage of this mechanism is that the details of wrapped dispatch are somewhat hidden from the caller, so this mechanism might not provide enough control for all middleware applications.
-
-=head4 2.1.0.1 Closure Method
-
-This method resembles that which would normally be used in PSGI, which is to define the middleware using a closure that wraps the application.
-
-    my &mw = sub (%env) {
-        app(%env).then(-> $p {
-            my @res = $p.result;
-            @res[1].push: P6SGI-Used => 'True';
-            @res;
-        });
-    };
-    &app = &mw;
-
-This example is functionality identical to the previous example.
-
-=head3 2.1.1 Request Environment
-
-Middleware applications SHOULD pass on the complete environment, only modifying the bits required to perform their purpose. Middleware applications MAY add new keys to the environment as a side-effect. These additional keys MUST contain a period and SHOULD use a unique namespace.
+Whenever setting new variables in the environment, the variables MUST contain a period and SHOULD use a unique prefix to avoid name clashes with servers, other middleware, and applications.
 
 =head3 2.1.2 The Input Stream
 
 An application server is required to provide the input stream as a L<Supply> emitting L<Blob>s. Middleware, however, MAY replace the Supply with one that emits anything that might be useful to the application. 
 
-The input stream provided by the middleware MUST be I<sane>.
+Such modifications to input necessarily present compatibility problems with other middleware, so both application and middleware developers SHOULD take care to document and apply such middleware carefully.
+
+The input stream provided by the middleware MUST still be I<sane>.
 
 =head3 2.1.3 The Error Stream
 
 See sections 2.0.3 and 2.2.3.
 
-=head3 2.1.4 Application Response
+=head3 2.1.4 Application Lifecycle
 
-As with an application, middleware MUST return a valid P6SGI response to the server.
+Middleware MUST return a valid response to the server according to the value set in C<p6w.protocol> by the server (or whatever middleware came before it).
 
-See section 4 for details on protocl handling.
+See sections 2.0.4 and 2.2.4. Middleware MUST adhere to all requirements of the application as respects the server (2.2.4) and all requirements of the server as respects the application (2.0.4).
+
+See section 4 for details on protocol handling.
 
 =head2 2.2 Layer 2: Application
 
-A P6SGI application is a Perl 6 routine that receives a P6SGI environment and responds to it by returning a response.
+A P6SGI application is a Perl 6 routine. The application MUST be L<Callable>. An application may be defined as either a runtime routine or a configuration routine. A configuration routine receives a P6SGI configuration environment and returns a runtime routine. A runtime routine receives a P6SGI runtime environment and responds to it by returning a response.
 
-A simple Hello World P6SGI application may be implemented as follows:
+As an example, a simple Hello World P6SGI application defined with a runtime routine could be implemented as follows:
 
     sub app(%env) {
         start {
@@ -339,53 +344,90 @@ A simple Hello World P6SGI application may be implemented as follows:
         };
     }
 
+Or, a slightly more complex Hello World application could be implemented using a configuration routine instead like so:
+
+    sub app-config(%config) returns Callable {
+        %config<p6w.protocol.enabled> ∩= set('request-response');
+        sub app(%env) {
+            start {
+                200, [ Content-Type => 'text/plain' ], [ 'Hello World' ]
+            };
+        }
+    }
+
+This second application makes sure that only the request-response protocol is enabled before returning an application only capable of responding that way (see Section 4).
+
 =head3 2.2.0 Defining an Application
 
-The way an application is defined and used by a P6SGI server may vary by server. The specification does not tell servers how to locate an application to run it, so you will need to see the server's documentation for a description of how to do that.
+An application is defined in one of two mechanisms, as mentioned in the previous section:
 
-Typically, however, the application is defined in a script file that defines the application subroutine as the final statement in the file (or includes a reference to the application as the final line of the file).
+1. A D<runtime routine> defines just the part of the application that reacts to incoming calls from the application server. (See Section 2.2.0.0.)
+2. A D<configuration routine> defines a special routine that is called prior to handling any incoming calls from the application server to give the application a chance to communicate with the server. (See Section 2.2.0.1.)
 
-For example, such a file might look like this:
+During application defintion, the application MAY also instantiate and apply middleware to be used by the application.
 
-    use v6;
-    use MyApp;
-    use MyApp::Middleware;
-    sub app(%env) {
-        my $app = MayApp.new;
-        my @body = $app.run;
+=head3 2.2.0.0 Runtime Routine
 
-        200, [ Content-Type => 'text/plain' ], @body.item
+To define an application as a runtime routine, the application is defined as a L<Callable> (typically a L<Routine>). This application MUST accept a single parameter, a hash, as its argument. The single parameter will be passed the runtime environment by the application server when called. 
+
+The application SHOULD respond to the caller, the application server, according to the C<p6w.protocol> string set in the passed environment.
+
+Here, for example, is a P6SGI application that calculates and prints the Nth Lucas number depending on the value passed in the query string. This assumes a request-response protocol (see Section 4.0).
+
+    sub lucas-app(%env) {
+        start {
+            my $n = %env<QUERY_STRING>.Int;
+            my $lucas-number := 2, 1, * + * ... *;
+            200, [ Content-Type => 'text/plain' ], [ $lucas-number[$n] ];
+        }
     }
-    &app.wrap(&my-middleware);
-    &app;
 
-In this example, we load some libraries from our imaginary main application, we define a simple P6SGI app, we apply some middleware (presumably exported from C<MyApp::Middleware>), and then end with the reference to our application. This an example of one method by which an application server will load an application. The only requirement for these scripts is that the main P6SGI application subroutine or a reference to it is the last definition in the file.
+This application is vulnerable, however, to problems if the server might call the application with a different protocol.
 
-It is recommended that such files identify themselves with the suffix F<.p6w> whenever a file suffix is useful.
+=head3 2.2.0.1 Configuration Routine
 
-=head3 2.2.1 Request Environment
+An application SHOULD return a configuration routine, which is defined just like the runtime routine, but it must constrain its return type to something L<Callable>. This application MUST accept a single parameter, a hash, as its argument, just like the runtime routine. This single parameter, though, will be giving as the smaller configuration environment rather than the runtime environment. This routine will also be called prior to any request or other contact from an origin has occurred, which gives the application the opportunity to communicate with the server early.
 
-The one and only argument passed to the application is an L<Associative> object containing the environment. The environment variables that MUST be set are defined in section 2.0.1. Additional variables may be provided by your application server and middleware.
+The application SHOULD modify the configuration environment to suit the needs of the application. The application SHOULD end the routine by returning a runtime routine (see the previous section).
 
-The application itself MAY store additional values in the environment as it sees fit. This allows the application to communicate with a server or middleware or just to store information useful for the duration of the request. When the application modifies the environment, the variables set MUST contain a period and SHOULD start with a unique name that is not C<p6w.> or C<p6wx.> as these are reserved.
+Here is the example from the previous section, but using a configuration routine to guarantee that the only protocol the application can use to contact it is the request-response protocol (see Section 4.0). It ends by returning the C<&lucas-app> subroutine defined in the previous section:
+
+    sub lucas-config(%config) returns Callable {
+        # Only permit the request-response protocol
+        %config<p6w.protocol.enabled> ∩= set('request-response');
+
+        &lucas-app;
+    }
+
+=head3 2.2.1 The Environment
+
+Calls to the configuration routine of the application (if defined) will receive the configuration environment as defined in Section 2.0.1.0. Calls to the runtime routine of the application will receive the runtime environment as defined in Section 2.0.1.1. Additional variables may be provided by your application server and middleware in either environment hash.
+
+The application itself MAY store additional values in the environment as it sees fit. This allows the application to communicate with a server or middleware. When the application modifies the environment, the variables set MUST contain a period and SHOULD start with a unique name that is not C<p6w.> or C<p6wx.> as these are reserved.
 
 =head3 2.2.2 The Input Stream
 
-During a POST, PUT, or other operation, the client may send along a request payload to your application. The application MAY choose to read the payload using the input stream provided in the C<p6w.input> key of the environment. This is a I<sane> L<Supply>, which may emit any kind of object. The server will provide a Supply that emits zero or more L<Blob>s, but application middleware may map that information into other objects.
+Some calls to your application may be accompanied by a request payload. For example, a POST or PUT request sent by an origin using HTTP will typically include such a payload. The applicaiton MAY choose to read the payload using the sane L<Supply> provided in the C<p6w.input> variable of the call environment.
+
+The data supplied will depend on the protocol and middleware employed, but is generally given as a stream of L<Blob>s by the application server.
 
 =head3 2.2.3 The Error Stream
 
 The application server is required to provide a C<p6w.errors> variable in the environment with a L<Supplier> object. The application MAY emit any errors or messages here using any object that stringifies. The application SHOULD NOT terminate such messages with a newline as the server will do so if necessary. The application SHOULD NOT call C<done> or C<quit> on this object.
 
-=head3 2.2.4 Application Response
+=head3 2.2.4 Application Call
 
-The application MUST return a valid P6SGI response to the server. 
+To handle requests from the origin, the application server will make calls to the application routine. The application SHOULD return a valid response to the server. The response required will depend on what string is set in C<p6w.protocol> within the call environment, so the application SHOULD check that on every call if it may vary.
+
+The application SHOULD attempt to return a value as quickly as possible via the runtime routine. For protocols that require the application to return a L<Promise>, the application SHOULD wrap the entire body of the call in a C<start> block to minimize the time the server will be waiting on the application.
 
 See section 4 on how different application protocols are handled.
 
 =head1 3 Extensions
 
-In addition to the standard specification, there are a number of extensions that servers or middleware MAY choose to implement. They are completely optional and applications and middleware SHOULD check for their presence before depending on them.
+In addition to the standard specification, there are a number of extensions that servers or middleware MAY choose to implement. They are completely optional and applications and middleware SHOULD check for their presence before using them. Such checks SHOULD be performed as early as possible, prior to returning the application, if possible.
+
+Unless stated otherwise, all environment variables described are set in the runtime environment, which is passed as the single argument with each call to the application.
 
 =head2 3.0 Header Done
 
@@ -411,11 +453,15 @@ This is not an exhaustive list, but here are a few possible reasons why this Pro
 
 =item An application initiated an HTTP/2 push-promise, which the server had begun to fulfill when it received a cancel message from the client.
 
+In particular, C<p6wx.body.done> MUST be broken if C<p6wx.header.done> is broken (assuming both extensions are implemented).
+
 =head2 3.2 Raw Socket
 
-The C<p6wx.io> environment variable, if provided, MUST be the bare metal L<IO::Socket::INET> used to communicate to the client. This is the interface of last resort as it sidesteps the entire P6SGI interface.
+The C<p6wx.io> environment variable, if provided, SHOULD be the socket object used to communicate to the client. This is the interface of last resort as it sidesteps the entire P6SGI interface, but may be useful in cases where an application wishes to control details of the socket itself.
 
-If your application requires the use of this socket, please file an issue describing the nature of your application in detail. You may have a use-case that requires revisions to the P6SGI standard to cope with.
+If your application requires the use of this socket, please file an issue describing the nature of your application in detail. You may have a use-case that a future revision to P6SGI can improve.
+
+This variable MAY be made available as part of the configuration environment.
 
 =head2 3.3 Logger
 
@@ -425,29 +471,33 @@ The C<p6wx.logger> environment variable, if provided, MUST be a L<Routine> defin
 
 When called application MUST provide a C<$level> that is one of: C<"debug">, C<"info">, C<"warn">, C<"error">, C<"fatal">.
 
+Te C<p6wx.logger> environment variable SHOULD be provided in the configuration environment.
+
 =head2 3.4 Sessions
 
-The C<p6wx.session> environment variable, if provided, MUST be an L<Associative> mapping arbitrary keys and values that may be read and written to by an application. The application SHOULD only use L<Str> keys and values. The implementation of persisting this data is up to the application or middleware implementing the session.
+This extension implements basic session handling that allows certain data to persist across requests. Session data SHOULD be associated with a particular origin.
 
-The C<p6wx.session.options> environment variable, if provided, MUST be an L<Associative> mapping implementation-specific keys and values. This allows the application a channel by which to instruct the session handler how to operate.
+The C<p6wx.session> environment variable, if provided, MUST be an L<Associative>. This hash maps arbitrary keys and values that may be read and written to by an application. The application SHOULD only use L<Str> keys and values. The details of persisting this data is up to the application server or middleware implementing the session extension.
+
+The C<p6wx.session.options> environment variable, if provided, MUST be an L<Associative>> This hash uses implementation-specific keys and values to communicate between the application and the extension implementation. This allows the application a channel by which to instruct the session handler how to operate.
 
 =head2 3.5 Harakiri Mode
 
-The C<p6wx.harakiri> environment variable, if provided, MUST be a L<Bool>. If set to C<True> it signals to the application that the server supports harakiri mode, which allows the application to ask the server to terminate the current work when the request is complete.
+The C<p6wx.harakiri> environment variable, if provided, MUST be a L<Bool>. If set to C<True> it signals to the application that the server supports harakiri mode, which allows the application to ask the server to terminate the current work when the request is complete. This variable SHOULD be set in the configuration environment.
 
 The C<p6wx.harakiri.commit> environment variable MAY be set by the application to signal to the server that the current worker should be killed after the current request has been processed.
 
 =head2 3.6 Cleanup Handlers
 
-The C<p6wx.cleanup> environment variable, if provided, MUST be a L<Bool>. If set to C<True> it tells the application that the server supports running cleanup handlers after the request is complete.
+The C<p6wx.cleanup> environment variable, if provided, MUST be a L<Bool>. If set to C<True> it tells the application that the server supports running cleanup handlers after the request is complete. This variable SHOULD be set in the configuration environment.
 
 The C<p6wx.cleanup.handlers> environment variable MUST be provided if the C<p6wx.cleanup> flag is set. This MUST an L<Array>. The application adds cleanup handlers to the array by putting L<Callable>s into the Array (usually by C<push>ing). Each handler will be given a copy of the C<%env> as the first argument. The server MUST run these handlers, but only after the application has completely finished returning the response and any response payload.
 
-If the server supports harakiri mode, it SHOULD allow the cleanup handlers to invoke harakiri mode if they set C<p6wx.harakiri.commit> (see 3.5).
+If the server supports the harakiri extension, it SHOULD allow the cleanup handlers to invoke harakiri mode by setting C<p6wx.harakiri.commit> (see 3.5).
 
 =head2 3.7 Output Block Detection
 
-The C<p6wx.body.backpressure> environment variable, if provided, MUST be a L<Bool> flag. It is set to C<True> to indicate that the P6SGI server provide response backpressure detection by polling for non-blocking I/O problems. In this case, the server MUST provide the other two environment variables. If C<False> or not defined, the server does not provide these two environment variables.
+The C<p6wx.body.backpressure> environment variable, if provided, MUST be a L<Bool> flag. It is set to C<True> to indicate that the P6SGI server provide response backpressure detection by polling for non-blocking I/O problems. In this case, the server MUST provide the other two environment variables. If C<False> or not defined, the server does not provide these two environment variables. This variable SHOULD be defined in the configuration environment.
 
 The C<p6wx.body.backpressure.supply> environment variable MUST be provided if C<p6wx.body.backpressure> is C<True>. When provided, it MUST be a live L<Supply> that periodically emits C<True> and C<False> values. C<True> is emitted when the server polls for backpressure and detects a blocked output socket. C<False> is emitted when the server polls for backpressure and detects the previously blocked socket is no longer blocked.
 
@@ -455,43 +505,37 @@ The C<p6wx.body.backpressure.test> environment variable MUST be provided if C<p6
 
 =head2 3.8 Protocol Upgrade
 
-The C<p6wx.protocol.upgrade> environment variable MUST be provided if the server implements the protocol upgrade extension. It MUST be set to an L<Set> of protocol names of protocols the server supports.
+The C<p6wx.net-protocol.upgrade> environment variable MUST be provided in the configuration environment, if the server implements the protocol upgrade extension. It MUST be the L<Set> of names of protocols the server supports for upgrade.
 
-When the client makes a protocol upgrade request using an C<Upgrade> header, the application MAY request that the server upgrade to one of these supported protocols by sending a C<P6SGIx-Upgrade> header back to the server with the named protocol. The application MAY send any other headers related to the Upgrade and MAY send a message payload if the upgrade allows it. These SHOULD override any server supplied values or headers.
+When the client makes a protocol upgrade request using an C<Upgrade> header, the application MAY request that the server negotiate the upgrade to one of these supported protocols by sending a C<P6SGIx-Upgrade> header back to the server with the named protocol. The application MAY send any other headers related to the Upgrade and MAY send a message payload if the upgrade allows it. These SHOULD override any server supplied values or headers.
 
-The server MUST negotiate the new protocol and enable any environment variables required for interacting through that protocol.
-
-Aside from the protocols named here, additional upgrade protocols may be added by other specifications or implementations. However, the common rule all such upgrades follow is that the application MUST complete work on the current protocol (generally HTTP/1.1) in the current method call.
-
-The server MUST make a new call to the application with a new environment to start processing on the new protocol as is appropriate for that protocol. This lets the application reliably process the activity for a single protocol interaction per subroutine call safely whether an upgrade is performed at the application's request or the protocol is otherwise initiated by the server (e.g., an HTTP/2 request may be initiated by a user agent without an upgrade from HTTP/1.1 or a server MAY automatically perform these upgrades in some or all circumstances depending on implementation).
+The server MUST negotiate the new protocol and enable any environment variables required for interacting through that protocol. After the handshake or upgrade negoatiation is complete, the server MUST make a new call to the application with a new environment to process the remainder of the network request with the origin.
 
 =head3 3.8.0 HTTP/2 Protocol Upgrade
 
 The workings of HTTP/2 are similar enough to HTTP/1.0 and HTTP/1.1 that use of a protocol upgrade may not be necessary in most or all use-cases. However, servers MAY choose to delegate this to the application using the protocol upgrade extension.
 
-Servers that support this protocol upgrade MUST place the name "h2c" and/or "h2" into the C<p6wx.protocol.upgrade> set, for support of HTTP/2 over cleartext connections and HTTP/2 over TLS, respectively.
+Servers that support this protocol upgrade MUST place the name "h2c" and/or "h2" into the C<p6wx.net-protocol.upgrade> set, for support of HTTP/2 over cleartext connections and HTTP/2 over TLS, respectively.
+
+The application MUST NOT request an upgrade using the C<P6SGIx-Upgrade> header for "h2c" unless the C<p6w.url-scheme> is "http". Similarly, the application MUST NOT request an upgrade for "h2" unless the C<p6w.url-scheme> is "https". The application server SHOULD enforce this requirement for security reasons.
 
 The application MUST NOT tap the C<p6w.input> stream when performing this upgrade. The application SHOULD NOT return a message payload aside from an empty L<Supply>.
-
-Once upgraded the application server MUST adhere to all the requirements for HTTP/2 as described in section 4.0. The application will be called again once a web request is received on the upgraded connection and is ready for processing.
 
 =head3 3.8.1 WebSocket Protocol Upgrade
 
-Servers that support the WebSocket protocol upgrade MUST place the name "websocket" into the C<p6wx.protocol.upgrade> set.
+Servers that support the WebSocket protocol upgrade MUST place the name "ws" into the C<p6wx.net-protocol.upgrade> set.
 
 The application MUST NOT tap the C<p6w.input> stream when performing this upgrade. The application SHOULD NOT return a message payload aside from an empty L<Supply>.
 
-Once upgraded the application server MUST adhere to all the requirements for WebSocket as described in section 2.0.4.1. The application will be called again immediately after the upgrade is complete to allow it to begin sending and receiving frames.
-
 =head2 3.9 Transfer Encoding
 
-This extension is only for HTTP/1.1 protocol connections. When the server supports this extension, it MUST provide a C<p6wx.http11.transfer-encoding> variable listing the transfer encodings the server supports.
+This extension is only for HTTP/1.1 protocol connections. When the server supports this extension, it MUST provide a C<p6wx.http11.transfer-encoding> variable containing a C<Set> naming the transfer encodings the server supports as strings. This SHOULD be set in the configuration environment.
 
-When the application returns a header named C<P6SGIx-Transfer-Encoding> with the name of one of the supported transfer encodings, the server MUST apply that transfer encoding to the message payload. If the connection is not HTTP/1.1, the server SHOULD ignore this header.
+When the application returns a header named C<P6SGIx-Transfer-Encoding> with the name of one of the supported transfer encoding strings, the server MUST apply that transfer encoding to the message payload. If the connection is not HTTP/1.1, the server SHOULD ignore this header.
 
 =head3 3.9.0 Chunked Encoding
 
-When the server supports and the application requests "chunked" encoding. The application server MUST treat each emitted L<Str> or L<Blob> as a chunk to be encoded according to L<RFC7230|https://tools.ietf.org/html/draft-ietf-httpbis-p1-messaging>.
+When the server supports and the application requests "chunked" encoding. The application server SHOULD treat each emitted L<Str> or L<Blob> as a chunk to be encoded according to L<RFC7230|https://tools.ietf.org/html/draft-ietf-httpbis-p1-messaging>. It MUST adhere to requirements of RFC7230 when sending the response payload to the origin.
 
 =head3 3.9.1 Other Encodings
 
@@ -499,7 +543,7 @@ All other encodings should be handled as required by the relevant rules for HTTP
 
 =head3 3.10 HTTP/2 Push Promises
 
-When the C<SERVER_PROTOCOL> is "HTTP/2", servers SHOULD support the HTTP/2 push promises extension. However, applications SHOULD check to make sure that the C<p6wx.h2.push-promise> variable is set before using this extension.
+When the C<SERVER_PROTOCOL> is "HTTP/2", servers SHOULD support the HTTP/2 push promises extension. However, applications SHOULD check to make sure that the C<p6wx.h2.push-promise> variable is set to a defined value before using this extension.
 
 This extension is implemented by providing a variable named C<p6wx.h2.push-promise>. When provided, this MUST be a L<Supplier>.
 
@@ -511,25 +555,17 @@ Upon receiving a message to C<p6wx.h2.push-promise>, the server SHOULD schedule 
 
 =head1 4 Application Protocol Implementation
 
-The goal of a P6SGI application server is to allow the application to focus on building web applications without having to implement the mundane details of web protocols. In times past, this was simply a matter of implementing HTTP/1.x or some kind of front-end to HTTP/1.x (such as CGI or FastCGI). While HTTP/1.x is still very important to the web today, new protocols have also become important to modern web applications, such as HTTP/2 and WebSocket.
+One goal of P6SGI application servers is to allow the application to focus on building web applications without having to implement the mundane details of web protocols. In times past, this was simply a matter of implementing HTTP/1.x or some kind of front-end to HTTP/1.x (such as CGI or FastCGI). While HTTP/1.x is still relevant to the web today, new protocols have also become important to modern web applications, such as HTTP/2 and WebSocket.
 
-These protocols may have different interfaces that do not lend themselves to the request-response pattern specifed by PSGI. Therefore, we provide a means by which servers and applications may implement these alternate protocols, which each may have different requirements. These protocols are called "application protocols" to differentiate them from network protocols. Rather than providing a protocol for HTTP, we provide a "request-response" protocol. The underlying network protocol may be HTTP or it may be something else.
+These protocols may have different interfaces that do not lend themselves to the request-response pattern specifed by PSGI. Therefore, we provide a means by which servers and applications may implement these alternate protocols, which each may have different requirements. These protocols are called D<application protocols> to differentiate them from network protocols. For example, rather than providing a protocol for HTTP, we provide the "request-response" protocol. The underlying network protocol may be HTTP/1.0, HTTP/1.1, HTTP/2 or it may be something else that operates according to a similar pattern.
 
-The application and application server MUST agree upon the application protocol or else they will not be able to communicate. For many applications, just implementing the basic protocol request-response protocol is enough. However, to allow for advanced applications P6SGI provides additional tools to help application and application server to communicate. This is handled via the C<p6w.protocol>, C<p6w.protocol.support>, and C<p6w.protocol.enabled> values in the environment.
+The application and application server SHOULD communicate according to the application protocol used for the current application call. Otherwise, they will be unable to communicate. For many applications, just implementing the basic protocol request-response protocol is enough. However, to allow for more complete applications, P6SGI provides additional tools to help application and application server to communicate through a variety of situations. This is handled primarily via the C<p6w.protocol>, C<p6w.protocol.support>, and C<p6w.protocol.enabled> values in the environment.
 
-The application SHOULD check for a defined value in C<p6w.protocol> to determine both that the server supports this extension and to determine which application protocol the application MUST response with. The application SHOULD NOT make assumptions about the network protocol based upon the C<p6w.protocol> value for the current request. If the application needs to make a decision based upon the network protocol, the application SHOULD check the C<SERVER_PROTOCOL>.
+The application SHOULD check the value in C<p6w.protocol>. The application SHOULD NOT make assumptions about the network protocol based upon the C<p6w.protocol> value for the current request. If the application needs to make a decision based upon the network protocol, the application SHOULD check the C<SERVER_PROTOCOL>.
 
-The application MAY check the C<p6w.protocol.support> to discover which protocols are supported by the application server. An application that is not able to support all supported protocols SHOULD modify C<p6w.protocol.enabled> to only include protocols supported by the application as early as possible. The application SHOULD do this in the C<setup-app> advanced configuration hook, if the application is using advanced configuration. For example,
+The application SHOULD check C<p6w.protocol.support> to discover which protocols are supported by the application server. An application that is not able to support all supported protocols SHOULD modify C<p6w.protocol.enabled> to only include protocols supported by the application as early as possible.
 
-    class {
-        constant SUPPORTED-PROTOCOLS = set('request-response');
-        method setup-app(%env) {
-            %env<p6w.protocol.enabled> ∩= SUPPORTED-PROTOCOLS;
-        }
-        ...
-    }
-
-The application server MUST provide the C<p6w.protocol.support> and C<p6w.protocol.enabled> values as part of the application environment. The application server MUST NOT use any protocol that is not a member of the C<p6w.protocol.enabled> set. If a protocol becomes disabled in the middle of a request, the request MUST continue, but subsequent requests MUST NOT use that protocol unless it is later enabled.
+The application server MUST provide the C<p6w.protocol.support> and C<p6w.protocol.enabled> values as part of the configuration environment. The application server MUST NOT use any protocol that is not a member of the C<p6w.protocol.enabled> set. If a protocol becomes disabled in the middle of a request, the request MUST continue, but subsequent requests MUST NOT use that protocol unless it is later enabled.
 
 This specification defines the following protocols:
 
@@ -540,6 +576,8 @@ This specification defines the following protocols:
 =item B<psgi> for legacy PSGI applications
 
 =item B<socket> for raw, plain socket protocols, which send and receive data with no expectation of special server handling
+
+It is recommended that an application server that implements all of these protocols only enable the request-response protocol within C<p6w.protocol.enabled> by default. This allows simple P6SGI applications to safely operate without having to perform any special configuration.
 
 =head2 4.0 Request-Response Protocol
 
@@ -553,17 +591,19 @@ Here is an example application that implements the "request-response" protocol:
         start {
             200,
             [ Content-Type => 'text/plain' ],
-            Supply.from-list([ "Hello World" ]),
+            supply {
+                emit "Hello World"
+            },
         };
     }
 
-An application MUST return a L<Promise>. This Promise MUST be kept with a L<Capture> (or something that becomes one on return) or broken. The Capture MUST contain 3 positional elements, which are the status code, the list of ehaders, and the message payload.
+An application MUST return a L<Promise>. This Promise MUST be kept with a L<Capture> (or something that becomes one on return) or MAY be broken. The Capture MUST contain 3 positional elements, which are the status code, the list of headers, and the response payload.
 
-=item The status code MUST be an L<Int> or object that coerces to an Int. It MUST be a valid HTTP status code.
+=item The status code MUST be an L<Int> or object that coerces to an Int. It MUST be a valid status code for the L<SERVER_PROTOCOL>.
 
 =item The headers MUST be a L<List> of L<Pair>s or an object that when coerced into a List becomes a List of Pairs. These pairs name the headers to return with the response. Header names MAY be repeated.
 
-=item The message payload MUST be a I<sane> L<Supply> or an object that coerces into a I<sane> Supply.
+=item The message payload MUST be a I<sane> L<Supply> or an object that coerces into a I<sane> Supply, such as a L<List>.
 
 Here is a more interesting example application demonstrating some of the power of this interface:
 
@@ -578,14 +618,13 @@ Here is a more interesting example application demonstrating some of the power o
                     emit $acc *= $v;
                     emit "\n";
                 }
-                done;
             },
         };
     }
 
 The example application above will print out all the values of factorial from 1 to N where N is given in the query string. The header is returned immediately, but the lines of the body are returned as the values of factorial are calculated. The asynchronous interface is concise and efficient.
 
-And here is an example demonstrating a couple ways in which coercion can be used by an application:
+And here is an example demonstrating a couple ways in which coercion can be used by an application to improve readability:
 
     sub app(%env) {
         my enum HttpStatus (OK => 200, NotFound => 404, ServerError => 500);
@@ -600,17 +639,17 @@ Applications SHOULD return a Promise as soon as possible. It is recommended that
 
 Application servers SHOULD NOT assume that the returned L<Promise> will be kept. It SHOULD assume that the Promise has been vowed and MUST NOT try to keep or break the Promise from the application.
 
-=head3 4.0.1 Message Payload
+=head3 4.0.1 Response Payload
 
 Applications MUST return a I<sane> L<Supply> that emits nothing for requests whose response must be empty.
 
-For any other request, the application MAY emit zero or more messages in the returned payload Supply. The messages MUST be handled as follows:
+For any other request, the application MAY emit zero or more messages in the returned payload Supply. The messages SHOULD be handled as follows:
 
-=item L<Blob>. Any Blob emitted by the application SHOULD be treated as binary data to be passed through to the origin.
+=item L<Blob>. Any Blob emitted by the application SHOULD be treated as binary data to be passed through to the origin as-is.
 
 =item L<List> of L<Pair>s. Some response payloads may contain trailing headers. Any List of Pairs emitted should be treated as trailing headers.
 
-=item L<Associative>. Any Associative object emitted should be treated as a message to communicate between layers of the application, middleware, and server. These should be ignored and passed on by middleware to the next layer unless consumed by the current middleware. Any message that reaches the application server but is not consumed by the application server MAY result in a warning being reported, but SHOULD otherwise be ignored.
+=item L<Associative>. Any Associative object emitted should be treated as a message to communicate between layers of the application, middleware, and server. These should be ignored and passed on by middleware to the next layer unless consumed by the current middleware. Any message that reaches the application server but is not consumed by the application server MAY result in a warning being reported, but SHOULD otherwise be ignored. These objects MUST NOT be transmitted to the origin.
 
 =item L<Mu>. Any other Mu SHOULD be stringified, if possible, and encoded by the application server. If an object given cannot be stringified, the server SHOULD report a warning.
 
@@ -618,13 +657,33 @@ For any other request, the application MAY emit zero or more messages in the ret
 
 The application server SHOULD handle encoding of strings or stringified objects emitted to it. When performing encoding, the application server SHOULD honor the C<charset> set within the C<Content-Type> header, if given. If it does not honor the C<charset>, it MUST encode any strings in the response payload according to the encoding named in C<p6w.body.encoding>.
 
-=head3 4.0.3 HTTP/2 Handling
+=head3 4.0.3 Request-Response Lifecycle
 
-When a server supports HTTP/2 it SHOULD implement the HTTP/2 Push Promise Extension defined in section 3.10. An application server MAY want to consider implementing HTTP/2 protocol upgrades using the extension described in section 3.8.
+The server processes requests from an origin, passes the partially processed request information to the application by calling the application, waits for the application's response, and then returns the response to the origin. In the simplest example this means handling an HTTP roundtrip. Yet, it may also mean implementing a related protocol like CGI or FastCGI or SCGI or something else entirely.
+
+In the modern web, an application may want to implement a variety of complex HTTP interactions. These use-cases are not described by the typical HTTP request-response roundtrip with which most web developers are familiar. For example, an interactive Accept-Continue response or a data stream to or from the origin or an upgrade request to switch protocols. As such, application servers SHOULD make a best effort to be implemented in such a way as to make this variety applications possible.
+
+The application server SHOULD pass control to the application as soon as the headers have been received and the environment can be constructed. The application server MAY continue processing the request payload while the application server begins its work. The server SHOULD NOT emit the request payload to C<p6w.input> yet.
+
+Once the application has returned the its L<Promise> to respond, the server SHOULD wait until the promise is kept. Once kept, the server SHOULD tap the response payload as soon as possible. After tapping the Supply, the application server SHOULD keep the L<Promise> in C<p6w.ready> (the application server SHOULD NOT break this Promise). Once that promise has been kept, only then SHOULD the server start emitting the contents of the request payload, if any, to C<p6w.input>.
+
+The server SHOULD return the application response headers back to the origin as soon as they are received. After which, the server SHOULD return each chunk emitted by the response body from the application as soon as possible.
+
+This particular order of operations during the application call will ensure that the application has the greatest opportunity to perform well and be able to execute a variety of novel HTTP interactions.
+
+=head3 4.0.4 HTTP/1.1 Keep Alive
+
+When an application server supports HTTP/1.1 with keep-alive, each request sent on the connection MUST be handled as a separate call to the application.
+
+=head3 4.0.4 HTTP/2 Handling
+
+When a server supports HTTP/2 it SHOULD implement the HTTP/2 Push Promise Extension defined in section 3.10. An application server MAY want to consider implementing HTTP/2 protocol upgrades using the extension described in section 3.8 or MAY perform such upgrades automatically instead.
+
+The application MUST be called once for each request or push-promise made on an HTTP/2 stream.
 
 =head2 4.1 Framed-Socket Protocol
 
-The "framed-socket" protocol is appropriate for WebSocket-style peer-to-peer TCP connections. The following sections assume a WebSocket connection, but MAY be adapted for use with other framed message exchanges, such as message queues or chat servers.
+The "framed-socket" protocol is appropriate for WebSocket-style peer-to-peer TCP connections. The following sections assume a WebSocket connection, but might be adaptable for use with other framed message exchanges, such as message queues or chat servers.
 
 =head3 4.1.0 Response
 
@@ -632,7 +691,7 @@ Any application server implementing WebSocket MUST adhere to all the requirement
 
 =item The C<REQUEST_METHOD> MUST be set to the HTTP method used when the WebSocket connection was negotiated, i.e., usually "GET". Similarly, C<SCRIPT_NAME>, C<PATH_INFO>, C<REQUEST_URI>, C<QUERY_STRING>, C<SERVER_NAME>, C<SERVER_PORT>, C<CONTENT_TYPE>, and C<HTTP_*> variables in the environment MUST be set to the values from the original upgrade request sent from the origin.
 
-=item The C<SERVER_PROTOCOL> MUST be set to "WebSocket/13" or a similar string representing the version of WebSocket is in use.
+=item The C<SERVER_PROTOCOL> MUST be set to "WebSocket/13" or a similar string representing the revision of the WebSocket network protocol which in use.
 
 =item The C<CONTENT_LENGTH> SHOULD be set to an undefined L<Int>.
 
@@ -642,19 +701,21 @@ Any application server implementing WebSocket MUST adhere to all the requirement
 
 =item The server MUST decode frames received from the client and emit each of them to C<p6w.input>. The frames MUST NOT be buffered or concatenated.
 
-=item The server's supplied C<p6w.input> L<Supply> must be I<sane>. The server SHOULD signal C<done> through the Supply when the client closes the WebSocket connection normally and C<quit> on abnormal termination of the connection.
+=item The server's supplied C<p6w.input> L<Supply> must be I<sane>. The server SHOULD signal C<done> through the Supply when either the client or server closes the WebSocket connection normally and C<quit> on abnormal termination of the connection.
 
 =item The server MUST encode frames emitted by the application in the message payload as data frames sent to the client. The frames MUST be separated out as emitted by the application without any buffering or concatenation.
 
-The application MUST return a L<Promise> that is kept with a L<Supply>. The application MAY break this Promise. The application will emit frames to send back to the origin using the promised Supply.
+The application MUST return a L<Promise> that is kept with just a L<Supply> (i.e., not a 3-element Capture as is used with the request-response protocol). The application MAY break this Promise. The application will emit frames to send back to the origin using the promised Supply.
 
-=head3 4.1.1 Message Payload
+=head3 4.1.1 Response Payload
 
-Applications MUST return a I<sane> L<Supply> that emits an object for every frame it wishes to return to the origin. The application MAY emit zero or more messages to this supply. The application MAY emit C<done> to signal that the connection should be terminated with the client.
+Applications MUST return a I<sane> L<Supply> that emits an object for every frame it wishes to return to the origin. The application MAY emit zero or more messages to this supply. The application MAY emit C<done> to signal that the connection is to be terminated with the client.
 
 The messages MUST be framed and returned to the origin by the application server as follows, based on message type:
 
 =item L<Blob>. Any Blob emitted by the application SHOULD be treated as binary data, framed exactly as is, and returned to the client.
+
+=item L<Associative>. Any Associative object emitted should be treated as a message to communicate between layers of the application, middleware, and server. These should be ignored and passed on by middleware to the next layer unless consumed by the current middleware. Any message that reaches the application server but is not consumed by the application server MAY result in a warning being reported, but SHOULD otherwise be ignored. These objects MUST NOT be transmitted to the origin.
 
 =item L<Mu>. Any other Mu SHOULD be stringified, if possible, and encoded by the application server. If an object given cannot be stringified, the server SHOULD report a warning.
 
@@ -668,19 +729,19 @@ To handle legacy applications, this specification defines the "psgi" protocol. I
 
 =head3 4.2.0 Response
 
-The application should return a 3-element L<Capture> directly. The first element being the numeric status code, the second being an array of pairs naming the headers to sent, and finally an array of strings containing the body.
+The application SHOULD return a 3-element L<Capture> directly. The first element being the numeric status code, the second being an array of pairs naming the headers to return in the response, and finally an array of values representing the response payload.
 
 =head3 4.2.1 Payload
 
-The payload should always be delivered as an array of strings.
+The payload SHOULD be delivered as an array of strings, never as a supply.
 
 =head3 4.2.2 Encoding
 
-The server is required to encode these, but the mechanism used is not defined by this specification.
+String encoding is not defined by this document.
 
 =head2 4.3 Socket Protocol
 
-The "socket" protocol can be provided by any application server wishing to allow the application to basically take over any socket connection. This allows the application to implement any arbitrary protocol.
+The "socket" protocol can be provided by an application server wishing to allow the application to basically take over the socket connection with the origin. This allows the application to implement an arbitrary protocol. It does so, however, in a way that is aimed toward providing better portability than using the socket extension.
 
 The socket provided sends and receives data directly to and from the application without any framing, buffering, or modification. 
 
@@ -688,7 +749,7 @@ The "socket" protocol SHOULD only be used when it is enabled in C<p6w.protocol.e
 
 =head2 4.3.0 Response
 
-Here's an example application that implements the "socket" protocol to create a fairly naïve HTTP server:
+Here's an example application that implements the "socket" protocol to create a naïve HTTP server:
 
     sub app(%env) {
         start {
@@ -738,82 +799,19 @@ The following parts of the environment SHOULD be provided as undefined values:
 
 The C<p6w.protocol> must be set to "socket".
 
-The application server MUST provide data sent by the origin to the application through the C<p6w.input> supply as it arrives.
-
-The application server MUST forward on data emitted by the application in the returned payload supply as it arrives. The application server MUST send no other data to the origin over that socket once the application is handed control. The application server MUST close the connection with the origin when the application server sends the "done" message to the supply.
+The application server SHOULD provide data sent by the origin to the application through the C<p6w.input> supply as it arrives. It MUST still be a I<sane> supply.
 
 The application server MAY tunnel the connection through another socket, stream, file handle, or what-not. That is, the application MAY NOT assume the communication is being performed over any particular medium. The application server SHOULD transmit the data to the origin as faithfully as possible, keeping the intent of the application as much as possible.
 
-=head3 4.3.1 Message Payload
+The application server SHOULD forward on data emitted by the application in the returned payload supply as it arrives. The application server SHOULD send no other data to the origin over that socket once the application is handed control, unless related to how the data is being tunneled or handled by the server. The application server SHOULD close the connection with the origin when the application server sends the "done" message to the supply. Similarly, the application server SHOULD send "done" the C<p6w.input> supply when the connection is closed by the client or server.
+
+=head3 4.3.1 Response Payload
 
 Applications MUST return a I<sane> L<Supply> which emits a string of bytes for every message to be sent. The messages returned on this stream MUST be L<Blob> objects. 
 
 =head3 4.3.2 Encoding
 
 The application server SHOULD reject any object other than a L<Blob> sent as part of the message payload. The application server is not expected to perform any encoding or stringification of messages.
-
-=head1 5 Advanced Configuration
-
-For applications that need more control over their environment, the P6SGI specification provides a mechanism for advanced configuration. This mechanism gives the application additional and extensible control over its lifecycle and a means to communicate with the application server earlier in the process.
-
-For example, here is an application returning an advanced configuration object:
-
-    use v6;
-    class :: is MyApp {
-        method setup-app(%env) {
-            if %env<p6w.version> < v1 {
-                die "This application requires an v0.7.Draft or better appserver.";
-            }
-
-            self.connect-db;
-        }
-
-        method provide-app(%env) {
-            given %env<p6w.protocol> {
-                when 'request-response' { &.http-app }
-                when 'framed-socket'    { &.ws-app }
-                default                 { die "unsupported appserver protocol" }
-            }
-        }
-
-        method teardown-app(%env) {
-            self.disconnect-db;
-        }
-    }
-
-=head2 5.0 Configuration Object
-
-The application server MUST be able to accept applications defined using an object other than a L<Callable>. When an object that is not Callable is used, the application server MUST perform the following:
-
-=item If the application object provides a C<setup-app> method, the application server MUST call that method as soon as possible. It MUST be called before the first call to the application routine and before any calls to C<teardown-app>, C<to-app>, and C<provide-app>. It will pass a single argument: the application environment (see below). The application server SHOULD ignore the return value of this method call.
-
-=item If the application object provides a C<provide-app> method, the application server MUST call that method prior to every call to the application routine. It will pass a single argument: the request environment (i.e., the full request environment, not the more limited application environment) to the method. The return value will be used as the application routine to use for only that request. The application MUST return a Callable to be used to handle that request to the application.
-
-=item If the application object provides a C<to-app> method, the application server MUST call that method prior to needing an application routine. It will pass no arguments to that call. The object returned will be used as the application routine. The application MUST return a Callable to be used to handle requests to the application.
-
-=item If the application object provides a C<teardown-app> method, the application server MUST call that method as late as possible. It MUST be called after the very last call to the applicaiton routine, and after all calls to C<setup-app>, C<to-app>, and C<provide-app>. The application server MUST call it with a single argument: the application environment.
-
-The calls made by the application server to these four methods MUST be made synchronously. The C<setup-app>, C<to-app>, and C<teardown-app> calls MUST only be made once per process.
-
-=head2 5.1 Application Environment
-
-The application environment differs from the request environment described in 2.0.1, 2.1.1, and 2.2.1 in that it only includes the global values. The application environment passed to C<setup-app> and C<teardown-app> MUST include at least the following keys and the corresponding values defined in 2.0.1:
-
-=item p6w.version
-
-=item p6w.errors
-
-=item p6w.multithread
-
-=item p6w.multiprocess
-
-=item p6w.run-once
-
-=item p6w.protocol.support
-
-=item p6w.protocol.enabled
-
-It is recommended that any other global values or global extension settings (particularly the flags signalling whether an extension is supported) also be included.
 
 =head1 Changes
 
@@ -835,9 +833,9 @@ It is recommended that any other global values or global extension settings (par
 
 =item Changed C<p6wx.protocol.upgrade> from an L<Array> to a L<Set> of supported protocol names.
 
-=item Added Section 4 to describe protocol-specific features of the specification. Section 4.0 is for HTTP, 4.1 is for WebSocket, and 4.3 is for Socket.
+=item Split the environment and the application into two parts: configuration and runtime.
 
-=item Added Section 5 to describe advanced application configuration using an object.
+=item Added Section 4 to describe protocol-specific features of the specification. Section 4.0 is for HTTP, 4.1 is for WebSocket, 4.2 is for PSGI, and 4.3 is for Socket.
 
 =head2 0.6.Draft
 
