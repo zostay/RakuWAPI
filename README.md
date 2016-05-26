@@ -99,11 +99,17 @@ For full details on how an application is defined, see Section 2.2.0. For detail
 
 The environment is delivered to the application via hashes, they MUST be [Associative](http://doc.perl6.org/type/Associative). The application server makes the environment available to the application at runtime. The environment is used to:
 
-1. Communicate server capabilities to the application, 2. Allow the application to communicate with the server, and 3. Allow the application to respond to calls to the application.
+  * Communicate server capabilities to the application,
+
+  * Allow the application to communicate with the server, and
+
+  * Allow the application to respond to calls to the application.
 
 Each variable or key in the environment is described as belonging to one of two roles:
 
-* A configuration environment variable describes global capabilities and configuration information to application. * A runtime environment variable describes per-call information related to the particular request.
+  * A configuration environment variable describes global capabilities and configuration information to application.
+
+  * A runtime environment variable describes per-call information related to the particular request.
 
 Calls to the runtime routine MUST be provided with all required environment variables belonging to either of these roles in the passed environment hash. However, calls to the configuration routine (see 2.0.4) MUST include the configuration envrionment and SHOULD NOT include runtime environment in the passed environment hash.
 
@@ -281,7 +287,15 @@ After the application has been defined, it will be called each time the applicat
 
 These requirements, however, are in held in common regardless of protocol, the application server requirements are as follows:
 
-1. The application server MUST check the return value of the application. If the application return value is [Callable](http://doc.perl6.org/type/Callable), the application has returned a configuration routine. Otherwise, the application has returned a runtime routine. 2. If the application returned a runtime routine, as detected in the previous step, the application server MUST call this routine and pass the configuration environment in a hash as the first argument to the routine. The return value of this routine is the runtime routine for the application. 3. Prior to each call to runtime routine, the application server MUST set the `p6w.protocol` variable to the name of the protocol the server will use to communicate with the application. 4. The server MUST pass the merger of the configuration and runtime environments in a hash as the first argument to the runtime routine. 5. The server MUST receive the return value of runtime routine and process it according to the application protocol in use for this call, the one matching the protocol set in step 3.
+  * The application server MUST check the return value of the application. If the application return value is [Callable](http://doc.perl6.org/type/Callable), the application has returned a configuration routine. Otherwise, the application has returned a runtime routine.
+
+  * If the application returned a runtime routine, as detected in the previous step, the application server MUST call this routine and pass the configuration environment in a hash as the first argument to the routine. The return value of this routine is the runtime routine for the application.
+
+  * Prior to each call to runtime routine, the application server MUST set the `p6w.protocol` variable to the name of the protocol the server will use to communicate with the application.
+
+  * The server MUST pass the merger of the configuration and runtime environments in a hash as the first argument to the runtime routine.
+
+  * The server MUST receive the return value of runtime routine and process it according to the application protocol in use for this call, the one matching the protocol set in step 3.
 
 The server MUST NOT call the application with `p6w.protocol` set to a protocol that has been previously disabled by the application via the `p6w.protocol.enabled` setting.
 
@@ -317,7 +331,11 @@ The way in which middleware is defined and applied is left up to the middleware 
 
 What is important in middleware definition is the following:
 
-1. A middleware application MUST be a P6SGI application, viz., it MUST be a configuration routine or a runtime routine as defined in section 2.2.0. 2. Middleware SHOULD be defined as a configuration routine, even if it doesn't need to access the configuration environment prior to runtime. This allows the middleware to wrap both configuration routines and runtime routines. 3. When defined as a configuration routine, Middleware MUST check to see if the application being wrapped returns a configuration routine or a runtime routine by testing whether the return value of the routine is [Callable](http://doc.perl6.org/type/Callable). If the wrapped application is a configuration routine, the middleware MUST call it with the configuration environment. The middleware routine MUST return a runtime routine, usually after wrapping it as well. (Though, it is possible for middleware to wrap just the configuration routine without wrapping the runtime routine.)
+  * A middleware application MUST be a P6SGI application, viz., it MUST be a configuration routine or a runtime routine as defined in section 2.2.0.
+
+  * Middleware SHOULD be defined as a configuration routine, even if it doesn't need to access the configuration environment prior to runtime. This allows the middleware to wrap both configuration routines and runtime routines.
+
+  * When defined as a configuration routine, Middleware MUST check to see if the application being wrapped returns a configuration routine or a runtime routine by testing whether the return value of the routine is [Callable](http://doc.perl6.org/type/Callable). If the wrapped application is a configuration routine, the middleware MUST call it with the configuration environment. The middleware routine MUST return a runtime routine, usually after wrapping it as well. (Though, it is possible for middleware to wrap just the configuration routine without wrapping the runtime routine.)
 
 Otherwise, There Is More Than One Way To Do It.
 
@@ -381,7 +399,9 @@ This second application makes sure that only the request-response protocol is en
 
 An application is defined in one of two mechanisms, as mentioned in the previous section:
 
-1. A runtime routine defines just the part of the application that reacts to incoming calls from the application server. (See Section 2.2.0.0.) 2. A configuration routine defines a special routine that is called prior to handling any incoming calls from the application server to give the application a chance to communicate with the server. (See Section 2.2.0.1.)
+  * A runtime routine defines just the part of the application that reacts to incoming calls from the application server. (See Section 2.2.0.0.)
+
+  * A configuration routine defines a special routine that is called prior to handling any incoming calls from the application server to give the application a chance to communicate with the server. (See Section 2.2.0.1.)
 
 During application defintion, the application MAY also instantiate and apply middleware to be used by the application.
 
