@@ -1,11 +1,11 @@
 {
-    "name" : "P6SGI",
-    "version" : "0.6.Draft",
-    "description" : "Perl 6 Standard Gateway Interface Specification",
+    "name" : "P6W",
+    "version" : "0.7.Draft",
+    "description" : "Web API for Perl 6",
     "author" : "Andrew Sterling Hanenkamp",
     "provides" : {
-        "P6SGI": "P6SGI.pod"
+        "P6W": "P6W.pod"
     },
     "depends" : [ ],
-    "source-url" : "git://github.com/zostay/P6SGI.git"
+    "source-url" : "git://github.com/zostay/P6W.git"
 }
