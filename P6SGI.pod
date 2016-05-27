@@ -20,9 +20,7 @@ This standard has the following goals:
 
 =item Keep the interface simple so that servers and middleware are simple to implement.
 
-=item Allow the interface to be flexible enough to accommodate a variety of common use-cases and simple optimzations.
-
-=item Provide flexibility so that unanticipated use-cases may be implemented and so that the interface may be extended by servers wishing to do so.
+=item Allow the interface to be flexible enough to accommodate a variety of common use-cases and simple optimzations as well as supporting unanticipated use-cases and future extensions.
 
 Aside from that is the underlying assumption that this is a simple interface and ought to at least somewhat resemble work in the standards it is derived from, including [Rack](http://www.rubydoc.info/github/rack/rack/master/file/SPEC), [WSGI](https://www.python.org/dev/peps/pep-0333/), [PSGI](https://metacpan.com/pod/PSGI), [CGI](http://www.w3.org/CGI/), and others.
 
@@ -60,15 +58,13 @@ Each layer has a specific role related to the other layers. The server layer is 
 
 This specification goes through each layer in order. In the process, each section only specifies the requirements and recommendations for the layer that section describes. When other layers a mentioned outside of its section, the specification is deliberately vague to keep all specifics in the appropriate section. 
 
-To aid in reading this specification, the numbering subsections of 2.0, 2.1, and 2.2 are matched so that you can navigate between them to compare the requirements of each layer. For example, 2.0.1 describes the environment the server provides, 2.1.1 describes how the application interacts with that environment, and 2.2.1 describes how middleware may manipulate that environment.
+To aid in reading this specification, the numbering subsections of 2.0, 2.1, and 2.2 are matched so that you can navigate between them to compare the requirements of each layer. For example, 2.0.1 describes the environment the server provides, 2.1.1 describes how the application interacts with that environment, and 2.1.1 describes how middleware may manipulate that environment.
 
 =head2 2.0 Layer 0: Server
 
 A P6SGI application server is a program capable of running P6SGI applications as defined by this specification.
 
 A P6SGI application server implements some kind of web service. For example, this may mean implementing an HTTP or WebSocket service or a related protocol such as CGI, FastCGI, SCGI, etc. An application server also manages the application lifecycle and executes the application, providing it with a complete environment, and processing the response from the application to determine how to respond to the origin.
-
-An application server SHOULD strive to be as flexible as possible to allow as many unusual interactions, subprotocols, and upgrade protocols to be implemented as possible within the connection.
 
 One important aspect of this specification that is not defined is the meaning of a server error. At times it is suggested that certain states be treated as a server error, but what that actually means to a given implementation is deliberatly undefined. That is a complex topic which varies by implementation and by the state the server is in when such a state is discovered. The server SHOULD log such events and SHOULD use the appropriate means of communication provided to notify the application that a server error has occurred while responding.
 
@@ -143,16 +139,12 @@ The configuration environment MUST be made available to the application during e
                              |                                        | protocols supported by the application 
                              |                                        | server.
     
-    C<p6w.protocol.enabled>  | C<< SetHash:D >>                       | This is a mutable set of strings
-                             |                                        | naming the actual protocols to be
-                             |                                        | used by the application server. This
-                             |                                        | SHOULD be modified by the application
-                             |                                        | to only include those protocols
-                             |                                        | supported. The values of this set and 
-                             |                                        | any changes made during the 
-                             |                                        | application lifecycle MUST be 
-                             |                                        | preserved for the lifetime of the 
-                             |                                        | application.
+    C<p6w.protocol.enabled>  | C<< SetHash:D >>                       | This is the set of enabled protocols. 
+                             |                                        | The application may modify this set 
+                             |                                        | with those found in 
+                             |                                        | C<p6w.protocol.support> to 
+                             |                                        | enable/disable protocols the server 
+                             |                                        | is permitted to use.
 
 =end table
 
@@ -650,7 +642,7 @@ Application servers SHOULD NOT assume that the returned L<Promise> will be kept.
 
 =head3 4.0.1 Response Payload
 
-Applications MUST return a I<sane> L<Supply> that emits nothing for requests whose response must be empty.
+The response payload, in the result of the application's promise, must be a I<sane> L<Supply>. This supply MUST emit nothing for requests whose response must be empty.
 
 For any other request, the application MAY emit zero or more messages in the returned payload Supply. The messages SHOULD be handled as follows:
 
