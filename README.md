@@ -1,7 +1,7 @@
 NAME
 ====
 
-P6SGI - Perl 6 Web Server Gateway Interface Specification
+Web API for Perl 6 (P6W)
 
 STATUS
 ======
@@ -30,21 +30,21 @@ Aside from that is the underlying assumption that this is a simple interface and
 1 TERMINOLOGY
 =============
 
-A P6SGI application is a Perl 6 routine that expects to receive an environment from an *application server* and returns a response each time it is called by the server.
+A P6W application is a Perl 6 routine that expects to receive an environment from an *application server* and returns a response each time it is called by the server.
 
 A Web Server is an application that processes requests and responses according to a web-related protocol, such as HTTP or WebSockets or similar protocol.
 
 The origin is the external entity that makes a given request and/or expects a response from the application server. This can be thought of generically as a web browser, bot, or other user agent.
 
-An application server is a program that is able to provide an environment to a *P6SGI application* and process the value returned from such an application.
+An application server is a program that is able to provide an environment to a *P6W application* and process the value returned from such an application.
 
-The *application server* might be associated with a *web server*, might itself be a *web server*, might process a protocol used to communicate with a *web server* (such as CGI or FastCGI), or may be something else entirely not related to a *web server* (such as a tool for testing *P6SGI applications*).
+The *application server* might be associated with a *web server*, might itself be a *web server*, might process a protocol used to communicate with a *web server* (such as CGI or FastCGI), or may be something else entirely not related to a *web server* (such as a tool for testing *P6w applications*).
 
-Middleware is a *P6SGI application* that wraps another *P6SGI application* for the purpose of performing some auxiliary task such as preprocessing request environments, logging, postprocessing responses, etc.
+Middleware is a *P6W application* that wraps another *P6W application* for the purpose of performing some auxiliary task such as preprocessing request environments, logging, postprocessing responses, etc.
 
 A framework developer is a developer who writes an *application server*.
 
-An application developer is a developer who writes a *P6SGI application*.
+An application developer is a developer who writes a *P6W application*.
 
 A sane Supply is a Supply object that follows the emit*-done/quit protocol, i.e., it will emit 0 or more objects followed by a call to the done or quit handler. See [Supply](http://doc.perl6.org/type/Supply) for details.
 
@@ -68,15 +68,15 @@ To aid in reading this specification, the numbering subsections of 2.0, 2.1, and
 2.0 Layer 0: Server
 -------------------
 
-A P6SGI application server is a program capable of running P6SGI applications as defined by this specification.
+A P6W application server is a program capable of running P6W applications as defined by this specification.
 
-A P6SGI application server implements some kind of web service. For example, this may mean implementing an HTTP or WebSocket service or a related protocol such as CGI, FastCGI, SCGI, etc. An application server also manages the application lifecycle and executes the application, providing it with a complete environment, and processing the response from the application to determine how to respond to the origin.
+A P6W application server implements some kind of web service. For example, this may mean implementing an HTTP or WebSocket service or a related protocol such as CGI, FastCGI, SCGI, etc. An application server also manages the application lifecycle and executes the application, providing it with a complete environment, and processing the response from the application to determine how to respond to the origin.
 
 One important aspect of this specification that is not defined is the meaning of a server error. At times it is suggested that certain states be treated as a server error, but what that actually means to a given implementation is deliberatly undefined. That is a complex topic which varies by implementation and by the state the server is in when such a state is discovered. The server SHOULD log such events and SHOULD use the appropriate means of communication provided to notify the application that a server error has occurred while responding.
 
 ### 2.0.0 Application Definition
 
-A P6SGI application is defined as a class or object, which must be implemented according to a particular interface. The application server MUST provide a means by which an application is loaded. The application server SHOULD be able to load them by executing a P6SGI script file.
+A P6W application is defined as a class or object, which must be implemented according to a particular interface. The application server MUST provide a means by which an application is loaded. The application server SHOULD be able to load them by executing a P6W script file.
 
 For example, here is a simple application:
 
@@ -113,9 +113,9 @@ The server MAY provide variables in the environment in either role in addition t
 
 The following prefixes are reserved and SHOULD NOT be used unless defined by this specification and only according to the definition given here.
 
-  * `p6w.` is for P6SGI core standard environment.
+  * `p6w.` is for P6W core standard environment.
 
-  * `p6wx.` is for P6SGI standard extensions to the environment.
+  * `p6wx.` is for P6W standard extensions to the environment.
 
 In the tables below, a type constraint is given for each variable. The application server MUST provide each key as the named type. All variables given in the tables with 2.0.1.0 and 2.0.1.1 MUST be provided.
 
@@ -300,7 +300,7 @@ For details on how each protocol handles the application call, see section 4.
 2.1 Layer 1: Middleware
 -----------------------
 
-P6SGI middleware is simply an application that wraps another application. Middleware is used to perform any kind of pre-processing, post-processing, or side-effects that might be added onto an application. Possible uses include logging, encoding, validation, security, debugging, routing, interface adaptation, and header manipulation.
+P6W middleware is simply an application that wraps another application. Middleware is used to perform any kind of pre-processing, post-processing, or side-effects that might be added onto an application. Possible uses include logging, encoding, validation, security, debugging, routing, interface adaptation, and header manipulation.
 
 For example, in the following snippet, `mw` is a middleware application that adds a custom header:
 
@@ -312,7 +312,7 @@ For example, in the following snippet, `mw` is a middleware application that add
             wrappee(%env).then(
                 -> $p {
                     my @r = $p.result;
-                    @r[1].push: 'P6SGI-Used' => 'True';
+                    @r[1].push: 'P6W-Used' => 'True';
                     @r
                 }
             );
@@ -323,11 +323,11 @@ For example, in the following snippet, `mw` is a middleware application that add
 
 ### 2.1.0 Middleware Definition
 
-The way in which middleware is defined and applied is left up to the middleware author. The example in the previous section uses a combination of priming and defining a closure. This is, by no means, the only way to define P6SGI middleware in Perl 6.
+The way in which middleware is defined and applied is left up to the middleware author. The example in the previous section uses a combination of priming and defining a closure. This is, by no means, the only way to define P6W middleware in Perl 6.
 
 What is important in middleware definition is the following:
 
-  * A middleware application MUST be a P6SGI application, viz., it MUST be a configuration routine or a runtime routine as defined in section 2.2.0.
+  * A middleware application MUST be a P6W application, viz., it MUST be a configuration routine or a runtime routine as defined in section 2.2.0.
 
   * Middleware SHOULD be defined as a configuration routine, even if it doesn't need to access the configuration environment prior to runtime. This allows the middleware to wrap both configuration routines and runtime routines.
 
@@ -364,9 +364,9 @@ See section 4 for details on protocol handling.
 2.2 Layer 2: Application
 ------------------------
 
-A P6SGI application is a Perl 6 routine. The application MUST be [Callable](http://doc.perl6.org/type/Callable). An application may be defined as either a runtime routine or a configuration routine. A configuration routine receives a P6SGI configuration environment and returns a runtime routine. A runtime routine receives a P6SGI runtime environment and responds to it by returning a response.
+A P6W application is a Perl 6 routine. The application MUST be [Callable](http://doc.perl6.org/type/Callable). An application may be defined as either a runtime routine or a configuration routine. A configuration routine receives a P6W configuration environment and returns a runtime routine. A runtime routine receives a P6W runtime environment and responds to it by returning a response.
 
-As an example, a simple Hello World P6SGI application defined with a runtime routine could be implemented as follows:
+As an example, a simple Hello World P6W application defined with a runtime routine could be implemented as follows:
 
 ```perl6
     sub app(%env) {
@@ -407,7 +407,7 @@ To define an application as a runtime routine, the application is defined as a [
 
 The application SHOULD respond to the caller, the application server, according to the `p6w.protocol` string set in the passed environment.
 
-Here, for example, is a P6SGI application that calculates and prints the Nth Lucas number depending on the value passed in the query string. This assumes a request-response protocol (see Section 4.0).
+Here, for example, is a P6W application that calculates and prints the Nth Lucas number depending on the value passed in the query string. This assumes a request-response protocol (see Section 4.0).
 
 ```perl6
     sub lucas-app(%env) {
@@ -500,9 +500,9 @@ In particular, `p6wx.body.done` MUST be broken if `p6wx.header.done` is broken (
 3.2 Raw Socket
 --------------
 
-The `p6wx.io` environment variable, if provided, SHOULD be the socket object used to communicate to the client. This is the interface of last resort as it sidesteps the entire P6SGI interface, but may be useful in cases where an application wishes to control details of the socket itself.
+The `p6wx.io` environment variable, if provided, SHOULD be the socket object used to communicate to the client. This is the interface of last resort as it sidesteps the entire P6W interface, but may be useful in cases where an application wishes to control details of the socket itself.
 
-If your application requires the use of this socket, please file an issue describing the nature of your application in detail. You may have a use-case that a future revision to P6SGI can improve.
+If your application requires the use of this socket, please file an issue describing the nature of your application in detail. You may have a use-case that a future revision to P6W can improve.
 
 This variable MAY be made available as part of the configuration environment.
 
@@ -547,7 +547,7 @@ If the server supports the harakiri extension, it SHOULD allow the cleanup handl
 3.7 Output Block Detection
 --------------------------
 
-The `p6wx.body.backpressure` environment variable, if provided, MUST be a [Bool](http://doc.perl6.org/type/Bool) flag. It is set to `True` to indicate that the P6SGI server provide response backpressure detection by polling for non-blocking I/O problems. In this case, the server MUST provide the other two environment variables. If `False` or not defined, the server does not provide these two environment variables. This variable SHOULD be defined in the configuration environment.
+The `p6wx.body.backpressure` environment variable, if provided, MUST be a [Bool](http://doc.perl6.org/type/Bool) flag. It is set to `True` to indicate that the P6W server provide response backpressure detection by polling for non-blocking I/O problems. In this case, the server MUST provide the other two environment variables. If `False` or not defined, the server does not provide these two environment variables. This variable SHOULD be defined in the configuration environment.
 
 The `p6wx.body.backpressure.supply` environment variable MUST be provided if `p6wx.body.backpressure` is `True`. When provided, it MUST be a live [Supply](http://doc.perl6.org/type/Supply) that periodically emits `True` and `False` values. `True` is emitted when the server polls for backpressure and detects a blocked output socket. `False` is emitted when the server polls for backpressure and detects the previously blocked socket is no longer blocked.
 
@@ -558,7 +558,7 @@ The `p6wx.body.backpressure.test` environment variable MUST be provided if `p6wx
 
 The `p6wx.net-protocol.upgrade` environment variable MUST be provided in the configuration environment, if the server implements the protocol upgrade extension. It MUST be the [Set](http://doc.perl6.org/type/Set) of names of protocols the server supports for upgrade.
 
-When the client makes a protocol upgrade request using an `Upgrade` header, the application MAY request that the server negotiate the upgrade to one of these supported protocols by sending a `P6SGIx-Upgrade` header back to the server with the named protocol. The application MAY send any other headers related to the Upgrade and MAY send a message payload if the upgrade allows it. These SHOULD override any server supplied values or headers.
+When the client makes a protocol upgrade request using an `Upgrade` header, the application MAY request that the server negotiate the upgrade to one of these supported protocols by sending a `P6Wx-Upgrade` header back to the server with the named protocol. The application MAY send any other headers related to the Upgrade and MAY send a message payload if the upgrade allows it. These SHOULD override any server supplied values or headers.
 
 The server MUST negotiate the new protocol and enable any environment variables required for interacting through that protocol. After the handshake or upgrade negoatiation is complete, the server MUST make a new call to the application with a new environment to process the remainder of the network request with the origin.
 
@@ -568,7 +568,7 @@ The workings of HTTP/2 are similar enough to HTTP/1.0 and HTTP/1.1 that use of a
 
 Servers that support this protocol upgrade MUST place the name "h2c" and/or "h2" into the `p6wx.net-protocol.upgrade` set, for support of HTTP/2 over cleartext connections and HTTP/2 over TLS, respectively.
 
-The application MUST NOT request an upgrade using the `P6SGIx-Upgrade` header for "h2c" unless the `p6w.url-scheme` is "http". Similarly, the application MUST NOT request an upgrade for "h2" unless the `p6w.url-scheme` is "https". The application server SHOULD enforce this requirement for security reasons.
+The application MUST NOT request an upgrade using the `P6Wx-Upgrade` header for "h2c" unless the `p6w.url-scheme` is "http". Similarly, the application MUST NOT request an upgrade for "h2" unless the `p6w.url-scheme` is "https". The application server SHOULD enforce this requirement for security reasons.
 
 The application MUST NOT tap the `p6w.input` stream when performing this upgrade. The application SHOULD NOT return a message payload aside from an empty [Supply](http://doc.perl6.org/type/Supply).
 
@@ -583,7 +583,7 @@ The application MUST NOT tap the `p6w.input` stream when performing this upgrade
 
 This extension is only for HTTP/1.1 protocol connections. When the server supports this extension, it MUST provide a `p6wx.http11.transfer-encoding` variable containing a `Set` naming the transfer encodings the server supports as strings. This SHOULD be set in the configuration environment.
 
-When the application returns a header named `P6SGIx-Transfer-Encoding` with the name of one of the supported transfer encoding strings, the server MUST apply that transfer encoding to the message payload. If the connection is not HTTP/1.1, the server SHOULD ignore this header.
+When the application returns a header named `P6Wx-Transfer-Encoding` with the name of one of the supported transfer encoding strings, the server MUST apply that transfer encoding to the message payload. If the connection is not HTTP/1.1, the server SHOULD ignore this header.
 
 ### 3.9.0 Chunked Encoding
 
@@ -608,11 +608,11 @@ Upon receiving a message to `p6wx.h2.push-promise`, the server SHOULD schedule a
 4 Application Protocol Implementation
 =====================================
 
-One goal of P6SGI application servers is to allow the application to focus on building web applications without having to implement the mundane details of web protocols. In times past, this was simply a matter of implementing HTTP/1.x or some kind of front-end to HTTP/1.x (such as CGI or FastCGI). While HTTP/1.x is still relevant to the web today, new protocols have also become important to modern web applications, such as HTTP/2 and WebSocket.
+One goal of P6W application servers is to allow the application to focus on building web applications without having to implement the mundane details of web protocols. In times past, this was simply a matter of implementing HTTP/1.x or some kind of front-end to HTTP/1.x (such as CGI or FastCGI). While HTTP/1.x is still relevant to the web today, new protocols have also become important to modern web applications, such as HTTP/2 and WebSocket.
 
 These protocols may have different interfaces that do not lend themselves to the request-response pattern specifed by PSGI. Therefore, we provide a means by which servers and applications may implement these alternate protocols, which each may have different requirements. These protocols are called application protocols to differentiate them from network protocols. For example, rather than providing a protocol for HTTP, we provide the "request-response" protocol. The underlying network protocol may be HTTP/1.0, HTTP/1.1, HTTP/2 or it may be something else that operates according to a similar pattern.
 
-The application and application server SHOULD communicate according to the application protocol used for the current application call. Otherwise, they will be unable to communicate. For many applications, just implementing the basic protocol request-response protocol is enough. However, to allow for more complete applications, P6SGI provides additional tools to help application and application server to communicate through a variety of situations. This is handled primarily via the `p6w.protocol`, `p6w.protocol.support`, and `p6w.protocol.enabled` values in the environment.
+The application and application server SHOULD communicate according to the application protocol used for the current application call. Otherwise, they will be unable to communicate. For many applications, just implementing the basic protocol request-response protocol is enough. However, to allow for more complete applications, P6W provides additional tools to help application and application server to communicate through a variety of situations. This is handled primarily via the `p6w.protocol`, `p6w.protocol.support`, and `p6w.protocol.enabled` values in the environment.
 
 The application SHOULD check the value in `p6w.protocol`. The application SHOULD NOT make assumptions about the network protocol based upon the `p6w.protocol` value for the current request. If the application needs to make a decision based upon the network protocol, the application SHOULD check the `SERVER_PROTOCOL`.
 
@@ -630,7 +630,7 @@ This specification defines the following protocols:
 
   * **socket** for raw, plain socket protocols, which send and receive data with no expectation of special server handling
 
-It is recommended that an application server that implements all of these protocols only enable the request-response protocol within `p6w.protocol.enabled` by default. This allows simple P6SGI applications to safely operate without having to perform any special configuration.
+It is recommended that an application server that implements all of these protocols only enable the request-response protocol within `p6w.protocol.enabled` by default. This allows simple P6W applications to safely operate without having to perform any special configuration.
 
 4.0 Request-Response Protocol
 -----------------------------
@@ -884,6 +884,8 @@ Changes
 
 0.7.Draft
 ---------
+
+  * Renamed the standard from Perl 6 Standard Gateway Interface (P6SGI) to the Web API for Perl 6 (P6W).
 
   * Some grammar fixes, typo fixes, and general verbiage cleanup and simplification.
 
