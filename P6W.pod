@@ -259,7 +259,7 @@ These requirements, however, are in held in common regardless of protocol, the a
 
 =item The application server MUST check the return value of the application. If the application return value is L<Callable>, the application has returned a configuration routine. Otherwise, the application has returned a runtime routine.
 
-=item If the application returned a runtime routine, as detected in the previous step, the application server MUST call this routine and pass the configuration environment in a hash as the first argument to the routine. The return value of this routine is the runtime routine for the application.
+=item If the application returned a configuration routine, as detected in the previous step, the application server MUST call this routine and pass the configuration environment in a hash as the first argument to the routine. The return value of this routine is the runtime routine for the application.
 
 =item Prior to each call to runtime routine, the application server MUST set the C<p6w.protocol> variable to the name of the protocol the server will use to communicate with the application.
 
