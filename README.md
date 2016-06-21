@@ -329,17 +329,19 @@ The way in which middleware is defined and applied is left up to the middleware 
 
 What is important in middleware definition is the following:
 
-  * A middleware application MUST be a P6W application, viz., it MUST be a configuration routine or a runtime routine as defined in section 2.2.0.
+  * A middleware application MUST be a P6W application, viz., it MUST be a configuration routine or runtime routine as defined in section 2.2.0.
 
-  * Middleware SHOULD be defined as a configuration routine, even if it doesn't need to access the configuration environment prior to runtime. This allows the middleware to wrap both configuration routines and runtime routines.
+  * Middleware SHOULD check to see if the application being wrapped returns a configuration routine or a runtime routine by testing whether the return value of the routine is [Callable](http://doc.perl6.org/type/Callable).
 
-  * When defined as a configuration routine, Middleware MUST check to see if the application being wrapped returns a configuration routine or a runtime routine by testing whether the return value of the routine is [Callable](http://doc.perl6.org/type/Callable). If the wrapped application is a configuration routine, the middleware MUST call it with the configuration environment. The middleware routine MUST return a runtime routine, usually after wrapping it as well. (Though, it is possible for middleware to wrap just the configuration routine without wrapping the runtime routine.)
+  * A middleware configuration routine SHOULD run the wrapped configuration application at configuration time with the configuration environment.
+
+  * A middleware runtime routine SHOULD fail if the wrapped configuration application is a configuration routine.
 
 Otherwise, There Is More Than One Way To Do It.
 
 ### 2.1.1 The Environment
 
-Middleware applications SHOULD interact with the environment (both configuration and runtime environment) as needed. They MAY set or modify variables in the environment. Middleware applications SHOULD maintain the typing required for the server in Sections 2.0.1.0 and 2.0.1.1 above, as modified by extensions and the application protocol in use. 
+Middleware applications MAY set or modify the environment (both configuration and runtime environment) as needed. Middleware applications SHOULD maintain the typing required for the server in Sections 2.0.1.0 and 2.0.1.1 above, as modified by extensions and the application protocol in use. 
 
 Whenever setting new variables in the environment, the variables MUST contain a period and SHOULD use a unique prefix to avoid name clashes with servers, other middleware, and applications.
 
