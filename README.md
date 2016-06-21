@@ -321,6 +321,8 @@ For example, in the following snippet, `mw` is a middleware application that add
     my &mw-app = &mw.assuming(&app);
 ```
 
+[**Conjecture:** The above code does not work, but should. The problem is that `.assuming()` does not (as of this writing) preserve the return type of the method called. If that patch or one like it turns out to somehow go against the spirit of `.assuming()` or something, this requires a better example.]
+
 ### 2.1.0 Middleware Definition
 
 The way in which middleware is defined and applied is left up to the middleware author. The example in the previous section uses a combination of priming and defining a closure. This is, by no means, the only way to define P6W middleware in Perl 6.
