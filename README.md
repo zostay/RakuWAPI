@@ -321,7 +321,7 @@ For example, in the following snippet, `mw` is a middleware application that add
     my &mw-app = &mw.assuming(&app);
 ```
 
-[**Conjecture:** The above code does not work, but should. The problem is that `.assuming()` does not (as of this writing) preserve the return type of the method called. If that patch or one like it turns out to somehow go against the spirit of `.assuming()` or something, this requires a better example.]
+[**Conjecture:** The above code does not work, but should. The problem is that `.assuming()` does not (as of this writing) preserve the return type of the method called. I have suggested a patch to correct this problem. If that patch or one like it turns out to somehow go against the spirit of `.assuming()` or something, this requires a better example.]
 
 ### 2.1.0 Middleware Definition
 
