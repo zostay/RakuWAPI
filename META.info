@@ -1,5 +1,6 @@
 {
     "name" : "P6W",
+    "license" : "Artistic-2.0",
     "version" : "0.7.Draft",
     "description" : "Web API for Perl 6",
     "authors" : [
