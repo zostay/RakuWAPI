@@ -1,7 +1,7 @@
 NAME
 ====
 
-Web API for Perl 6 (P6W)
+Web API for Perl 6 (P6WAPI)
 
 STATUS
 ======
@@ -30,21 +30,21 @@ Aside from that is the underlying assumption that this is a simple interface and
 1 TERMINOLOGY
 =============
 
-A P6W application is a Perl 6 routine that expects to receive an environment from an *application server* and returns a response each time it is called by the server.
+A P6WAPI application is a Perl 6 routine that expects to receive an environment from an *application server* and returns a response each time it is called by the server.
 
 A Web Server is an application that processes requests and responses according to a web-related protocol, such as HTTP or WebSockets or similar protocol.
 
 The origin is the external entity that makes a given request and/or expects a response from the application server. This can be thought of generically as a web browser, bot, or other user agent.
 
-An application server is a program that is able to provide an environment to a *P6W application* and process the value returned from such an application.
+An application server is a program that is able to provide an environment to a *P6WAPI application* and process the value returned from such an application.
 
 The *application server* might be associated with a *web server*, might itself be a *web server*, might process a protocol used to communicate with a *web server* (such as CGI or FastCGI), or may be something else entirely not related to a *web server* (such as a tool for testing *P6w applications*).
 
-Middleware is a *P6W application* that wraps another *P6W application* for the purpose of performing some auxiliary task such as preprocessing request environments, logging, postprocessing responses, etc.
+Middleware is a *P6WAPI application* that wraps another *P6WAPI application* for the purpose of performing some auxiliary task such as preprocessing request environments, logging, postprocessing responses, etc.
 
 A framework developer is a developer who writes an *application server*.
 
-An application developer is a developer who writes a *P6W application*.
+An application developer is a developer who writes a *P6WAPI application*.
 
 A sane Supply is a Supply object that follows the emit*-done/quit protocol, i.e., it will emit 0 or more objects followed by a call to the done or quit handler. See [Supply](http://doc.perl6.org/type/Supply) for details.
 
@@ -68,15 +68,15 @@ To aid in reading this specification, the numbering subsections of 2.0, 2.1, and
 2.0 Layer 0: Server
 -------------------
 
-A P6W application server is a program capable of running P6W applications as defined by this specification.
+A P6WAPI application server is a program capable of running P6WAPI applications as defined by this specification.
 
-A P6W application server implements some kind of web service. For example, this may mean implementing an HTTP or WebSocket service or a related protocol such as CGI, FastCGI, SCGI, etc. An application server also manages the application lifecycle and executes the application, providing it with a complete environment, and processing the response from the application to determine how to respond to the origin.
+A P6WAPI application server implements some kind of web service. For example, this may mean implementing an HTTP or WebSocket service or a related protocol such as CGI, FastCGI, SCGI, etc. An application server also manages the application lifecycle and executes the application, providing it with a complete environment, and processing the response from the application to determine how to respond to the origin.
 
 One important aspect of this specification that is not defined is the meaning of a server error. At times it is suggested that certain states be treated as a server error, but what that actually means to a given implementation is deliberatly undefined. That is a complex topic which varies by implementation and by the state the server is in when such a state is discovered. The server SHOULD log such events and SHOULD use the appropriate means of communication provided to notify the application that a server error has occurred while responding.
 
 ### 2.0.0 Application Definition
 
-A P6W application is defined as a class or object, which must be implemented according to a particular interface. The application server MUST provide a means by which an application is loaded. The application server SHOULD be able to load them by executing a P6W script file.
+A P6WAPI application is defined as a class or object, which must be implemented according to a particular interface. The application server MUST provide a means by which an application is loaded. The application server SHOULD be able to load them by executing a P6WAPI script file.
 
 For example, here is a simple application:
 
@@ -113,9 +113,9 @@ The server MAY provide variables in the environment in either role in addition t
 
 The following prefixes are reserved and SHOULD NOT be used unless defined by this specification and only according to the definition given here.
 
-  * `p6w.` is for P6W core standard environment.
+  * `p6w.` is for P6WAPI core standard environment.
 
-  * `p6wx.` is for P6W standard extensions to the environment.
+  * `p6wx.` is for P6WAPI standard extensions to the environment.
 
 In the tables below, a type constraint is given for each variable. The application server MUST provide each key as the named type. All variables given in the tables with 2.0.1.0 and 2.0.1.1 MUST be provided.
 
@@ -123,148 +123,26 @@ In the tables below, a type constraint is given for each variable. The applicati
 
 The configuration environment MUST be made available to the application during every call made to the application, both to the configuration routine and the runtime routine.
 
-<table>
-  <thead>
-    <tr>
-      <td>Variable</td>
-      <td>Constraint</td>
-      <td>Description</td>
-    </tr>
-  </thead>
-  <tr>
-    <td><code>p6w.version</code></td>
-    <td><code>Version:D</code></td>
-    <td>This is the version of this specification, <code>v0.7.Draft</code>.</td>
-  </tr>
-  <tr>
-    <td><code>p6w.errors</code></td>
-    <td><code>Supplier:D</code></td>
-    <td>The error stream for logging.</td>
-  </tr>
-  <tr>
-    <td><code>p6w.multithread</code></td>
-    <td><code>Bool:D</code></td>
-    <td>True if the app may be simultaneously invoked in another thread in the same process.</td>
-  </tr>
-  <tr>
-    <td><code>p6w.multiprocess</code></td>
-    <td><code>Bool:D</code></td>
-    <td>True if the app may be simultaneously invoked in another process.</td>
-  </tr>
-  <tr>
-    <td><code>p6w.run-once</code></td>
-    <td><code>Bool:D</code></td>
-    <td>True if the server expects the app to be invoked only once during the life of the process. This is not a guarantee.</td>
-  </tr>
-  <tr>
-    <td><code>p6w.protocol.support</code></td>
-    <td><code>Set:D</code></td>
-    <td>This is a <a href="http://doc.perl6.org/type/Set">Set</a> of strings naming the protocols supported by the application server.</td>
-  </tr>
-  <tr>
-    <td><code>p6w.protocol.enabled</code></td>
-    <td><code>SetHash:D</code></td>
-    <td>This is the set of enabled protocols. The application may modify this set with those found in <code>p6w.protocol.support</code> to enable/disable protocols the server is permitted to use.</td>
-  </tr>
+<table class="pod-table">
+<thead><tr>
+<th>Variable</th> <th>Constraint</th> <th>Description</th>
+</tr></thead>
+<tbody>
+<tr> <td><code>p6w.version</code></td> <td><code>Version:D</code></td> <td>This is the version of this specification, <code>v0.7.Draft</code>.</td> </tr> <tr> <td><code>p6w.errors</code></td> <td><code>Supplier:D</code></td> <td>The error stream for logging.</td> </tr> <tr> <td><code>p6w.multithread</code></td> <td><code>Bool:D</code></td> <td>True if the app may be simultaneously invoked in another thread in the same process.</td> </tr> <tr> <td><code>p6w.multiprocess</code></td> <td><code>Bool:D</code></td> <td>True if the app may be simultaneously invoked in another process.</td> </tr> <tr> <td><code>p6w.run-once</code></td> <td><code>Bool:D</code></td> <td>True if the server expects the app to be invoked only once during the life of the process. This is not a guarantee.</td> </tr> <tr> <td><code>p6w.protocol.support</code></td> <td><code>Set:D</code></td> <td>This is a <a href="http://doc.perl6.org/type/Set">Set</a> of strings naming the protocols supported by the application server.</td> </tr> <tr> <td><code>p6w.protocol.enabled</code></td> <td><code>SetHash:D</code></td> <td>This is the set of enabled protocols. The application may modify this set with those found in <code>p6w.protocol.support</code> to enable/disable protocols the server is permitted to use.</td> </tr>
+</tbody>
 </table>
 
 #### 2.0.1.1 Runtime Environment
 
 Many of the call environment variables are derived from the old Common Gateway Interface (CGI). This environment MUST be given when the application is being called, i.e., whenever the runtime routine is called.
 
-<table>
-  <thead>
-    <tr>
-      <td>Variable</td>
-      <td>Constraint</td>
-      <td>Description</td>
-    </tr>
-  </thead>
-  <tr>
-    <td><code>REQUEST_METHOD</code></td>
-    <td><code>Str:D where *.chars &gt; 0</code></td>
-    <td>The HTTP request method, such as "GET" or "POST".</td>
-  </tr>
-  <tr>
-    <td><code>SCRIPT_NAME</code></td>
-    <td><code>Str:D where any('', m{ ^ "/" })</code></td>
-    <td>This is the initial portion of the URI path that refers to the application.</td>
-  </tr>
-  <tr>
-    <td><code>PATH_INFO</code></td>
-    <td><code>Str:D where any('', m{ ^ "/" })</code></td>
-    <td>This is the remainder of the request URI path within the application. This value SHOULD be URI decoded by the application server according to <a href="http://www.ietf.org/rfc/rfc3875">RFC 3875</a></td>
-  </tr>
-  <tr>
-    <td><code>REQUEST_URI</code></td>
-    <td><code>Str:D</code></td>
-    <td>This is the exact URI sent by the client in the request line of the HTTP request. The application server SHOULD NOT perform any decoding on it.</td>
-  </tr>
-  <tr>
-    <td><code>QUERY_STRING</code></td>
-    <td><code>Str:D</code></td>
-    <td>This is the portion of the requested URL following the <code>?</code>, if any.</td>
-  </tr>
-  <tr>
-    <td><code>SERVER_NAME</code></td>
-    <td><code>Str:D where *.chars &gt; 0</code></td>
-    <td>This is the name of the web server.</td>
-  </tr>
-  <tr>
-    <td><code>SERVER_PORT</code></td>
-    <td><code>Int:D where * &gt; 0</code></td>
-    <td>This is the port number of the web server.</td>
-  </tr>
-  <tr>
-    <td><code>SERVER_PROTOCOL</code></td>
-    <td><code>Str:D where *.chars &gt; 0</code></td>
-    <td>This is the server protocol sent by the client, e.g. "HTTP/1.0" or "HTTP/1.1".</td>
-  </tr>
-  <tr>
-    <td><code>CONTENT_LENGTH</code></td>
-    <td><code>Int:_</code></td>
-    <td>This corresponds to the Content-Length header sent by the client. If no such header was sent the application server SHOULD set this key to the <a href="http://doc.perl6.org/type/Int">Int</a> type value.</td>
-  </tr>
-  <tr>
-    <td><code>CONTENT_TYPE</code></td>
-    <td><code>Str:_</code></td>
-    <td>This corresponds to the Content-Type header sent by the client. If no such header was sent the application server SHOULD set this key to the <a href="http://doc.perl6.org/type/Str">Str</a> type value.</td>
-  </tr>
-  <tr>
-    <td><code>HTTP_*</code></td>
-    <td><code>Str:_</code></td>
-    <td>The remaining request headers are placed here. The names are prefixed with <code>HTTP_</code>, in ALL CAPS with the hyphens ("-") turned to underscores ("_"). Multiple incoming headers with the same name SHOULD have their values joined with a comma (", ") as described in <a href="http://www.ietf.org/rfc/rfc2616">RFC 2616</a>. The <code>HTTP_CONTENT_LENGTH</code> and <code>HTTP_CONTENT_TYPE</code> headers MUST NOT be set.</td>
-  </tr>
-  <tr>
-    <td>Other CGI Keys</td>
-    <td><code>Str:_</code></td>
-    <td>The server SHOULD attempt to provide as many other CGI variables as possible, but no others are required or formally specified.</td>
-  </tr>
-  <tr>
-    <td><code>p6w.url-scheme</code></td>
-    <td><code>Str:D</code></td>
-    <td>Either "http" or "https".</td>
-  </tr>
-  <tr>
-    <td><code>p6w.input</code></td>
-    <td><code>Supply:D</code></td>
-    <td>The input stream for reading the body of the request, if any.</td>
-  </tr>
-  <tr>
-    <td><code>p6w.ready</code></td>
-    <td><code>Promise:D</code></td>
-    <td>This is a vowed Promise that MUST be kept by the server as soon as the server has tapped the application's output Supply and is ready to receive emitted messages. The value of the kept Promise is irrelevent. The server SHOULD NOT break this Promise.</td>
-  </tr>
-  <tr>
-    <td><code>p6w.body.encoding</code></td>
-    <td><code>Str:D</code></td>
-    <td>Name of the encoding the server will use for any strings it is sent.</td>
-  </tr>
-  <tr>
-    <td><code>p6w.protocol</code></td>
-    <td><code>Str:D</code></td>
-    <td>This is a string naming the response protocols the server is expecting from the application for call.</td>
-  </tr>
+<table class="pod-table">
+<thead><tr>
+<th>Variable</th> <th>Constraint</th> <th>Description</th>
+</tr></thead>
+<tbody>
+<tr> <td><code>REQUEST_METHOD</code></td> <td><code>Str:D where *.chars &gt; 0</code></td> <td>The HTTP request method, such as &quot;GET&quot; or &quot;POST&quot;.</td> </tr> <tr> <td><code>SCRIPT_NAME</code></td> <td><code>Str:D where any(&#39;&#39;, m{ ^ &quot;/&quot; })</code></td> <td>This is the initial portion of the URI path that refers to the application.</td> </tr> <tr> <td><code>PATH_INFO</code></td> <td><code>Str:D where any(&#39;&#39;, m{ ^ &quot;/&quot; })</code></td> <td>This is the remainder of the request URI path within the application. This value SHOULD be URI decoded by the application server according to <a href="http://www.ietf.org/rfc/rfc3875">RFC 3875</a></td> </tr> <tr> <td><code>REQUEST_URI</code></td> <td><code>Str:D</code></td> <td>This is the exact URI sent by the client in the request line of the HTTP request. The application server SHOULD NOT perform any decoding on it.</td> </tr> <tr> <td><code>QUERY_STRING</code></td> <td><code>Str:D</code></td> <td>This is the portion of the requested URL following the <code>?</code>, if any.</td> </tr> <tr> <td><code>SERVER_NAME</code></td> <td><code>Str:D where *.chars &gt; 0</code></td> <td>This is the name of the web server.</td> </tr> <tr> <td><code>SERVER_PORT</code></td> <td><code>Int:D where * &gt; 0</code></td> <td>This is the port number of the web server.</td> </tr> <tr> <td><code>SERVER_PROTOCOL</code></td> <td><code>Str:D where *.chars &gt; 0</code></td> <td>This is the server protocol sent by the client, e.g. &quot;HTTP/1.0&quot; or &quot;HTTP/1.1&quot;.</td> </tr> <tr> <td><code>CONTENT_LENGTH</code></td> <td><code>Int:_</code></td> <td>This corresponds to the Content-Length header sent by the client. If no such header was sent the application server SHOULD set this key to the <a href="http://doc.perl6.org/type/Int">Int</a> type value.</td> </tr> <tr> <td><code>CONTENT_TYPE</code></td> <td><code>Str:_</code></td> <td>This corresponds to the Content-Type header sent by the client. If no such header was sent the application server SHOULD set this key to the <a href="http://doc.perl6.org/type/Str">Str</a> type value.</td> </tr> <tr> <td><code>HTTP_*</code></td> <td><code>Str:_</code></td> <td>The remaining request headers are placed here. The names are prefixed with <code>HTTP_</code>, in ALL CAPS with the hyphens (&quot;-&quot;) turned to underscores (&quot;_&quot;). Multiple incoming headers with the same name SHOULD have their values joined with a comma (&quot;, &quot;) as described in <a href="http://www.ietf.org/rfc/rfc2616">RFC 2616</a>. The <code>HTTP_CONTENT_LENGTH</code> and <code>HTTP_CONTENT_TYPE</code> headers MUST NOT be set.</td> </tr> <tr> <td>Other CGI Keys</td> <td><code>Str:_</code></td> <td>The server SHOULD attempt to provide as many other CGI variables as possible, but no others are required or formally specified.</td> </tr> <tr> <td><code>p6w.url-scheme</code></td> <td><code>Str:D</code></td> <td>Either &quot;http&quot; or &quot;https&quot;.</td> </tr> <tr> <td><code>p6w.input</code></td> <td><code>Supply:D</code></td> <td>The input stream for reading the body of the request, if any.</td> </tr> <tr> <td><code>p6w.ready</code></td> <td><code>Promise:D</code></td> <td>This is a vowed Promise that MUST be kept by the server as soon as the server has tapped the application&#39;s output Supply and is ready to receive emitted messages. The value of the kept Promise is irrelevent. The server SHOULD NOT break this Promise.</td> </tr> <tr> <td><code>p6w.body.encoding</code></td> <td><code>Str:D</code></td> <td>Name of the encoding the server will use for any strings it is sent.</td> </tr> <tr> <td><code>p6w.protocol</code></td> <td><code>Str:D</code></td> <td>This is a string naming the response protocols the server is expecting from the application for call.</td> </tr>
+</tbody>
 </table>
 
 In the environment, either `SCRIPT_NAME` or `PATH_INFO` must be set to a non-empty string. When `REQUEST_URI` is "/", the `PATH_INFO` SHOULD be "/" and `SCRIPT_NAME` SHOULD be the empty string. `SCRIPT_NAME` MUST NOT be set to "/".
@@ -300,7 +178,7 @@ For details on how each protocol handles the application call, see section 4.
 2.1 Layer 1: Middleware
 -----------------------
 
-P6W middleware is simply an application that wraps another application. Middleware is used to perform any kind of pre-processing, post-processing, or side-effects that might be added onto an application. Possible uses include logging, encoding, validation, security, debugging, routing, interface adaptation, and header manipulation.
+P6WAPI middleware is simply an application that wraps another application. Middleware is used to perform any kind of pre-processing, post-processing, or side-effects that might be added onto an application. Possible uses include logging, encoding, validation, security, debugging, routing, interface adaptation, and header manipulation.
 
 For example, in the following snippet, `mw` is a middleware application that adds a custom header:
 
@@ -325,11 +203,11 @@ For example, in the following snippet, `mw` is a middleware application that add
 
 ### 2.1.0 Middleware Definition
 
-The way in which middleware is defined and applied is left up to the middleware author. The example in the previous section uses a combination of priming and defining a closure. This is, by no means, the only way to define P6W middleware in Perl 6.
+The way in which middleware is defined and applied is left up to the middleware author. The example in the previous section uses a combination of priming and defining a closure. This is, by no means, the only way to define P6WAPI middleware in Perl 6.
 
 What is important in middleware definition is the following:
 
-  * A middleware application MUST be a P6W application, viz., it MUST be a configuration routine or runtime routine as defined in section 2.2.0.
+  * A middleware application MUST be a P6WAPI application, viz., it MUST be a configuration routine or runtime routine as defined in section 2.2.0.
 
   * Middleware SHOULD check to see if the application being wrapped returns a configuration routine or a runtime routine by testing whether the return value of the routine is [Callable](http://doc.perl6.org/type/Callable).
 
@@ -368,9 +246,9 @@ See section 4 for details on protocol handling.
 2.2 Layer 2: Application
 ------------------------
 
-A P6W application is a Perl 6 routine. The application MUST be [Callable](http://doc.perl6.org/type/Callable). An application may be defined as either a runtime routine or a configuration routine. A configuration routine receives a P6W configuration environment and returns a runtime routine. A runtime routine receives a P6W runtime environment and responds to it by returning a response.
+A P6WAPI application is a Perl 6 routine. The application MUST be [Callable](http://doc.perl6.org/type/Callable). An application may be defined as either a runtime routine or a configuration routine. A configuration routine receives a P6WAPI configuration environment and returns a runtime routine. A runtime routine receives a P6WAPI runtime environment and responds to it by returning a response.
 
-As an example, a simple Hello World P6W application defined with a runtime routine could be implemented as follows:
+As an example, a simple Hello World P6WAPI application defined with a runtime routine could be implemented as follows:
 
 ```perl6
     sub app(%env) {
@@ -411,7 +289,7 @@ To define an application as a runtime routine, the application is defined as a [
 
 The application SHOULD respond to the caller, the application server, according to the `p6w.protocol` string set in the passed environment.
 
-Here, for example, is a P6W application that calculates and prints the Nth Lucas number depending on the value passed in the query string. This assumes a request-response protocol (see Section 4.0).
+Here, for example, is a P6WAPI application that calculates and prints the Nth Lucas number depending on the value passed in the query string. This assumes a request-response protocol (see Section 4.0).
 
 ```perl6
     sub lucas-app(%env) {
@@ -504,9 +382,9 @@ In particular, `p6wx.body.done` MUST be broken if `p6wx.header.done` is broken (
 3.2 Raw Socket
 --------------
 
-The `p6wx.io` environment variable, if provided, SHOULD be the socket object used to communicate to the client. This is the interface of last resort as it sidesteps the entire P6W interface, but may be useful in cases where an application wishes to control details of the socket itself.
+The `p6wx.io` environment variable, if provided, SHOULD be the socket object used to communicate to the client. This is the interface of last resort as it sidesteps the entire P6WAPI interface, but may be useful in cases where an application wishes to control details of the socket itself.
 
-If your application requires the use of this socket, please file an issue describing the nature of your application in detail. You may have a use-case that a future revision to P6W can improve.
+If your application requires the use of this socket, please file an issue describing the nature of your application in detail. You may have a use-case that a future revision to P6WAPI can improve.
 
 This variable MAY be made available as part of the configuration environment.
 
@@ -551,7 +429,7 @@ If the server supports the harakiri extension, it SHOULD allow the cleanup handl
 3.7 Output Block Detection
 --------------------------
 
-The `p6wx.body.backpressure` environment variable, if provided, MUST be a [Bool](http://doc.perl6.org/type/Bool) flag. It is set to `True` to indicate that the P6W server provide response backpressure detection by polling for non-blocking I/O problems. In this case, the server MUST provide the other two environment variables. If `False` or not defined, the server does not provide these two environment variables. This variable SHOULD be defined in the configuration environment.
+The `p6wx.body.backpressure` environment variable, if provided, MUST be a [Bool](http://doc.perl6.org/type/Bool) flag. It is set to `True` to indicate that the P6WAPI server provide response backpressure detection by polling for non-blocking I/O problems. In this case, the server MUST provide the other two environment variables. If `False` or not defined, the server does not provide these two environment variables. This variable SHOULD be defined in the configuration environment.
 
 The `p6wx.body.backpressure.supply` environment variable MUST be provided if `p6wx.body.backpressure` is `True`. When provided, it MUST be a live [Supply](http://doc.perl6.org/type/Supply) that periodically emits `True` and `False` values. `True` is emitted when the server polls for backpressure and detects a blocked output socket. `False` is emitted when the server polls for backpressure and detects the previously blocked socket is no longer blocked.
 
@@ -612,11 +490,11 @@ Upon receiving a message to `p6wx.h2.push-promise`, the server SHOULD schedule a
 4 Application Protocol Implementation
 =====================================
 
-One goal of P6W application servers is to allow the application to focus on building web applications without having to implement the mundane details of web protocols. In times past, this was simply a matter of implementing HTTP/1.x or some kind of front-end to HTTP/1.x (such as CGI or FastCGI). While HTTP/1.x is still relevant to the web today, new protocols have also become important to modern web applications, such as HTTP/2 and WebSocket.
+One goal of P6WAPI application servers is to allow the application to focus on building web applications without having to implement the mundane details of web protocols. In times past, this was simply a matter of implementing HTTP/1.x or some kind of front-end to HTTP/1.x (such as CGI or FastCGI). While HTTP/1.x is still relevant to the web today, new protocols have also become important to modern web applications, such as HTTP/2 and WebSocket.
 
 These protocols may have different interfaces that do not lend themselves to the request-response pattern specifed by PSGI. Therefore, we provide a means by which servers and applications may implement these alternate protocols, which each may have different requirements. These protocols are called application protocols to differentiate them from network protocols. For example, rather than providing a protocol for HTTP, we provide the "request-response" protocol. The underlying network protocol may be HTTP/1.0, HTTP/1.1, HTTP/2 or it may be something else that operates according to a similar pattern.
 
-The application and application server SHOULD communicate according to the application protocol used for the current application call. Otherwise, they will be unable to communicate. For many applications, just implementing the basic protocol request-response protocol is enough. However, to allow for more complete applications, P6W provides additional tools to help application and application server to communicate through a variety of situations. This is handled primarily via the `p6w.protocol`, `p6w.protocol.support`, and `p6w.protocol.enabled` values in the environment.
+The application and application server SHOULD communicate according to the application protocol used for the current application call. Otherwise, they will be unable to communicate. For many applications, just implementing the basic protocol request-response protocol is enough. However, to allow for more complete applications, P6WAPI provides additional tools to help application and application server to communicate through a variety of situations. This is handled primarily via the `p6w.protocol`, `p6w.protocol.support`, and `p6w.protocol.enabled` values in the environment.
 
 The application SHOULD check the value in `p6w.protocol`. The application SHOULD NOT make assumptions about the network protocol based upon the `p6w.protocol` value for the current request. If the application needs to make a decision based upon the network protocol, the application SHOULD check the `SERVER_PROTOCOL`.
 
@@ -634,7 +512,7 @@ This specification defines the following protocols:
 
   * **socket** for raw, plain socket protocols, which send and receive data with no expectation of special server handling
 
-It is recommended that an application server that implements all of these protocols only enable the request-response protocol within `p6w.protocol.enabled` by default. This allows simple P6W applications to safely operate without having to perform any special configuration.
+It is recommended that an application server that implements all of these protocols only enable the request-response protocol within `p6w.protocol.enabled` by default. This allows simple P6WAPI applications to safely operate without having to perform any special configuration.
 
 4.0 Request-Response Protocol
 -----------------------------
@@ -886,6 +764,11 @@ The application server SHOULD reject any object other than a [Blob](http://doc.p
 Changes
 =======
 
+0.8.Draft
+---------
+
+  * Changed the abbreviation from P6W to P6WAPI.
+
 0.7.Draft
 ---------
 
@@ -974,3 +857,4 @@ This second revision eliminates the legacy standard and requires that all P6SGI 
 ---------
 
 This is the first published version. It was heavily influenced by PSGI and included interfaces based on the standard, deferred, and streaming responses of PSGI. Instead of callbacks, however, it used [Promise](http://doc.perl6.org/type/Promise) to handle deferred responses and [Channel](http://doc.perl6.org/type/Channel) to handle streaming. It mentioned middleware in passing.
+
