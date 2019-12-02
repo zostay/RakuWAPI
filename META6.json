@@ -11,5 +11,5 @@
         "P6W": "P6W.pod"
     },
     "depends" : [ ],
-    "source-url" : "git://github.com/zostay/P6W.git"
+    "source-url" : "git://github.com/zostay/RakuWAPI.git"
 }
