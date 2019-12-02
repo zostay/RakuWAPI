@@ -1,4 +1,4 @@
-=NAME Web API for Perl 6 (P6WAPI)
+=NAME Web API for Raku (RakuWAPI)
 
 =begin pod
 
@@ -6,17 +6,17 @@
 
 This is a Proposed Draft.
 
-Version 0.7.Draft
+Version 0.9.Draft
 
 =head1 0 INTRODUCTION
 
-This document standardizes an API for web application and server framework developers in Perl 6. It provides a standard protocol by which web applications and application servers may communicate with each other.
+This document standardizes an API for web application and server framework developers in Raku. It provides a standard protocol by which web applications and application servers may communicate with each other.
 
 This standard has the following goals:
 
 =item Standardize the interface between server and application so that web developers may focus on application development rather than the nuances of supporting different server platforms.
 
-=item Keep the interface simple so that a web application or middleware requires no additional tools or libraries other than what exists in a standard Perl 6 environment, and no module installations are required.
+=item Keep the interface simple so that a web application or middleware requires no additional tools or libraries other than what exists in a standard Raku environment, and no module installations are required.
 
 =item Keep the interface simple so that servers and middleware are simple to implement.
 
@@ -26,21 +26,21 @@ Aside from that is the underlying assumption that this is a simple interface and
 
 =head1 1 TERMINOLOGY
 
-A D<P6WAPI application> is a Perl 6 routine that expects to receive an environment from an I<application server> and returns a response each time it is called by the server.
+A D<RakuWAPI application> is a Raku routine that expects to receive an environment from an I<application server> and returns a response each time it is called by the server.
 
 A D<Web Server> is an application that processes requests and responses according to a web-related protocol, such as HTTP or WebSockets or similar protocol.
 
 The D<origin> is the external entity that makes a given request and/or expects a response from the application server. This can be thought of generically as a web browser, bot, or other user agent.
 
-An D<application server> is a program that is able to provide an environment to a I<P6WAPI application> and process the value returned from such an application.
+An D<application server> is a program that is able to provide an environment to a I<RakuWAPI application> and process the value returned from such an application.
 
-The I<application server> might be associated with a I<web server>, might itself be a I<web server>, might process a protocol used to communicate with a I<web server> (such as CGI or FastCGI), or may be something else entirely not related to a I<web server> (such as a tool for testing I<P6w applications>).
+The I<application server> might be associated with a I<web server>, might itself be a I<web server>, might process a protocol used to communicate with a I<web server> (such as CGI or FastCGI), or may be something else entirely not related to a I<web server> (such as a tool for testing I<RakuWAPI applications>).
 
-D<Middleware> is a I<P6WAPI application> that wraps another I<P6WAPI application> for the purpose of performing some auxiliary task such as preprocessing request environments, logging, postprocessing responses, etc.
+D<Middleware> is a I<RakuWAPI application> that wraps another I<RakuWAPI application> for the purpose of performing some auxiliary task such as preprocessing request environments, logging, postprocessing responses, etc.
 
 A D<framework developer> is a developer who writes an I<application server>.
 
-An D<application developer> is a developer who writes a I<P6WAPI application>.
+An D<application developer> is a developer who writes a I<RakuWAPI application>.
 
 A D<sane Supply> is a Supply object that follows the emit*-done/quit protocol, i.e., it will emit 0 or more objects followed by a call to the done or quit handler. See L<Supply> for details.
 
@@ -62,15 +62,15 @@ To aid in reading this specification, the numbering subsections of 2.0, 2.1, and
 
 =head2 2.0 Layer 0: Server
 
-A P6WAPI application server is a program capable of running P6WAPI applications as defined by this specification.
+A RakuWAPI application server is a program capable of running RakuWAPI applications as defined by this specification.
 
-A P6WAPI application server implements some kind of web service. For example, this may mean implementing an HTTP or WebSocket service or a related protocol such as CGI, FastCGI, SCGI, etc. An application server also manages the application lifecycle and executes the application, providing it with a complete environment, and processing the response from the application to determine how to respond to the origin.
+A RakuWAPI application server implements some kind of web service. For example, this may mean implementing an HTTP or WebSocket service or a related protocol such as CGI, FastCGI, SCGI, etc. An application server also manages the application lifecycle and executes the application, providing it with a complete environment, and processing the response from the application to determine how to respond to the origin.
 
 One important aspect of this specification that is not defined is the meaning of a server error. At times it is suggested that certain states be treated as a server error, but what that actually means to a given implementation is deliberatly undefined. That is a complex topic which varies by implementation and by the state the server is in when such a state is discovered. The server SHOULD log such events and SHOULD use the appropriate means of communication provided to notify the application that a server error has occurred while responding.
 
 =head3 2.0.0 Application Definition
 
-A P6WAPI application is defined as a class or object, which must be implemented according to a particular interface. The application server MUST provide a means by which an application is loaded. The application server SHOULD be able to load them by executing a P6WAPI script file.
+A RakuWAPI application is defined as a class or object, which must be implemented according to a particular interface. The application server MUST provide a means by which an application is loaded. The application server SHOULD be able to load them by executing a RakuWAPI script file.
 
 For example, here is a simple application:
 
@@ -103,9 +103,9 @@ The server MAY provide variables in the environment in either role in addition t
 
 The following prefixes are reserved and SHOULD NOT be used unless defined by this specification and only according to the definition given here.
 
-=item C<p6w.> is for P6WAPI core standard environment.
+=item C<wapi.> is for RakuWAPI core standard environment.
 
-=item C<p6wx.> is for P6WAPI standard extensions to the environment.
+=item C<wapix.> is for RakuWAPI standard extensions to the environment.
 
 In the tables below, a type constraint is given for each variable. The application server MUST provide each key as the named type. All variables given in the tables with 2.0.1.0 and 2.0.1.1 MUST be provided.
 
@@ -117,32 +117,32 @@ The configuration environment MUST be made available to the application during e
 
     Variable                 | Constraint                             | Description
     =========================|========================================|======================================
-    C<p6w.version>           | C<< Version:D >>                       | This is the version of this
+    C<wapi.version>          | C<< Version:D >>                       | This is the version of this
                              |                                        | specification, C<v0.7.Draft>.
     
-    C<p6w.errors>            | C<< Supplier:D >>                      | The error stream for logging.
+    C<wapi.errors>           | C<< Supplier:D >>                      | The error stream for logging.
     
-    C<p6w.multithread>       | C<< Bool:D >>                          | True if the app may be
+    C<wapi.multithread>      | C<< Bool:D >>                          | True if the app may be
                              |                                        | simultaneously invoked in another
                              |                                        | thread in the same
                              |                                        | process.
     
-    C<p6w.multiprocess>      | C<< Bool:D >>                          | True if the app may be simultaneously
+    C<wapi.multiprocess>     | C<< Bool:D >>                          | True if the app may be simultaneously
                              |                                        | invoked in another process.
     
-    C<p6w.run-once>          | C<< Bool:D >>                          | True if the server expects the app
+    C<wapi.run-once>         | C<< Bool:D >>                          | True if the server expects the app
                              |                                        | to be invoked only once during the
                              |                                        | life of the process. This is not a
                              |                                        | guarantee.
     
-    C<p6w.protocol.support>  | C<< Set:D >>                           | This is a L<Set> of strings naming the
+    C<wapi.protocol.support> | C<< Set:D >>                           | This is a L<Set> of strings naming the
                              |                                        | protocols supported by the application 
                              |                                        | server.
     
-    C<p6w.protocol.enabled>  | C<< SetHash:D >>                       | This is the set of enabled protocols. 
+    C<wapi.protocol.enabled> | C<< SetHash:D >>                       | This is the set of enabled protocols. 
                              |                                        | The application may modify this set 
                              |                                        | with those found in 
-                             |                                        | C<p6w.protocol.support> to 
+                             |                                        | C<wapi.protocol.support> to 
                              |                                        | enable/disable protocols the server 
                              |                                        | is permitted to use.
 
@@ -217,12 +217,12 @@ Many of the call environment variables are derived from the old Common Gateway I
                              |                                        | possible, but no others are required
                              |                                        | or formally specified.
 
-    C<p6w.url-scheme>        | C<< Str:D >>                           | Either "http" or "https".
+    C<wapi.url-scheme>       | C<< Str:D >>                           | Either "http" or "https".
 
-    C<p6w.input>             | C<< Supply:D >>                        | The input stream for reading the
+    C<wapi.input>            | C<< Supply:D >>                        | The input stream for reading the
                              |                                        | body of the request, if any.
 
-    C<p6w.ready>             | C<< Promise:D >>                       | This is a vowed Promise that MUST be
+    C<wapi.ready>            | C<< Promise:D >>                       | This is a vowed Promise that MUST be
                              |                                        | kept by the server as soon as the
                              |                                        | server has tapped the application's
                              |                                        | output Supply and is ready to
@@ -231,10 +231,10 @@ Many of the call environment variables are derived from the old Common Gateway I
                              |                                        | The server SHOULD NOT break this
                              |                                        | Promise.
 
-    C<p6w.body.encoding>     | C<< Str:D >>                           | Name of the encoding the server will
+    C<wapi.body.encoding>    | C<< Str:D >>                           | Name of the encoding the server will
                              |                                        | use for any strings it is sent.
 
-    C<p6w.protocol>          | C<< Str:D >>                           | This is a string naming the
+    C<wapi.protocol>         | C<< Str:D >>                           | This is a string naming the
                              |                                        | response protocols the server is 
                              |                                        | expecting from the application for 
                              |                                        | call.
@@ -245,11 +245,11 @@ In the environment, either C<SCRIPT_NAME> or C<PATH_INFO> must be set to a non-e
 
 =head3 2.0.2 The Input Stream
 
-The input stream is set in the C<p6w.input> key of the runtime environment. This represents the request payload sent from the origin. Unless otherwise indicated as part of the protocol definition, the server MUST provide a I<sane> L<Supply> that emits L<Blob> objects containing the content of the request payload. It MAY emit nothing and just signal C<done> if the request payload is empty.
+The input stream is set in the C<wapi.input> key of the runtime environment. This represents the request payload sent from the origin. Unless otherwise indicated as part of the protocol definition, the server MUST provide a I<sane> L<Supply> that emits L<Blob> objects containing the content of the request payload. It MAY emit nothing and just signal C<done> if the request payload is empty.
 
 =head3 2.0.3 The Error Stream
 
-The error stream MUST be given in the configuration environment via C<p6w.errors>. This MUST be a L<Supplier> the server provides for emitting errors. The application MAY call C<emit> on the Supplier zero or more times, passing any object that may be stringified. The server SHOULD write these log entries to a suitable log file or to C<$*ERR> or wherever appropriate. If written to a typical file handle, it should automatically append a newline to each emitted message.
+The error stream MUST be given in the configuration environment via C<wapi.errors>. This MUST be a L<Supplier> the server provides for emitting errors. The application MAY call C<emit> on the Supplier zero or more times, passing any object that may be stringified. The server SHOULD write these log entries to a suitable log file or to C<$*ERR> or wherever appropriate. If written to a typical file handle, it should automatically append a newline to each emitted message.
 
 =head3 2.0.4 Application Lifecycle
 
@@ -261,19 +261,19 @@ These requirements, however, are in held in common regardless of protocol, the a
 
 =item If the application returned a configuration routine, as detected in the previous step, the application server MUST call this routine and pass the configuration environment in a hash as the first argument to the routine. The return value of this routine is the runtime routine for the application.
 
-=item Prior to each call to runtime routine, the application server MUST set the C<p6w.protocol> variable to the name of the protocol the server will use to communicate with the application.
+=item Prior to each call to runtime routine, the application server MUST set the C<wapi.protocol> variable to the name of the protocol the server will use to communicate with the application.
 
 =item The server MUST pass the merger of the configuration and runtime environments in a hash as the first argument to the runtime routine.
 
 =item The server MUST receive the return value of runtime routine and process it according to the application protocol in use for this call, the one matching the protocol set in step 3.
 
-The server MUST NOT call the application with C<p6w.protocol> set to a protocol that has been previously disabled by the application via the C<p6w.protocol.enabled> setting.
+The server MUST NOT call the application with C<wapi.protocol> set to a protocol that has been previously disabled by the application via the C<wapi.protocol.enabled> setting.
 
 For details on how each protocol handles the application call, see section 4.
 
 =head2 2.1 Layer 1: Middleware
 
-P6WAPI middleware is simply an application that wraps another application. Middleware is used to perform any kind of pre-processing, post-processing, or side-effects that might be added onto an application. Possible uses include logging, encoding, validation, security, debugging, routing, interface adaptation, and header manipulation.
+RakuWAPI middleware is simply an application that wraps another application. Middleware is used to perform any kind of pre-processing, post-processing, or side-effects that might be added onto an application. Possible uses include logging, encoding, validation, security, debugging, routing, interface adaptation, and header manipulation.
 
 For example, in the following snippet, C<mw> is a middleware application that adds a custom header:
 
@@ -284,7 +284,7 @@ For example, in the following snippet, C<mw> is a middleware application that ad
             wrappee(%env).then(
                 -> $p {
                     my @r = $p.result;
-                    @r[1].push: 'P6W-Used' => 'True';
+                    @r[1].push: 'WAPI-Used' => 'True';
                     @r
                 }
             );
@@ -294,11 +294,11 @@ For example, in the following snippet, C<mw> is a middleware application that ad
 
 =head3 2.1.0 Middleware Definition
 
-The way in which middleware is defined and applied is left up to the middleware author. The example in the previous section uses a combination of priming and defining a closure. This is, by no means, the only way to define P6WAPI middleware in Perl 6.
+The way in which middleware is defined and applied is left up to the middleware author. The example in the previous section uses a combination of priming and defining a closure. This is, by no means, the only way to define RakuWAPI middleware in Raku.
 
 What is important in middleware definition is the following:
 
-=item A middleware application MUST be a P6WAPI application, viz., it MUST be a configuration routine or runtime routine as defined in section 2.2.0.
+=item A middleware application MUST be a RakuWAPI application, viz., it MUST be a configuration routine or runtime routine as defined in section 2.2.0.
 
 =item Middleware SHOULD check to see if the application being wrapped returns a configuration routine or a runtime routine by testing whether the return value of the routine is L<Callable>.
 
@@ -328,7 +328,7 @@ See sections 2.0.3 and 2.2.3.
 
 =head3 2.1.4 Application Lifecycle
 
-Middleware MUST return a valid response to the server according to the value set in C<p6w.protocol> by the server (or whatever middleware came before it).
+Middleware MUST return a valid response to the server according to the value set in C<wapi.protocol> by the server (or whatever middleware came before it).
 
 See sections 2.0.4 and 2.2.4. Middleware MUST adhere to all requirements of the application as respects the server (2.2.4) and all requirements of the server as respects the application (2.0.4).
 
@@ -336,9 +336,9 @@ See section 4 for details on protocol handling.
 
 =head2 2.2 Layer 2: Application
 
-A P6WAPI application is a Perl 6 routine. The application MUST be L<Callable>. An application may be defined as either a runtime routine or a configuration routine. A configuration routine receives a P6WAPI configuration environment and returns a runtime routine. A runtime routine receives a P6WAPI runtime environment and responds to it by returning a response.
+A RakuWAPI application is a Raku routine. The application MUST be L<Callable>. An application may be defined as either a runtime routine or a configuration routine. A configuration routine receives a RakuWAPI configuration environment and returns a runtime routine. A runtime routine receives a RakuWAPI runtime environment and responds to it by returning a response.
 
-As an example, a simple Hello World P6WAPI application defined with a runtime routine could be implemented as follows:
+As an example, a simple Hello World RakuWAPI application defined with a runtime routine could be implemented as follows:
 
     sub app(%env) {
         start {
@@ -349,7 +349,7 @@ As an example, a simple Hello World P6WAPI application defined with a runtime ro
 Or, a slightly more complex Hello World application could be implemented using a configuration routine instead like so:
 
     sub app-config(%config) returns Callable {
-        %config<p6w.protocol.enabled> ∩= set('request-response');
+        %config<wapi.protocol.enabled> ∩= set('request-response');
         sub app(%env) {
             start {
                 200, [ Content-Type => 'text/plain' ], [ 'Hello World' ]
@@ -373,9 +373,9 @@ During application defintion, the application MAY also instantiate and apply mid
 
 To define an application as a runtime routine, the application is defined as a L<Callable> (typically a L<Routine>). This application MUST accept a single parameter, a hash, as its argument. The single parameter will be passed the runtime environment by the application server when called. 
 
-The application SHOULD respond to the caller, the application server, according to the C<p6w.protocol> string set in the passed environment.
+The application SHOULD respond to the caller, the application server, according to the C<wapi.protocol> string set in the passed environment.
 
-Here, for example, is a P6WAPI application that calculates and prints the Nth Lucas number depending on the value passed in the query string. This assumes a request-response protocol (see Section 4.0).
+Here, for example, is a RakuWAPI application that calculates and prints the Nth Lucas number depending on the value passed in the query string. This assumes a request-response protocol (see Section 4.0).
 
     sub lucas-app(%env) {
         start {
@@ -397,7 +397,7 @@ Here is the example from the previous section, but using a configuration routine
 
     sub lucas-config(%config) returns Callable {
         # Only permit the request-response protocol
-        %config<p6w.protocol.enabled> ∩= set('request-response');
+        %config<wapi.protocol.enabled> ∩= set('request-response');
 
         &lucas-app;
     }
@@ -406,21 +406,21 @@ Here is the example from the previous section, but using a configuration routine
 
 Calls to the configuration routine of the application (if defined) will receive the configuration environment as defined in Section 2.0.1.0. Calls to the runtime routine of the application will receive the runtime environment as defined in Section 2.0.1.1. Additional variables may be provided by your application server and middleware in either environment hash.
 
-The application itself MAY store additional values in the environment as it sees fit. This allows the application to communicate with a server or middleware. When the application modifies the environment, the variables set MUST contain a period and SHOULD start with a unique name that is not C<p6w.> or C<p6wx.> as these are reserved.
+The application itself MAY store additional values in the environment as it sees fit. This allows the application to communicate with a server or middleware. When the application modifies the environment, the variables set MUST contain a period and SHOULD start with a unique name that is not C<wapi.> or C<wapix.> as these are reserved.
 
 =head3 2.2.2 The Input Stream
 
-Some calls to your application may be accompanied by a request payload. For example, a POST or PUT request sent by an origin using HTTP will typically include such a payload. The applicaiton MAY choose to read the payload using the sane L<Supply> provided in the C<p6w.input> variable of the call environment.
+Some calls to your application may be accompanied by a request payload. For example, a POST or PUT request sent by an origin using HTTP will typically include such a payload. The applicaiton MAY choose to read the payload using the sane L<Supply> provided in the C<wapi.input> variable of the call environment.
 
 The data supplied will depend on the protocol and middleware employed, but is generally given as a stream of L<Blob>s by the application server.
 
 =head3 2.2.3 The Error Stream
 
-The application server is required to provide a C<p6w.errors> variable in the environment with a L<Supplier> object. The application MAY emit any errors or messages here using any object that stringifies. The application SHOULD NOT terminate such messages with a newline as the server will do so if necessary. The application SHOULD NOT call C<done> or C<quit> on this object.
+The application server is required to provide a C<wapi.errors> variable in the environment with a L<Supplier> object. The application MAY emit any errors or messages here using any object that stringifies. The application SHOULD NOT terminate such messages with a newline as the server will do so if necessary. The application SHOULD NOT call C<done> or C<quit> on this object.
 
 =head3 2.2.4 Application Call
 
-To handle requests from the origin, the application server will make calls to the application routine. The application SHOULD return a valid response to the server. The response required will depend on what string is set in C<p6w.protocol> within the call environment, so the application SHOULD check that on every call if it may vary.
+To handle requests from the origin, the application server will make calls to the application routine. The application SHOULD return a valid response to the server. The response required will depend on what string is set in C<wapi.protocol> within the call environment, so the application SHOULD check that on every call if it may vary.
 
 The application SHOULD attempt to return a value as quickly as possible via the runtime routine. For protocols that require the application to return a L<Promise>, the application SHOULD wrap the entire body of the call in a C<start> block to minimize the time the server will be waiting on the application.
 
@@ -434,7 +434,7 @@ Unless stated otherwise, all environment variables described are set in the runt
 
 =head2 3.0 Header Done
 
-The C<p6wx.header.done> environment variable, if provided, MUST be a vowed L<Promise>. This Promise MUST be kept when the server is done sending or processing the response header. The Promise MUST be broken if the server is unable or unwilling to send the application provided headers.
+The C<wapix.header.done> environment variable, if provided, MUST be a vowed L<Promise>. This Promise MUST be kept when the server is done sending or processing the response header. The Promise MUST be broken if the server is unable or unwilling to send the application provided headers.
 
 This is not an exhaustive list, but here are a few possible reasons why this Promise MAY be broken:
 
@@ -446,7 +446,7 @@ This is not an exhaustive list, but here are a few possible reasons why this Pro
 
 =head2 3.1 Body Done
 
-The C<p6wx.body.done> environment variable, if provided, MUST be a vowed L<Promise>. This Promise MUST be kept when the server is done sending or processing the response body. The Promise MUST be broken if the server is unable or unwilling to send the complete application body.
+The C<wapix.body.done> environment variable, if provided, MUST be a vowed L<Promise>. This Promise MUST be kept when the server is done sending or processing the response body. The Promise MUST be broken if the server is unable or unwilling to send the complete application body.
 
 This is not an exhaustive list, but here are a few possible reasons why this Promise MAY be broken:
 
@@ -456,61 +456,61 @@ This is not an exhaustive list, but here are a few possible reasons why this Pro
 
 =item An application initiated an HTTP/2 push-promise, which the server had begun to fulfill when it received a cancel message from the client.
 
-In particular, C<p6wx.body.done> MUST be broken if C<p6wx.header.done> is broken (assuming both extensions are implemented).
+In particular, C<wapix.body.done> MUST be broken if C<wapix.header.done> is broken (assuming both extensions are implemented).
 
 =head2 3.2 Raw Socket
 
-The C<p6wx.io> environment variable, if provided, SHOULD be the socket object used to communicate to the client. This is the interface of last resort as it sidesteps the entire P6WAPI interface, but may be useful in cases where an application wishes to control details of the socket itself.
+The C<wapix.io> environment variable, if provided, SHOULD be the socket object used to communicate to the client. This is the interface of last resort as it sidesteps the entire RakuWAPI interface, but may be useful in cases where an application wishes to control details of the socket itself.
 
-If your application requires the use of this socket, please file an issue describing the nature of your application in detail. You may have a use-case that a future revision to P6WAPI can improve.
+If your application requires the use of this socket, please file an issue describing the nature of your application in detail. You may have a use-case that a future revision to RakuWAPI can improve.
 
 This variable MAY be made available as part of the configuration environment.
 
 =head2 3.3 Logger
 
-The C<p6wx.logger> environment variable, if provided, MUST be a L<Routine> defined with a signature as follows:
+The C<wapix.logger> environment variable, if provided, MUST be a L<Routine> defined with a signature as follows:
 
     sub (Str:D $message, Str:D :$level = 'info');
 
 When called application MUST provide a C<$level> that is one of: C<"debug">, C<"info">, C<"warn">, C<"error">, C<"fatal">.
 
-Te C<p6wx.logger> environment variable SHOULD be provided in the configuration environment.
+Te C<wapix.logger> environment variable SHOULD be provided in the configuration environment.
 
 =head2 3.4 Sessions
 
 This extension implements basic session handling that allows certain data to persist across requests. Session data SHOULD be associated with a particular origin.
 
-The C<p6wx.session> environment variable, if provided, MUST be an L<Associative>. This hash maps arbitrary keys and values that may be read and written to by an application. The application SHOULD only use L<Str> keys and values. The details of persisting this data is up to the application server or middleware implementing the session extension.
+The C<wapix.session> environment variable, if provided, MUST be an L<Associative>. This hash maps arbitrary keys and values that may be read and written to by an application. The application SHOULD only use L<Str> keys and values. The details of persisting this data is up to the application server or middleware implementing the session extension.
 
-The C<p6wx.session.options> environment variable, if provided, MUST be an L<Associative>> This hash uses implementation-specific keys and values to communicate between the application and the extension implementation. This allows the application a channel by which to instruct the session handler how to operate.
+The C<wapix.session.options> environment variable, if provided, MUST be an L<Associative>> This hash uses implementation-specific keys and values to communicate between the application and the extension implementation. This allows the application a channel by which to instruct the session handler how to operate.
 
 =head2 3.5 Harakiri Mode
 
-The C<p6wx.harakiri> environment variable, if provided, MUST be a L<Bool>. If set to C<True> it signals to the application that the server supports harakiri mode, which allows the application to ask the server to terminate the current work when the request is complete. This variable SHOULD be set in the configuration environment.
+The C<wapix.harakiri> environment variable, if provided, MUST be a L<Bool>. If set to C<True> it signals to the application that the server supports harakiri mode, which allows the application to ask the server to terminate the current work when the request is complete. This variable SHOULD be set in the configuration environment.
 
-The C<p6wx.harakiri.commit> environment variable MAY be set by the application to signal to the server that the current worker should be killed after the current request has been processed.
+The C<wapix.harakiri.commit> environment variable MAY be set by the application to signal to the server that the current worker should be killed after the current request has been processed.
 
 =head2 3.6 Cleanup Handlers
 
-The C<p6wx.cleanup> environment variable, if provided, MUST be a L<Bool>. If set to C<True> it tells the application that the server supports running cleanup handlers after the request is complete. This variable SHOULD be set in the configuration environment.
+The C<wapix.cleanup> environment variable, if provided, MUST be a L<Bool>. If set to C<True> it tells the application that the server supports running cleanup handlers after the request is complete. This variable SHOULD be set in the configuration environment.
 
-The C<p6wx.cleanup.handlers> environment variable MUST be provided if the C<p6wx.cleanup> flag is set. This MUST an L<Array>. The application adds cleanup handlers to the array by putting L<Callable>s into the Array (usually by C<push>ing). Each handler will be given a copy of the C<%env> as the first argument. The server MUST run these handlers, but only after the application has completely finished returning the response and any response payload.
+The C<wapix.cleanup.handlers> environment variable MUST be provided if the C<wapix.cleanup> flag is set. This MUST an L<Array>. The application adds cleanup handlers to the array by putting L<Callable>s into the Array (usually by C<push>ing). Each handler will be given a copy of the C<%env> as the first argument. The server MUST run these handlers, but only after the application has completely finished returning the response and any response payload.
 
-If the server supports the harakiri extension, it SHOULD allow the cleanup handlers to invoke harakiri mode by setting C<p6wx.harakiri.commit> (see 3.5).
+If the server supports the harakiri extension, it SHOULD allow the cleanup handlers to invoke harakiri mode by setting C<wapix.harakiri.commit> (see 3.5).
 
 =head2 3.7 Output Block Detection
 
-The C<p6wx.body.backpressure> environment variable, if provided, MUST be a L<Bool> flag. It is set to C<True> to indicate that the P6WAPI server provide response backpressure detection by polling for non-blocking I/O problems. In this case, the server MUST provide the other two environment variables. If C<False> or not defined, the server does not provide these two environment variables. This variable SHOULD be defined in the configuration environment.
+The C<wapix.body.backpressure> environment variable, if provided, MUST be a L<Bool> flag. It is set to C<True> to indicate that the RakuWAPI server provide response backpressure detection by polling for non-blocking I/O problems. In this case, the server MUST provide the other two environment variables. If C<False> or not defined, the server does not provide these two environment variables. This variable SHOULD be defined in the configuration environment.
 
-The C<p6wx.body.backpressure.supply> environment variable MUST be provided if C<p6wx.body.backpressure> is C<True>. When provided, it MUST be a live L<Supply> that periodically emits C<True> and C<False> values. C<True> is emitted when the server polls for backpressure and detects a blocked output socket. C<False> is emitted when the server polls for backpressure and detects the previously blocked socket is no longer blocked.
+The C<wapix.body.backpressure.supply> environment variable MUST be provided if C<wapix.body.backpressure> is C<True>. When provided, it MUST be a live L<Supply> that periodically emits C<True> and C<False> values. C<True> is emitted when the server polls for backpressure and detects a blocked output socket. C<False> is emitted when the server polls for backpressure and detects the previously blocked socket is no longer blocked.
 
-The C<p6wx.body.backpressure.test> environment variable MUST be provided if C<p6wx.body.backpressure> is C<True>. When provided, it MUST be a L<Bool> that is C<True> while output has last been detected as blocked and C<False> otherwise. This can be useful for detecting the initial state before the backpressure supply has emitted any value or just as a way to poll the last known status of the socket.
+The C<wapix.body.backpressure.test> environment variable MUST be provided if C<wapix.body.backpressure> is C<True>. When provided, it MUST be a L<Bool> that is C<True> while output has last been detected as blocked and C<False> otherwise. This can be useful for detecting the initial state before the backpressure supply has emitted any value or just as a way to poll the last known status of the socket.
 
 =head2 3.8 Protocol Upgrade
 
-The C<p6wx.net-protocol.upgrade> environment variable MUST be provided in the configuration environment, if the server implements the protocol upgrade extension. It MUST be the L<Set> of names of protocols the server supports for upgrade.
+The C<wapix.net-protocol.upgrade> environment variable MUST be provided in the configuration environment, if the server implements the protocol upgrade extension. It MUST be the L<Set> of names of protocols the server supports for upgrade.
 
-When the client makes a protocol upgrade request using an C<Upgrade> header, the application MAY request that the server negotiate the upgrade to one of these supported protocols by sending a C<P6Wx-Upgrade> header back to the server with the named protocol. The application MAY send any other headers related to the Upgrade and MAY send a message payload if the upgrade allows it. These SHOULD override any server supplied values or headers.
+When the client makes a protocol upgrade request using an C<Upgrade> header, the application MAY request that the server negotiate the upgrade to one of these supported protocols by sending a C<wapix-Upgrade> header back to the server with the named protocol. The application MAY send any other headers related to the Upgrade and MAY send a message payload if the upgrade allows it. These SHOULD override any server supplied values or headers.
 
 The server MUST negotiate the new protocol and enable any environment variables required for interacting through that protocol. After the handshake or upgrade negoatiation is complete, the server MUST make a new call to the application with a new environment to process the remainder of the network request with the origin.
 
@@ -518,23 +518,23 @@ The server MUST negotiate the new protocol and enable any environment variables 
 
 The workings of HTTP/2 are similar enough to HTTP/1.0 and HTTP/1.1 that use of a protocol upgrade may not be necessary in most or all use-cases. However, servers MAY choose to delegate this to the application using the protocol upgrade extension.
 
-Servers that support this protocol upgrade MUST place the name "h2c" and/or "h2" into the C<p6wx.net-protocol.upgrade> set, for support of HTTP/2 over cleartext connections and HTTP/2 over TLS, respectively.
+Servers that support this protocol upgrade MUST place the name "h2c" and/or "h2" into the C<wapix.net-protocol.upgrade> set, for support of HTTP/2 over cleartext connections and HTTP/2 over TLS, respectively.
 
-The application MUST NOT request an upgrade using the C<P6Wx-Upgrade> header for "h2c" unless the C<p6w.url-scheme> is "http". Similarly, the application MUST NOT request an upgrade for "h2" unless the C<p6w.url-scheme> is "https". The application server SHOULD enforce this requirement for security reasons.
+The application MUST NOT request an upgrade using the C<WAPIx-Upgrade> header for "h2c" unless the C<wapi.url-scheme> is "http". Similarly, the application MUST NOT request an upgrade for "h2" unless the C<wapi.url-scheme> is "https". The application server SHOULD enforce this requirement for security reasons.
 
-The application MUST NOT tap the C<p6w.input> stream when performing this upgrade. The application SHOULD NOT return a message payload aside from an empty L<Supply>.
+The application MUST NOT tap the C<wapi.input> stream when performing this upgrade. The application SHOULD NOT return a message payload aside from an empty L<Supply>.
 
 =head3 3.8.1 WebSocket Protocol Upgrade
 
-Servers that support the WebSocket protocol upgrade MUST place the name "ws" into the C<p6wx.net-protocol.upgrade> set.
+Servers that support the WebSocket protocol upgrade MUST place the name "ws" into the C<wapix.net-protocol.upgrade> set.
 
-The application MUST NOT tap the C<p6w.input> stream when performing this upgrade. The application SHOULD NOT return a message payload aside from an empty L<Supply>.
+The application MUST NOT tap the C<wapi.input> stream when performing this upgrade. The application SHOULD NOT return a message payload aside from an empty L<Supply>.
 
 =head2 3.9 Transfer Encoding
 
-This extension is only for HTTP/1.1 protocol connections. When the server supports this extension, it MUST provide a C<p6wx.http11.transfer-encoding> variable containing a C<Set> naming the transfer encodings the server supports as strings. This SHOULD be set in the configuration environment.
+This extension is only for HTTP/1.1 protocol connections. When the server supports this extension, it MUST provide a C<wapix.http11.transfer-encoding> variable containing a C<Set> naming the transfer encodings the server supports as strings. This SHOULD be set in the configuration environment.
 
-When the application returns a header named C<P6Wx-Transfer-Encoding> with the name of one of the supported transfer encoding strings, the server MUST apply that transfer encoding to the message payload. If the connection is not HTTP/1.1, the server SHOULD ignore this header.
+When the application returns a header named C<WAPIx-Transfer-Encoding> with the name of one of the supported transfer encoding strings, the server MUST apply that transfer encoding to the message payload. If the connection is not HTTP/1.1, the server SHOULD ignore this header.
 
 =head3 3.9.0 Chunked Encoding
 
@@ -546,29 +546,29 @@ All other encodings should be handled as required by the relevant rules for HTTP
 
 =head3 3.10 HTTP/2 Push Promises
 
-When the C<SERVER_PROTOCOL> is "HTTP/2", servers SHOULD support the HTTP/2 push promises extension. However, applications SHOULD check to make sure that the C<p6wx.h2.push-promise> variable is set to a defined value before using this extension.
+When the C<SERVER_PROTOCOL> is "HTTP/2", servers SHOULD support the HTTP/2 push promises extension. However, applications SHOULD check to make sure that the C<wapix.h2.push-promise> variable is set to a defined value before using this extension.
 
-This extension is implemented by providing a variable named C<p6wx.h2.push-promise>. When provided, this MUST be a L<Supplier>.
+This extension is implemented by providing a variable named C<wapix.h2.push-promise>. When provided, this MUST be a L<Supplier>.
 
 When the application wishes to invoke a server push, it MUST emit a message describing the request the server is pushing. The application server will receive this request and make a new, separate call to the application to fulfill that request.
 
 Push-promise messages are sent as an L<Array> of L<Pair>s. This is a set of headers to send with the PUSH_PROMISE frame, including HTTP/2 pseudo-headers like ":path" and ":authority".
 
-Upon receiving a message to C<p6wx.h2.push-promise>, the server SHOULD schedule a followup call to the application to fulfill the push-promise as if the push-promise were an incoming request from the client. (The push-promise could be canceled by the client, so the call to the application might not actually happen.)
+Upon receiving a message to C<wapix.h2.push-promise>, the server SHOULD schedule a followup call to the application to fulfill the push-promise as if the push-promise were an incoming request from the client. (The push-promise could be canceled by the client, so the call to the application might not actually happen.)
 
 =head1 4 Application Protocol Implementation
 
-One goal of P6WAPI application servers is to allow the application to focus on building web applications without having to implement the mundane details of web protocols. In times past, this was simply a matter of implementing HTTP/1.x or some kind of front-end to HTTP/1.x (such as CGI or FastCGI). While HTTP/1.x is still relevant to the web today, new protocols have also become important to modern web applications, such as HTTP/2 and WebSocket.
+One goal of RakuWAPI application servers is to allow the application to focus on building web applications without having to implement the mundane details of web protocols. In times past, this was simply a matter of implementing HTTP/1.x or some kind of front-end to HTTP/1.x (such as CGI or FastCGI). While HTTP/1.x is still relevant to the web today, new protocols have also become important to modern web applications, such as HTTP/2 and WebSocket.
 
 These protocols may have different interfaces that do not lend themselves to the request-response pattern specifed by PSGI. Therefore, we provide a means by which servers and applications may implement these alternate protocols, which each may have different requirements. These protocols are called D<application protocols> to differentiate them from network protocols. For example, rather than providing a protocol for HTTP, we provide the "request-response" protocol. The underlying network protocol may be HTTP/1.0, HTTP/1.1, HTTP/2 or it may be something else that operates according to a similar pattern.
 
-The application and application server SHOULD communicate according to the application protocol used for the current application call. Otherwise, they will be unable to communicate. For many applications, just implementing the basic protocol request-response protocol is enough. However, to allow for more complete applications, P6WAPI provides additional tools to help application and application server to communicate through a variety of situations. This is handled primarily via the C<p6w.protocol>, C<p6w.protocol.support>, and C<p6w.protocol.enabled> values in the environment.
+The application and application server SHOULD communicate according to the application protocol used for the current application call. Otherwise, they will be unable to communicate. For many applications, just implementing the basic protocol request-response protocol is enough. However, to allow for more complete applications, RakuWAPI provides additional tools to help application and application server to communicate through a variety of situations. This is handled primarily via the C<wapi.protocol>, C<wapi.protocol.support>, and C<wapi.protocol.enabled> values in the environment.
 
-The application SHOULD check the value in C<p6w.protocol>. The application SHOULD NOT make assumptions about the network protocol based upon the C<p6w.protocol> value for the current request. If the application needs to make a decision based upon the network protocol, the application SHOULD check the C<SERVER_PROTOCOL>.
+The application SHOULD check the value in C<wapi.protocol>. The application SHOULD NOT make assumptions about the network protocol based upon the C<wapi.protocol> value for the current request. If the application needs to make a decision based upon the network protocol, the application SHOULD check the C<SERVER_PROTOCOL>.
 
-The application SHOULD check C<p6w.protocol.support> to discover which protocols are supported by the application server. An application that is not able to support all supported protocols SHOULD modify C<p6w.protocol.enabled> to only include protocols supported by the application as early as possible.
+The application SHOULD check C<wapi.protocol.support> to discover which protocols are supported by the application server. An application that is not able to support all supported protocols SHOULD modify C<wapi.protocol.enabled> to only include protocols supported by the application as early as possible.
 
-The application server MUST provide the C<p6w.protocol.support> and C<p6w.protocol.enabled> values as part of the configuration environment. The application server MUST NOT use any protocol that is not a member of the C<p6w.protocol.enabled> set. If a protocol becomes disabled in the middle of a request, the request MUST continue, but subsequent requests MUST NOT use that protocol unless it is later enabled.
+The application server MUST provide the C<wapi.protocol.support> and C<wapi.protocol.enabled> values as part of the configuration environment. The application server MUST NOT use any protocol that is not a member of the C<wapi.protocol.enabled> set. If a protocol becomes disabled in the middle of a request, the request MUST continue, but subsequent requests MUST NOT use that protocol unless it is later enabled.
 
 This specification defines the following protocols:
 
@@ -580,7 +580,7 @@ This specification defines the following protocols:
 
 =item B<socket> for raw, plain socket protocols, which send and receive data with no expectation of special server handling
 
-It is recommended that an application server that implements all of these protocols only enable the request-response protocol within C<p6w.protocol.enabled> by default. This allows simple P6WAPI applications to safely operate without having to perform any special configuration.
+It is recommended that an application server that implements all of these protocols only enable the request-response protocol within C<wapi.protocol.enabled> by default. This allows simple RakuWAPI applications to safely operate without having to perform any special configuration.
 
 =head2 4.0 Request-Response Protocol
 
@@ -658,7 +658,7 @@ For any other request, the application MAY emit zero or more messages in the ret
 
 =head3 4.0.2 Encoding
 
-The application server SHOULD handle encoding of strings or stringified objects emitted to it. When performing encoding, the application server SHOULD honor the C<charset> set within the C<Content-Type> header, if given. If it does not honor the C<charset>, it MUST encode any strings in the response payload according to the encoding named in C<p6w.body.encoding>.
+The application server SHOULD handle encoding of strings or stringified objects emitted to it. When performing encoding, the application server SHOULD honor the C<charset> set within the C<Content-Type> header, if given. If it does not honor the C<charset>, it MUST encode any strings in the response payload according to the encoding named in C<wapi.body.encoding>.
 
 =head3 4.0.3 Request-Response Lifecycle
 
@@ -666,9 +666,9 @@ The server processes requests from an origin, passes the partially processed req
 
 In the modern web, an application may want to implement a variety of complex HTTP interactions. These use-cases are not described by the typical HTTP request-response roundtrip with which most web developers are familiar. For example, an interactive Accept-Continue response or a data stream to or from the origin or an upgrade request to switch protocols. As such, application servers SHOULD make a best effort to be implemented in such a way as to make this variety applications possible.
 
-The application server SHOULD pass control to the application as soon as the headers have been received and the environment can be constructed. The application server MAY continue processing the request payload while the application server begins its work. The server SHOULD NOT emit the request payload to C<p6w.input> yet.
+The application server SHOULD pass control to the application as soon as the headers have been received and the environment can be constructed. The application server MAY continue processing the request payload while the application server begins its work. The server SHOULD NOT emit the request payload to C<wapi.input> yet.
 
-Once the application has returned the its L<Promise> to respond, the server SHOULD wait until the promise is kept. Once kept, the server SHOULD tap the response payload as soon as possible. After tapping the Supply, the application server SHOULD keep the L<Promise> in C<p6w.ready> (the application server SHOULD NOT break this Promise). Once that promise has been kept, only then SHOULD the server start emitting the contents of the request payload, if any, to C<p6w.input>.
+Once the application has returned the its L<Promise> to respond, the server SHOULD wait until the promise is kept. Once kept, the server SHOULD tap the response payload as soon as possible. After tapping the Supply, the application server SHOULD keep the L<Promise> in C<wapi.ready> (the application server SHOULD NOT break this Promise). Once that promise has been kept, only then SHOULD the server start emitting the contents of the request payload, if any, to C<wapi.input>.
 
 The server SHOULD return the application response headers back to the origin as soon as they are received. After which, the server SHOULD return each chunk emitted by the response body from the application as soon as possible.
 
@@ -698,13 +698,13 @@ Any application server implementing WebSocket MUST adhere to all the requirement
 
 =item The C<CONTENT_LENGTH> SHOULD be set to an undefined L<Int>.
 
-=item The C<p6w.url-scheme> MUST be set to "ws" for plain text WebSocket connections or "wss" for encrypted WebSocket connections.
+=item The C<wapi.url-scheme> MUST be set to "ws" for plain text WebSocket connections or "wss" for encrypted WebSocket connections.
 
-=item The C<p6w.protocol> MUST be set to "framed-socket".
+=item The C<wapi.protocol> MUST be set to "framed-socket".
 
-=item The server MUST decode frames received from the client and emit each of them to C<p6w.input>. The frames MUST NOT be buffered or concatenated.
+=item The server MUST decode frames received from the client and emit each of them to C<wapi.input>. The frames MUST NOT be buffered or concatenated.
 
-=item The server's supplied C<p6w.input> L<Supply> must be I<sane>. The server SHOULD signal C<done> through the Supply when either the client or server closes the WebSocket connection normally and C<quit> on abnormal termination of the connection.
+=item The server's supplied C<wapi.input> L<Supply> must be I<sane>. The server SHOULD signal C<done> through the Supply when either the client or server closes the WebSocket connection normally and C<quit> on abnormal termination of the connection.
 
 =item The server MUST encode frames emitted by the application in the message payload as data frames sent to the client. The frames MUST be separated out as emitted by the application without any buffering or concatenation.
 
@@ -724,11 +724,11 @@ The messages MUST be framed and returned to the origin by the application server
 
 =head3 4.1.2 Encoding
 
-The application server SHOULD handle encoding of strings or stringified objects emitted to it. The server MUST encode any strings in the message payload according to the encoding named in C<p6w.body.encoding>.
+The application server SHOULD handle encoding of strings or stringified objects emitted to it. The server MUST encode any strings in the message payload according to the encoding named in C<wapi.body.encoding>.
 
 =head2 4.2 PSGI Protocol
 
-To handle legacy applications, this specification defines the "psgi" protocol. If C<p6w.protocol.enabled> has both "psgi" and "request-response" enabled, the "request-response" protocol SHOULD be preferred.
+To handle legacy applications, this specification defines the "psgi" protocol. If C<wapi.protocol.enabled> has both "psgi" and "request-response" enabled, the "request-response" protocol SHOULD be preferred.
 
 =head3 4.2.0 Response
 
@@ -748,7 +748,7 @@ The "socket" protocol can be provided by an application server wishing to allow 
 
 The socket provided sends and receives data directly to and from the application without any framing, buffering, or modification. 
 
-The "socket" protocol SHOULD only be used when it is enabled in C<p6w.protocol.enabled> and no other protocol enabled there can fulfill the current application call.
+The "socket" protocol SHOULD only be used when it is enabled in C<wapi.protocol.enabled> and no other protocol enabled there can fulfill the current application call.
 
 =head2 4.3.0 Response
 
@@ -757,7 +757,7 @@ Here's an example application that implements the "socket" protocol to create a 
     sub app(%env) {
         start {
             supply {
-                whenever %env<p6w.input> -> $msg {
+                whenever %env<wapi.input> -> $msg {
                     my $req = parse-http-request($msg);
 
                     if $req.method eq 'GET' {
@@ -792,21 +792,21 @@ The following parts of the environment SHOULD be provided as undefined values:
 
 =item HTTP_*
 
-=item p6w.url-scheme
+=item wapi.url-scheme
 
-=item p6w.ready
+=item wapi.ready
 
-=item p6w.body.encoding
+=item wapi.body.encoding
 
 =item SERVER_PROTOCOL
 
-The C<p6w.protocol> must be set to "socket".
+The C<wapi.protocol> must be set to "socket".
 
-The application server SHOULD provide data sent by the origin to the application through the C<p6w.input> supply as it arrives. It MUST still be a I<sane> supply.
+The application server SHOULD provide data sent by the origin to the application through the C<wapi.input> supply as it arrives. It MUST still be a I<sane> supply.
 
 The application server MAY tunnel the connection through another socket, stream, file handle, or what-not. That is, the application MAY NOT assume the communication is being performed over any particular medium. The application server SHOULD transmit the data to the origin as faithfully as possible, keeping the intent of the application as much as possible.
 
-The application server SHOULD forward on data emitted by the application in the returned payload supply as it arrives. The application server SHOULD send no other data to the origin over that socket once the application is handed control, unless related to how the data is being tunneled or handled by the server. The application server SHOULD close the connection with the origin when the application server sends the "done" message to the supply. Similarly, the application server SHOULD send "done" the C<p6w.input> supply when the connection is closed by the client or server.
+The application server SHOULD forward on data emitted by the application in the returned payload supply as it arrives. The application server SHOULD send no other data to the origin over that socket once the application is handed control, unless related to how the data is being tunneled or handled by the server. The application server SHOULD close the connection with the origin when the application server sends the "done" message to the supply. Similarly, the application server SHOULD send "done" the C<wapi.input> supply when the connection is closed by the client or server.
 
 =head3 4.3.1 Response Payload
 
@@ -817,6 +817,18 @@ Applications MUST return a I<sane> L<Supply> which emits a string of bytes for e
 The application server SHOULD reject any object other than a L<Blob> sent as part of the message payload. The application server is not expected to perform any encoding or stringification of messages.
 
 =head1 Changes
+
+=head2 0.9.Draft
+
+=item Changed the abbreviation from P6WAPI to RakuWAPI.
+
+=item Changed all C<p6w.*> environment prefixes to C<wapi.*>
+
+=item Changed all C<p6wx.*> environment prefixes to C<wapix.*>
+
+=item Changed all C<P6Wx-*> header names to C<WAPIx-*> header names
+
+=item Renamed all example C<*.p6w> files to C<*.wapi>
 
 =head2 0.8.Draft
 
