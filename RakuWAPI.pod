@@ -198,13 +198,13 @@ Many of the runtime environment variables are derived from the old Common Gatewa
     C<CONTENT_LENGTH>        | C<< Int:_ >>         | This corresponds to the
                              |                      | Content-Length header sent by the
                              |                      | client. If no such header was sent
-                             |                      | the application server SHOULD set
+                             |                      | the application server MUST set
                              |                      | this key to the L<Int> type value.
 
     C<CONTENT_TYPE>          | C<< Str:_ >>         | This corresponds to the Content-Type
                              |                      | header sent by the client. If no
                              |                      | such header was sent the application
-                             |                      | server SHOULD set this key to the
+                             |                      | server MUST set this key to the
                              |                      | L<Str> type value.
 
     C<HTTP_*>                | C<< Str:_ >>         | The remaining request headers are
@@ -212,7 +212,7 @@ Many of the runtime environment variables are derived from the old Common Gatewa
                              |                      | with C<HTTP_>, in ALL CAPS with the
                              |                      | hyphens ("-") turned to underscores
                              |                      | ("_"). Multiple incoming headers
-                             |                      | with the same name SHOULD have their 
+                             |                      | with the same name MUST have their 
                              |                      | values joined with a comma (", ") as
                              |                      | described in
                              |                      | L<RFC 2616|http://www.ietf.org/rfc/rfc2616>.
@@ -220,7 +220,7 @@ Many of the runtime environment variables are derived from the old Common Gatewa
                              |                      | C<HTTP_CONTENT_TYPE> headers MUST
                              |                      | NOT be set.
 
-    Other CGI Keys           | C<< Str:_ >>         | The server SHOULD attempt to provide
+    Other CGI Keys           | C<< Str:_ >>         | The server MUST attempt to provide
                              |                      | as many other CGI variables as
                              |                      | possible, but no others are required
                              |                      | or formally specified.
