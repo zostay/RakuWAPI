@@ -296,11 +296,11 @@ During application defintion, the application MAY also instantiate and apply mid
 
 ### 2.2.0.0 Runtime Routine
 
-To define an application as a runtime routine, the application is defined as a [Callable](http://doc.perl6.org/type/Callable) (typically a [Routine](http://doc.perl6.org/type/Routine)). This application MUST accept a single parameter, a hash, as its argument. The single parameter will be passed the runtime environment by the application server when called. 
+To define an application as a runtime routine, the application is defined as a [Callable](http://doc.perl6.org/type/Callable) (typically a [Routine](http://doc.perl6.org/type/Routine)). This application MUST accept a single parameter as its argument. When the application server handles a request, the server will set this parameter to the runtime environment for the request. The application MUST NOT have a return type set to a [Callable](http://doc.perl6.org/type/Callable).
 
-The application SHOULD respond to the caller, the application server, according to the `wapi.protocol` string set in the passed environment.
+The application SHOULD respond to the caller, i.e., the application server or outer middleware, according to the `wapi.protocol` string set in the passed environment.
 
-Here, for example, is a RakuWAPI application that calculates and prints the Nth Lucas number depending on the value passed in the query string. This assumes a request-response protocol (see Section 4.0).
+Here, for example, is a RakuWAPI application that calculates and prints the Nth Lucas number depending on the value passed in the query string. This assumes a `request-response` protocol (see Section 4.0).
 
 ```perl6
     sub lucas-app(%env) {
@@ -777,6 +777,8 @@ Changes
 
 0.9.Draft
 ---------
+
+  * Section 2.2.0.0 has been changed to forbid runtime routines from having a `Callable` return type.
 
   * Section 2.1.2 was rewritten to disallow what was previously allowed: the modification of the input stream.
 
