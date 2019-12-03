@@ -362,9 +362,9 @@ See section 4 on how different application protocols are handled.
 3 Extensions
 ============
 
-In addition to the standard specification, there are a number of extensions that servers or middleware MAY choose to implement. They are completely optional and applications and middleware SHOULD check for their presence before using them. Such checks SHOULD be performed as early as possible, prior to returning the application, if possible.
+In addition to the standard specification, there are a number of extensions that servers or middleware MAY choose to implement. They are completely optional and applications and middleware SHOULD check for their presence before using them. Such checks SHOULD be performed as early as possible.
 
-Unless stated otherwise, all environment variables described are set in the runtime environment, which is passed as the single argument with each call to the application.
+Unless stated otherwise, all environment variables described here are set in the runtime environment, which is passed as the single argument with each call to the runtime routine.
 
 3.0 Header Done
 ---------------
@@ -378,6 +378,8 @@ This is not an exhaustive list, but here are a few possible reasons why this Pro
   * An internal error occurred in the application server.
 
   * The client hungup the connection before the headers could be sent.
+
+When broken, this Promise SHOULD be broken with a helpful diagnostic exception.
 
 3.1 Body Done
 -------------
@@ -394,10 +396,12 @@ This is not an exhaustive list, but here are a few possible reasons why this Pro
 
 In particular, `wapix.body.done` MUST be broken if `wapix.header.done` is broken (assuming both extensions are implemented).
 
+When broken, the Promise SHOULD be broken with a helpful diagnostic exception.
+
 3.2 Raw Socket
 --------------
 
-The `wapix.io` environment variable, if provided, SHOULD be the socket object used to communicate to the client. This is the interface of last resort as it sidesteps the entire RakuWAPI interface, but may be useful in cases where an application wishes to control details of the socket itself.
+The `wapix.io` environment variable, if provided, SHOULD be the socket object used to communicate to the client. This is the interface of last resort as it sidesteps the entire RakuWAPI interface. It may be useful in cases where an application wishes to control details of the socket itself.
 
 If your application requires the use of this socket, please file an issue describing the nature of your application in detail. You may have a use-case that a future revision to RakuWAPI can improve.
 
@@ -423,14 +427,14 @@ This extension implements basic session handling that allows certain data to per
 
 The `wapix.session` environment variable, if provided, MUST be an [Associative](http://doc.perl6.org/type/Associative). This hash maps arbitrary keys and values that may be read and written to by an application. The application SHOULD only use [Str](http://doc.perl6.org/type/Str) keys and values. The details of persisting this data is up to the application server or middleware implementing the session extension.
 
-The `wapix.session.options` environment variable, if provided, MUST be an [Associative](http://doc.perl6.org/type/Associative)> This hash uses implementation-specific keys and values to communicate between the application and the extension implementation. This allows the application a channel by which to instruct the session handler how to operate.
+The `wapix.session.options` environment variable, if provided, MUST be an [Associative](http://doc.perl6.org/type/Associative). This variable uses implementation-specific keys and values to communicate between the application and the extension implementation. This allows the application a channel by which to instruct the session handler how to operate.
 
 3.5 Harakiri Mode
 -----------------
 
 The `wapix.harakiri` environment variable, if provided, MUST be a [Bool](http://doc.perl6.org/type/Bool). If set to `True` it signals to the application that the server supports harakiri mode, which allows the application to ask the server to terminate the current work when the request is complete. This variable SHOULD be set in the configuration environment.
 
-The `wapix.harakiri.commit` environment variable MAY be set by the application to signal to the server that the current worker should be killed after the current request has been processed.
+The `wapix.harakiri.commit` environment variable MAY be set to a `True` value by the application to signal to the server that the current worker should be killed after the current request has been processed.
 
 3.6 Cleanup Handlers
 --------------------
@@ -455,7 +459,7 @@ The `wapix.body.backpressure.test` environment variable MUST be provided if `wap
 
 The `wapix.net-protocol.upgrade` environment variable MUST be provided in the configuration environment, if the server implements the protocol upgrade extension. It MUST be the [Set](http://doc.perl6.org/type/Set) of names of protocols the server supports for upgrade.
 
-When the client makes a protocol upgrade request using an `Upgrade` header, the application MAY request that the server negotiate the upgrade to one of these supported protocols by sending a `wapix-Upgrade` header back to the server with the named protocol. The application MAY send any other headers related to the Upgrade and MAY send a message payload if the upgrade allows it. These SHOULD override any server supplied values or headers.
+When the client makes a protocol upgrade request using an `Upgrade` header, the application MAY request that the server negotiate the upgrade to one of these supported protocols by sending a `WAPIx-Upgrade` header back to the server with the named protocol. The application MAY send any other headers related to the Upgrade and MAY send a message payload if the upgrade allows it. These SHOULD override any server supplied values or headers.
 
 The server MUST negotiate the new protocol and enable any environment variables required for interacting through that protocol. After the handshake or upgrade negoatiation is complete, the server MUST make a new call to the application with a new environment to process the remainder of the network request with the origin.
 
