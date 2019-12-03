@@ -226,21 +226,21 @@ What is important in middleware definition is the following:
 
   * A middleware runtime routine SHOULD fail if the wrapped configuration application is a configuration routine.
 
+Any general purpose middleware should be defined as a configuration routine.
+
 Otherwise, There Is More Than One Way To Do It.
 
 ### 2.1.1 The Environment
 
-Middleware applications MAY set or modify the environment (both configuration and runtime environment) as needed. Middleware applications SHOULD maintain the typing required for the server in Sections 2.0.1.0 and 2.0.1.1 above, as modified by extensions and the application protocol in use. 
+Middleware applications MAY set or modify the environment (both configuration and runtime environment) as needed. Middleware applications MUST maintain the typing required for the server in Sections 2.0.1.0 and 2.0.1.1 above, as modified by extensions and the application protocol in use. 
 
 Whenever setting new variables in the environment, the variables MUST contain a period and SHOULD use a unique prefix to avoid name clashes with servers, other middleware, and applications.
 
 ### 2.1.2 The Input Stream
 
-An application server is required to provide the input stream as a [Supply](http://doc.perl6.org/type/Supply) emitting [Blob](http://doc.perl6.org/type/Blob)s. Middleware, however, MAY replace the Supply with one that emits anything that might be useful to the application. 
+An application server is required to provide the input stream as a [Supply](http://doc.perl6.org/type/Supply) emitting [Blob](http://doc.perl6.org/type/Blob)s. Middleware MUST provide the same. 
 
-Such modifications to input necessarily present compatibility problems with other middleware, so both application and middleware developers SHOULD take care to document and apply such middleware carefully.
-
-The input stream provided by the middleware MUST still be *sane*.
+However, it is possible that the middleware will consume the data in `wapi.input` for the purpose of parsing or providing the data contained in another form. In such a case, the middleware SHOULD provide an empty, already closed, [Supply](http://doc.perl6.org/type/Supply). The middleware should provide the data in another environment variable.
 
 ### 2.1.3 The Error Stream
 
@@ -777,6 +777,10 @@ Changes
 
 0.9.Draft
 ---------
+
+  * Section 2.1.2 was rewritten to disallow what was previously allowed: the modification of the input stream.
+
+  * Eliminated ambiguity regarding typing of environment in the middleware section.
 
   * Added a section for type constraints and made better use of subset types to streamline and simplify some of the documentation.
 
