@@ -778,6 +778,8 @@ Changes
 0.9.Draft
 ---------
 
+  * Added a section for type constraints and made better use of subset types to streamline and simplify some of the documentation.
+
   * Cleaned up some old language left over from previous versions of the specification.
 
   * Eliminated some ambiguities in the type required for undefined environment values. The undefined environment values MUST match the given type constraint and be set to type objects of that type if they are not defined.

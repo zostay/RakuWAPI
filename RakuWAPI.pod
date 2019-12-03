@@ -830,6 +830,8 @@ The application server SHOULD reject any object other than a L<Blob> sent as par
 
 =head2 0.9.Draft
 
+=item Added a section for type constraints and made better use of subset types to streamline and simplify some of the documentation.
+
 =item Cleaned up some old language left over from previous versions of the specification.
 
 =item Eliminated some ambiguities in the type required for undefined environment values. The undefined environment values MUST match the given type constraint and be set to type objects of that type if they are not defined.
