@@ -150,7 +150,7 @@ The configuration environment MUST be made available to the application during e
 
 =head4 2.0.1.1 Runtime Environment
 
-Many of the call environment variables are derived from the old Common Gateway Interface (CGI). This environment MUST be given when the application is being called, i.e., whenever the runtime routine is called.
+Many of the runtime environment variables are derived from the old Common Gateway Interface (CGI). This environment MUST be given when the application is being called, i.e., whenever the runtime routine is called.
 
 =begin table :allow<C L>
 
@@ -410,7 +410,7 @@ The application itself MAY store additional values in the environment as it sees
 
 =head3 2.2.2 The Input Stream
 
-Some calls to your application may be accompanied by a request payload. For example, a POST or PUT request sent by an origin using HTTP will typically include such a payload. The applicaiton MAY choose to read the payload using the sane L<Supply> provided in the C<wapi.input> variable of the call environment.
+Some calls to your application may be accompanied by a request payload. For example, a POST or PUT request sent by an origin using HTTP will typically include such a payload. The applicaiton MAY choose to read the payload using the sane L<Supply> provided in the C<wapi.input> variable of the runtime environment.
 
 The data supplied will depend on the protocol and middleware employed, but is generally given as a stream of L<Blob>s by the application server.
 
@@ -420,7 +420,7 @@ The application server is required to provide a C<wapi.errors> variable in the e
 
 =head3 2.2.4 Application Call
 
-To handle requests from the origin, the application server will make calls to the application routine. The application SHOULD return a valid response to the server. The response required will depend on what string is set in C<wapi.protocol> within the call environment, so the application SHOULD check that on every call if it may vary.
+To handle requests from the origin, the application server will make calls to the application routine. The application SHOULD return a valid response to the server. The response required will depend on what string is set in C<wapi.protocol> within the runtime environment, so the application SHOULD check that on every call if it may vary.
 
 The application SHOULD attempt to return a value as quickly as possible via the runtime routine. For protocols that require the application to return a L<Promise>, the application SHOULD wrap the entire body of the call in a C<start> block to minimize the time the server will be waiting on the application.
 
