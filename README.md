@@ -776,6 +776,10 @@ Changes
 0.9.Draft
 ---------
 
+  * Cleaned up some old language left over from previous versions of the specification.
+
+  * Eliminated some ambiguities in the type required for undefined environment values. The undefined environment values MUST match the given type constraint and be set to type objects of that type if they are not defined.
+
   * Changed the abbreviation from P6WAPI to RakuWAPI.
 
   * Changed all `p6w.*` environment prefixes to `wapi.*`
