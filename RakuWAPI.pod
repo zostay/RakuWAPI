@@ -50,7 +50,7 @@ The following type constraints are defined for use with this document.
 
     subset NonEmptyStr of Str where { !.defined || .chars > 0 };
     subset PathStr of Str where { !.defined || $_ ~~ any('', m{ ^ "/" }) };
-    subset PositiveInt of Int where { !.defined || $_ > 0 }
+    subset PositiveInt of Int where { !.defined || $_ > 0 };
 
 Any place a type is used in this document, the implementation is free to use any subtype (either subset or sub-class) of that type in place of the named type so long as the type constraint is guaranteed to hold for the subtype. For example, if an C<Int> is required, it would be permissible to use an C<IntStr> instead.
 
@@ -353,7 +353,7 @@ As an example, a simple Hello World RakuWAPI application defined with a runtime 
     sub app(%env) {
         start {
             200, [ Content-Type => 'text/plain' ], [ 'Hello World' ]
-        };
+        }
     }
 
 Or, a slightly more complex Hello World application could be implemented using a configuration routine instead like so:
@@ -363,7 +363,7 @@ Or, a slightly more complex Hello World application could be implemented using a
         sub app(%env) {
             start {
                 200, [ Content-Type => 'text/plain' ], [ 'Hello World' ]
-            };
+            }
         }
     }
 
@@ -607,7 +607,7 @@ Here is an example application that implements the "request-response" protocol:
             supply {
                 emit "Hello World"
             },
-        };
+        }
     }
 
 An application MUST return a L<Promise>. This Promise MUST be kept with a L<Capture> (or something that becomes one on return) or MAY be broken. The Capture MUST contain 3 positional elements, which are the status code, the list of headers, and the response payload.
@@ -632,7 +632,7 @@ Here is a more interesting example application demonstrating some of the power o
                     emit "\n";
                 }
             },
-        };
+        }
     }
 
 The example application above will print out all the values of factorial from 1 to N where N is given in the query string. The header is returned immediately, but the lines of the body are returned as the values of factorial are calculated. The asynchronous interface is concise and efficient.
@@ -776,7 +776,7 @@ Here's an example application that implements the "socket" protocol to create a 
                         emit "Custom HTTP Server";
                     }
                 }
-            };
+            }
         }
     }
 

@@ -56,7 +56,7 @@ The following type constraints are defined for use with this document.
 ```perl6
     subset NonEmptyStr of Str where { !.defined || .chars > 0 };
     subset PathStr of Str where { !.defined || $_ ~~ any('', m{ ^ "/" }) };
-    subset PositiveInt of Int where { !.defined || $_ > 0 }
+    subset PositiveInt of Int where { !.defined || $_ > 0 };
 ```
 
 Any place a type is used in this document, the implementation is free to use any subtype (either subset or sub-class) of that type in place of the named type so long as the type constraint is guaranteed to hold for the subtype. For example, if an `Int` is required, it would be permissible to use an `IntStr` instead.
@@ -265,7 +265,7 @@ As an example, a simple Hello World RakuWAPI application defined with a runtime 
     sub app(%env) {
         start {
             200, [ Content-Type => 'text/plain' ], [ 'Hello World' ]
-        };
+        }
     }
 ```
 
@@ -277,7 +277,7 @@ Or, a slightly more complex Hello World application could be implemented using a
         sub app(%env) {
             start {
                 200, [ Content-Type => 'text/plain' ], [ 'Hello World' ]
-            };
+            }
         }
     }
 ```
@@ -542,7 +542,7 @@ Here is an example application that implements the "request-response" protocol:
             supply {
                 emit "Hello World"
             },
-        };
+        }
     }
 ```
 
@@ -569,7 +569,7 @@ Here is a more interesting example application demonstrating some of the power o
                     emit "\n";
                 }
             },
-        };
+        }
     }
 ```
 
@@ -721,7 +721,7 @@ Here's an example application that implements the "socket" protocol to create a 
                         emit "Custom HTTP Server";
                     }
                 }
-            };
+            }
         }
     }
 ```
