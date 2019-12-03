@@ -59,6 +59,8 @@ The following type constraints are defined for use with this document.
     subset PositiveInt of Int where { !.defined || $_ > 0 }
 ```
 
+Any place a type is used in this document, the implementation is free to use any subtype (either subset or sub-class) of that type in place of the named type so long as the type constraint is guaranteed to hold for the subtype. For example, if an `Int` is required, it would be permissible to use an `IntStr` instead.
+
 2 SPECIFICATION
 ===============
 
