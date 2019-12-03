@@ -387,7 +387,7 @@ The application SHOULD respond to the caller, i.e., the application server or ou
 
 Here, for example, is a RakuWAPI application that calculates and prints the Nth Lucas number depending on the value passed in the query string. This assumes a C<request-response> protocol (see Section 4.0).
 
-    sub lucas-app(%env) {
+    sub lucas-runtime(%env) {
         start {
             my $n = %env<QUERY_STRING>.Int;
             my $lucas-number := 2, 1, * + * ... *;
@@ -399,7 +399,7 @@ This application is vulnerable, however, to problems if the server might call th
 
 =head3 2.2.0.1 Configuration Routine
 
-An application SHOULD return a configuration routine, which is defined just like the runtime routine, but it must constrain its return type to something L<Callable>. This application MUST accept a single parameter, a hash, as its argument, just like the runtime routine. This single parameter, though, will be giving as the smaller configuration environment rather than the runtime environment. This routine will also be called prior to any request or other contact from an origin has occurred, which gives the application the opportunity to communicate with the server early.
+An application SHOULD return a configuration routine, which is defined just like the runtime routine, but it must constrain its return type to something L<Callable>. This application MUST accept a single parameter as its argument, just like the runtime routine. This single parameter will be set to the configuration environment when called by the application server. This routine will also be called prior to any request or other contact from an origin has occurred, which gives the application the opportunity to communicate with the server early.
 
 The application SHOULD modify the configuration environment to suit the needs of the application. The application SHOULD end the routine by returning a runtime routine (see the previous section).
 
@@ -409,20 +409,18 @@ Here is the example from the previous section, but using a configuration routine
         # Only permit the request-response protocol
         %config<wapi.protocol.enabled> ∩= set('request-response');
 
-        &lucas-app;
+        &lucas-runtime;
     }
 
 =head3 2.2.1 The Environment
 
-Calls to the configuration routine of the application (if defined) will receive the configuration environment as defined in Section 2.0.1.0. Calls to the runtime routine of the application will receive the runtime environment as defined in Section 2.0.1.1. Additional variables may be provided by your application server and middleware in either environment hash.
+Calls to the configuration routine of the application (if defined) will receive the configuration environment as defined in Section 2.0.1.0. Calls to the runtime routine of the application will receive the combination of the runtime environment and configuration environment as defined in Sections 2.0.1.0 and 2.0.1.1. Additional variables may be provided by your application server and middleware in either environment hash.
 
-The application itself MAY store additional values in the environment as it sees fit. This allows the application to communicate with a server or middleware. When the application modifies the environment, the variables set MUST contain a period and SHOULD start with a unique name that is not C<wapi.> or C<wapix.> as these are reserved.
+The application itself MAY store additional values in the environment as it sees fit. This allows the application to communicate with a server or middleware or even with itself. When the application modifies the environment, the variables set MUST contain a period and SHOULD start with a unique name that is not C<wapi.> or C<wapix.> as these are reserved.
 
 =head3 2.2.2 The Input Stream
 
-Some calls to your application may be accompanied by a request payload. For example, a POST or PUT request sent by an origin using HTTP will typically include such a payload. The applicaiton MAY choose to read the payload using the sane L<Supply> provided in the C<wapi.input> variable of the runtime environment.
-
-The data supplied will depend on the protocol and middleware employed, but is generally given as a stream of L<Blob>s by the application server.
+Some calls to your application may be accompanied by a request payload. For example, a POST or PUT request sent by an origin using HTTP will typically include such a payload. The application MAY choose to read the payload using the sane L<Supply> provided in the C<wapi.input> variable of the runtime environment. This will provide a stream lf L<Blob>s.
 
 =head3 2.2.3 The Error Stream
 
