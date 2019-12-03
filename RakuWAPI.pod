@@ -44,6 +44,14 @@ An D<application developer> is a developer who writes a I<RakuWAPI application>.
 
 A D<sane Supply> is a Supply object that follows the emit*-done/quit protocol, i.e., it will emit 0 or more objects followed by a call to the done or quit handler. See L<Supply> for details.
 
+=head2 Type Constraints
+
+The following type constraints are defined for use with this document.
+
+    subset NonEmptyStr of Str where { !.defined || .chars > 0 };
+    subset PathStr of Str where { !.defined || $_ ~~ any('', m{ ^ "/" }) };
+    subset PositiveInt of Int where { !.defined || $_ > 0 }
+
 =head1 2 SPECIFICATION
 
 This specification is divided into three layers:
@@ -115,36 +123,36 @@ The configuration environment MUST be made available to the application during e
 
 =begin table :allow<C L>
 
-    Variable                 | Constraint                             | Description
-    =========================|========================================|======================================
-    C<wapi.version>          | C<< Version:D >>                       | This is the version of this
-                             |                                        | specification, C<v0.7.Draft>.
+    Variable                 | Constraint        | Description
+    =========================|===================|======================================
+    C<wapi.version>          | C<< Version:D >>  | This is the version of this
+                             |                   | specification, C<v0.9.Draft>.
     
-    C<wapi.errors>           | C<< Supplier:D >>                      | The error stream for logging.
+    C<wapi.errors>           | C<< Supplier:D >> | The error stream for logging.
     
-    C<wapi.multithread>      | C<< Bool:D >>                          | True if the app may be
-                             |                                        | simultaneously invoked in another
-                             |                                        | thread in the same
-                             |                                        | process.
+    C<wapi.multithread>      | C<< Bool:D >>     | True if the app may be
+                             |                   | simultaneously invoked in another
+                             |                   | thread in the same
+                             |                   | process.
     
-    C<wapi.multiprocess>     | C<< Bool:D >>                          | True if the app may be simultaneously
-                             |                                        | invoked in another process.
+    C<wapi.multiprocess>     | C<< Bool:D >>     | True if the app may be simultaneously
+                             |                   | invoked in another process.
     
-    C<wapi.run-once>         | C<< Bool:D >>                          | True if the server expects the app
-                             |                                        | to be invoked only once during the
-                             |                                        | life of the process. This is not a
-                             |                                        | guarantee.
+    C<wapi.run-once>         | C<< Bool:D >>     | True if the server expects the app
+                             |                   | to be invoked only once during the
+                             |                   | life of the process. This is not a
+                             |                   | guarantee.
     
-    C<wapi.protocol.support> | C<< Set:D >>                           | This is a L<Set> of strings naming the
-                             |                                        | protocols supported by the application 
-                             |                                        | server.
+    C<wapi.protocol.support> | C<< Set:D >>      | This is a L<Set> of strings naming the
+                             |                   | protocols supported by the application 
+                             |                   | server.
     
-    C<wapi.protocol.enabled> | C<< SetHash:D >>                       | This is the set of enabled protocols. 
-                             |                                        | The application may modify this set 
-                             |                                        | with those found in 
-                             |                                        | C<wapi.protocol.support> to 
-                             |                                        | enable/disable protocols the server 
-                             |                                        | is permitted to use.
+    C<wapi.protocol.enabled> | C<< SetHash:D >>  | This is the set of enabled protocols. 
+                             |                   | The application may modify this set 
+                             |                   | with those found in 
+                             |                   | C<wapi.protocol.support> to 
+                             |                   | enable/disable protocols the server 
+                             |                   | is permitted to use.
 
 =end table
 
@@ -154,90 +162,90 @@ Many of the runtime environment variables are derived from the old Common Gatewa
 
 =begin table :allow<C L>
 
-    Variable                 | Constraint                             | Description
-    =========================|========================================|======================================
-    C<REQUEST_METHOD>        | C<< Str:D where *.chars > 0 >>         | The HTTP request method, such as
-                             |                                        | "GET" or "POST".
+    Variable                 | Constraint           | Description
+    =========================|======================|======================================
+    C<REQUEST_METHOD>        | C<< NonEmptyStr:D >> | The HTTP request method, such as
+                             |                      | "GET" or "POST".
 
-    C<SCRIPT_NAME>           | C<< Str:D where any('', m{ ^ "/" }) >> | This is the initial portion of the
-                             |                                        | URI path that refers to the
-                             |                                        | application.
+    C<SCRIPT_NAME>           | C<< PathStr:D >>     | This is the initial portion of the
+                             |                      | URI path that refers to the
+                             |                      | application.
 
-    C<PATH_INFO>             | C<< Str:D where any('', m{ ^ "/" }) >> | This is the remainder of the request
-                             |                                        | URI path within the application.
-                             |                                        | This value SHOULD be URI decoded by
-                             |                                        | the application server according to
-                             |                                        | L<RFC 3875|http://www.ietf.org/rfc/rfc3875>
+    C<PATH_INFO>             | C<< PathStr:D >>     | This is the remainder of the request
+                             |                      | URI path within the application.
+                             |                      | This value SHOULD be URI decoded by
+                             |                      | the application server according to
+                             |                      | L<RFC 3875|http://www.ietf.org/rfc/rfc3875>
 
-    C<REQUEST_URI>           | C<< Str:D >>                           | This is the exact URI sent by the
-                             |                                        | client in the request line of the
-                             |                                        | HTTP request. The application server
-                             |                                        | SHOULD NOT perform any decoding on
-                             |                                        | it.
+    C<REQUEST_URI>           | C<< Str:D >>         | This is the exact URI sent by the
+                             |                      | client in the request line of the
+                             |                      | HTTP request. The application server
+                             |                      | SHOULD NOT perform any decoding on
+                             |                      | it.
 
-    C<QUERY_STRING>          | C<< Str:D >>                           | This is the portion of the requested
-                             |                                        | URL following the C<?>, if any.
+    C<QUERY_STRING>          | C<< Str:D >>         | This is the portion of the requested
+                             |                      | URL following the C<?>, if any.
 
-    C<SERVER_NAME>           | C<< Str:D where *.chars > 0 >>         | This is the name of the web server.
+    C<SERVER_NAME>           | C<< NonEmptyStr:D >> | This is the name of the web server.
 
-    C<SERVER_PORT>           | C<< Int:D where * > 0 >>               | This is the port number of the web
-                             |                                        | server.
+    C<SERVER_PORT>           | C<< PositiveInt:D >> | This is the port number of the web
+                             |                      | server.
 
-    C<SERVER_PROTOCOL>       | C<< Str:D where *.chars > 0 >>         | This is the server protocol sent by
-                             |                                        | the client, e.g. "HTTP/1.0"
-                             |                                        | or "HTTP/1.1".
+    C<SERVER_PROTOCOL>       | C<< NonEmptyStr:D >> | This is the server protocol sent by
+                             |                      | the client, e.g. "HTTP/1.0"
+                             |                      | or "HTTP/1.1".
 
-    C<CONTENT_LENGTH>        | C<< Int:_ >>                           | This corresponds to the
-                             |                                        | Content-Length header sent by the
-                             |                                        | client. If no such header was sent
-                             |                                        | the application server SHOULD set
-                             |                                        | this key to the L<Int> type value.
+    C<CONTENT_LENGTH>        | C<< Int:_ >>         | This corresponds to the
+                             |                      | Content-Length header sent by the
+                             |                      | client. If no such header was sent
+                             |                      | the application server SHOULD set
+                             |                      | this key to the L<Int> type value.
 
-    C<CONTENT_TYPE>          | C<< Str:_ >>                           | This corresponds to the Content-Type
-                             |                                        | header sent by the client. If no
-                             |                                        | such header was sent the application
-                             |                                        | server SHOULD set this key to the
-                             |                                        | L<Str> type value.
+    C<CONTENT_TYPE>          | C<< Str:_ >>         | This corresponds to the Content-Type
+                             |                      | header sent by the client. If no
+                             |                      | such header was sent the application
+                             |                      | server SHOULD set this key to the
+                             |                      | L<Str> type value.
 
-    C<HTTP_*>                | C<< Str:_ >>                           | The remaining request headers are
-                             |                                        | placed here. The names are prefixed
-                             |                                        | with C<HTTP_>, in ALL CAPS with the
-                             |                                        | hyphens ("-") turned to underscores
-                             |                                        | ("_"). Multiple incoming headers
-                             |                                        | with the same name SHOULD have their 
-                             |                                        | values joined with a comma (", ") as
-                             |                                        | described in
-                             |                                        | L<RFC 2616|http://www.ietf.org/rfc/rfc2616>.
-                             |                                        | The C<HTTP_CONTENT_LENGTH> and
-                             |                                        | C<HTTP_CONTENT_TYPE> headers MUST
-                             |                                        | NOT be set.
+    C<HTTP_*>                | C<< Str:_ >>         | The remaining request headers are
+                             |                      | placed here. The names are prefixed
+                             |                      | with C<HTTP_>, in ALL CAPS with the
+                             |                      | hyphens ("-") turned to underscores
+                             |                      | ("_"). Multiple incoming headers
+                             |                      | with the same name SHOULD have their 
+                             |                      | values joined with a comma (", ") as
+                             |                      | described in
+                             |                      | L<RFC 2616|http://www.ietf.org/rfc/rfc2616>.
+                             |                      | The C<HTTP_CONTENT_LENGTH> and
+                             |                      | C<HTTP_CONTENT_TYPE> headers MUST
+                             |                      | NOT be set.
 
-    Other CGI Keys           | C<< Str:_ >>                           | The server SHOULD attempt to provide
-                             |                                        | as many other CGI variables as
-                             |                                        | possible, but no others are required
-                             |                                        | or formally specified.
+    Other CGI Keys           | C<< Str:_ >>         | The server SHOULD attempt to provide
+                             |                      | as many other CGI variables as
+                             |                      | possible, but no others are required
+                             |                      | or formally specified.
 
-    C<wapi.url-scheme>       | C<< Str:D >>                           | Either "http" or "https".
+    C<wapi.url-scheme>       | C<< Str:D >>         | Either "http" or "https".
 
-    C<wapi.input>            | C<< Supply:D >>                        | The input stream for reading the
-                             |                                        | body of the request, if any.
+    C<wapi.input>            | C<< Supply:D >>      | The input stream for reading the
+                             |                      | body of the request, if any.
 
-    C<wapi.ready>            | C<< Promise:D >>                       | This is a vowed Promise that MUST be
-                             |                                        | kept by the server as soon as the
-                             |                                        | server has tapped the application's
-                             |                                        | output Supply and is ready to
-                             |                                        | receive emitted messages. The value
-                             |                                        | of the kept Promise is irrelevent.
-                             |                                        | The server SHOULD NOT break this
-                             |                                        | Promise.
+    C<wapi.ready>            | C<< Promise:D >>     | This is a vowed Promise that MUST be
+                             |                      | kept by the server as soon as the
+                             |                      | server has tapped the application's
+                             |                      | output Supply and is ready to
+                             |                      | receive emitted messages. The value
+                             |                      | of the kept Promise is irrelevent.
+                             |                      | The server SHOULD NOT break this
+                             |                      | Promise.
 
-    C<wapi.body.encoding>    | C<< Str:D >>                           | Name of the encoding the server will
-                             |                                        | use for any strings it is sent.
+    C<wapi.body.encoding>    | C<< Str:D >>         | Name of the encoding the server will
+                             |                      | use for any strings it is sent.
 
-    C<wapi.protocol>         | C<< Str:D >>                           | This is a string naming the
-                             |                                        | response protocols the server is 
-                             |                                        | expecting from the application for 
-                             |                                        | call.
+    C<wapi.protocol>         | C<< Str:D >>         | This is a string naming the
+                             |                      | response protocols the server is 
+                             |                      | expecting from the application for 
+                             |                      | call.
 
 =end table
 
