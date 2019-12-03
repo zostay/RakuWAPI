@@ -30,6 +30,9 @@ Aside from that is the underlying assumption that this is a simple interface and
 1 TERMINOLOGY
 =============
 
+1.0 Glossary
+------------
+
 A RakuWAPI application is a Raku routine that expects to receive an environment from an *application server* and returns a response each time it is called by the server.
 
 A Web Server is an application that processes requests and responses according to a web-related protocol, such as HTTP or WebSockets or similar protocol.
@@ -48,8 +51,8 @@ An application developer is a developer who writes a *RakuWAPI application*.
 
 A sane Supply is a Supply object that follows the emit*-done/quit protocol, i.e., it will emit 0 or more objects followed by a call to the done or quit handler. See [Supply](http://doc.perl6.org/type/Supply) for details.
 
-Type Constraints
-----------------
+1.1 Type Constraints
+--------------------
 
 The following type constraints are defined for use with this document.
 
@@ -57,6 +60,7 @@ The following type constraints are defined for use with this document.
     subset NonEmptyStr of Str where { !.defined || .chars > 0 };
     subset PathStr of Str where { !.defined || $_ ~~ any('', m{ ^ "/" }) };
     subset PositiveInt of Int where { !.defined || $_ > 0 };
+    subset Supplierish of Any where { !.defined || ?.can('emit').grep(*.arity == 2) };
 ```
 
 Any place a type is used in this document, the implementation is free to use any subtype (either subset or sub-class) of that type in place of the named type so long as the type constraint is guaranteed to hold for the subtype. For example, if an `Int` is required, it would be permissible to use an `IntStr` instead.
@@ -141,7 +145,7 @@ The configuration environment MUST be made available to the application during e
 <th>Variable</th> <th>Constraint</th> <th>Description</th>
 </tr></thead>
 <tbody>
-<tr> <td><code>wapi.version</code></td> <td><code>Version:D</code></td> <td>This is the version of this specification, <code>v0.9.Draft</code>.</td> </tr> <tr> <td><code>wapi.errors</code></td> <td><code>Supplier:D</code></td> <td>The error stream for logging.</td> </tr> <tr> <td><code>wapi.multithread</code></td> <td><code>Bool:D</code></td> <td>True if the app may be simultaneously invoked in another thread in the same process.</td> </tr> <tr> <td><code>wapi.multiprocess</code></td> <td><code>Bool:D</code></td> <td>True if the app may be simultaneously invoked in another process.</td> </tr> <tr> <td><code>wapi.run-once</code></td> <td><code>Bool:D</code></td> <td>True if the server expects the app to be invoked only once during the life of the process. This is not a guarantee.</td> </tr> <tr> <td><code>wapi.protocol.support</code></td> <td><code>Set:D</code></td> <td>This is a <a href="http://doc.perl6.org/type/Set">Set</a> of strings naming the protocols supported by the application server.</td> </tr> <tr> <td><code>wapi.protocol.enabled</code></td> <td><code>SetHash:D</code></td> <td>This is the set of enabled protocols. The application may modify this set with those found in <code>wapi.protocol.support</code> to enable/disable protocols the server is permitted to use.</td> </tr>
+<tr> <td><code>wapi.version</code></td> <td><code>Version:D</code></td> <td>This is the version of this specification, <code>v0.9.Draft</code>.</td> </tr> <tr> <td><code>wapi.errors</code></td> <td><code>Supplierish:D</code></td> <td>The error stream for logging.</td> </tr> <tr> <td><code>wapi.multithread</code></td> <td><code>Bool:D</code></td> <td>True if the app may be simultaneously invoked in another thread in the same process.</td> </tr> <tr> <td><code>wapi.multiprocess</code></td> <td><code>Bool:D</code></td> <td>True if the app may be simultaneously invoked in another process.</td> </tr> <tr> <td><code>wapi.run-once</code></td> <td><code>Bool:D</code></td> <td>True if the server expects the app to be invoked only once during the life of the process. This is not a guarantee.</td> </tr> <tr> <td><code>wapi.protocol.support</code></td> <td><code>Set:D</code></td> <td>This is a <a href="http://doc.perl6.org/type/Set">Set</a> of strings naming the protocols supported by the application server.</td> </tr> <tr> <td><code>wapi.protocol.enabled</code></td> <td><code>SetHash:D</code></td> <td>This is the set of enabled protocols. The application may modify this set with those found in <code>wapi.protocol.support</code> to enable/disable protocols the server is permitted to use.</td> </tr>
 </tbody>
 </table>
 
@@ -166,7 +170,9 @@ The input stream is set in the `wapi.input` key of the runtime environment. This
 
 ### 2.0.3 The Error Stream
 
-The error stream MUST be given in the configuration environment via `wapi.errors`. This MUST be a [Supplier](http://doc.perl6.org/type/Supplier) the server provides for emitting errors. The application MAY call `emit` on the Supplier zero or more times, passing any object that may be stringified. The server SHOULD write these log entries to a suitable log file or to `$*ERR` or wherever appropriate. If written to a typical file handle, it should automatically append a newline to each emitted message.
+The error stream MUST be given in the configuration environment via `wapi.errors`. This MUST be a [Supplierish](http://doc.perl6.org/type/Supplierish) (see Section 1.1) object the server provides for emitting errors. This is a defined object that has an `emit` method that has the same signature as `Supplier.emit`. 
+
+The application MAY call `emit` on this object zero or more times, passing any object that may be stringified. The server SHOULD write these log entries to a suitable log file or to `$*ERR` or wherever appropriate. If written to a typical file handle, it should automatically append a newline to each emitted message.
 
 ### 2.0.4 Application Lifecycle
 
@@ -343,7 +349,7 @@ Some calls to your application may be accompanied by a request payload. For exam
 
 ### 2.2.3 The Error Stream
 
-The application server is required to provide a `wapi.errors` variable in the environment with a [Supplier](http://doc.perl6.org/type/Supplier) object. The application MAY emit any errors or messages here using any object that stringifies. The application SHOULD NOT terminate such messages with a newline as the server will do so if necessary. The application SHOULD NOT call `done` or `quit` on this object.
+The application server is required to provide a `wapi.errors` variable in the environment with a [Supplierish](http://doc.perl6.org/type/Supplierish) object (see Section 1.1). The application MAY emit any errors or messages here using any object that stringifies. The application SHOULD NOT terminate such messages with a newline as the server will do so if necessary.
 
 ### 2.2.4 Application Call
 
@@ -775,6 +781,8 @@ Changes
 
 0.9.Draft
 ---------
+
+  * The error stream is now defined to be a `Supplierish` object, defined in Section 1.1.
 
   * Section 2.2.0.0 has been changed to forbid runtime routines from having a `Callable` return type.
 

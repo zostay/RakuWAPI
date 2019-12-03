@@ -26,6 +26,8 @@ Aside from that is the underlying assumption that this is a simple interface and
 
 =head1 1 TERMINOLOGY
 
+=head2 1.0 Glossary
+
 A D<RakuWAPI application> is a Raku routine that expects to receive an environment from an I<application server> and returns a response each time it is called by the server.
 
 A D<Web Server> is an application that processes requests and responses according to a web-related protocol, such as HTTP or WebSockets or similar protocol.
@@ -44,13 +46,14 @@ An D<application developer> is a developer who writes a I<RakuWAPI application>.
 
 A D<sane Supply> is a Supply object that follows the emit*-done/quit protocol, i.e., it will emit 0 or more objects followed by a call to the done or quit handler. See L<Supply> for details.
 
-=head2 Type Constraints
+=head2 1.1 Type Constraints
 
 The following type constraints are defined for use with this document.
 
     subset NonEmptyStr of Str where { !.defined || .chars > 0 };
     subset PathStr of Str where { !.defined || $_ ~~ any('', m{ ^ "/" }) };
     subset PositiveInt of Int where { !.defined || $_ > 0 };
+    subset Supplierish of Any where { !.defined || ?.can('emit').grep(*.arity == 2) };
 
 Any place a type is used in this document, the implementation is free to use any subtype (either subset or sub-class) of that type in place of the named type so long as the type constraint is guaranteed to hold for the subtype. For example, if an C<Int> is required, it would be permissible to use an C<IntStr> instead.
 
@@ -125,36 +128,36 @@ The configuration environment MUST be made available to the application during e
 
 =begin table :allow<C L>
 
-    Variable                 | Constraint        | Description
-    =========================|===================|======================================
-    C<wapi.version>          | C<< Version:D >>  | This is the version of this
-                             |                   | specification, C<v0.9.Draft>.
+    Variable                 | Constraint           | Description
+    =========================|======================|======================================
+    C<wapi.version>          | C<< Version:D >>     | This is the version of this
+                             |                      | specification, C<v0.9.Draft>.
     
-    C<wapi.errors>           | C<< Supplier:D >> | The error stream for logging.
+    C<wapi.errors>           | C<< Supplierish:D >> | The error stream for logging.
     
-    C<wapi.multithread>      | C<< Bool:D >>     | True if the app may be
-                             |                   | simultaneously invoked in another
-                             |                   | thread in the same
-                             |                   | process.
+    C<wapi.multithread>      | C<< Bool:D >>        | True if the app may be
+                             |                      | simultaneously invoked in another
+                             |                      | thread in the same
+                             |                      | process.
     
-    C<wapi.multiprocess>     | C<< Bool:D >>     | True if the app may be simultaneously
-                             |                   | invoked in another process.
+    C<wapi.multiprocess>     | C<< Bool:D >>        | True if the app may be simultaneously
+                             |                      | invoked in another process.
     
-    C<wapi.run-once>         | C<< Bool:D >>     | True if the server expects the app
-                             |                   | to be invoked only once during the
-                             |                   | life of the process. This is not a
-                             |                   | guarantee.
+    C<wapi.run-once>         | C<< Bool:D >>        | True if the server expects the app
+                             |                      | to be invoked only once during the
+                             |                      | life of the process. This is not a
+                             |                      | guarantee.
     
-    C<wapi.protocol.support> | C<< Set:D >>      | This is a L<Set> of strings naming the
-                             |                   | protocols supported by the application 
-                             |                   | server.
+    C<wapi.protocol.support> | C<< Set:D >>         | This is a L<Set> of strings naming the
+                             |                      | protocols supported by the application 
+                             |                      | server.
     
-    C<wapi.protocol.enabled> | C<< SetHash:D >>  | This is the set of enabled protocols. 
-                             |                   | The application may modify this set 
-                             |                   | with those found in 
-                             |                   | C<wapi.protocol.support> to 
-                             |                   | enable/disable protocols the server 
-                             |                   | is permitted to use.
+    C<wapi.protocol.enabled> | C<< SetHash:D >>     | This is the set of enabled protocols. 
+                             |                      | The application may modify this set 
+                             |                      | with those found in 
+                             |                      | C<wapi.protocol.support> to 
+                             |                      | enable/disable protocols the server 
+                             |                      | is permitted to use.
 
 =end table
 
@@ -259,7 +262,9 @@ The input stream is set in the C<wapi.input> key of the runtime environment. Thi
 
 =head3 2.0.3 The Error Stream
 
-The error stream MUST be given in the configuration environment via C<wapi.errors>. This MUST be a L<Supplier> the server provides for emitting errors. The application MAY call C<emit> on the Supplier zero or more times, passing any object that may be stringified. The server SHOULD write these log entries to a suitable log file or to C<$*ERR> or wherever appropriate. If written to a typical file handle, it should automatically append a newline to each emitted message.
+The error stream MUST be given in the configuration environment via C<wapi.errors>. This MUST be a L<Supplierish> (see Section 1.1) object the server provides for emitting errors. This is a defined object that has an C<emit> method that has the same signature as C<Supplier.emit>. 
+
+The application MAY call C<emit> on this object zero or more times, passing any object that may be stringified. The server SHOULD write these log entries to a suitable log file or to C<$*ERR> or wherever appropriate. If written to a typical file handle, it should automatically append a newline to each emitted message.
 
 =head3 2.0.4 Application Lifecycle
 
@@ -424,7 +429,7 @@ Some calls to your application may be accompanied by a request payload. For exam
 
 =head3 2.2.3 The Error Stream
 
-The application server is required to provide a C<wapi.errors> variable in the environment with a L<Supplier> object. The application MAY emit any errors or messages here using any object that stringifies. The application SHOULD NOT terminate such messages with a newline as the server will do so if necessary. The application SHOULD NOT call C<done> or C<quit> on this object.
+The application server is required to provide a C<wapi.errors> variable in the environment with a L<Supplierish> object (see Section 1.1). The application MAY emit any errors or messages here using any object that stringifies. The application SHOULD NOT terminate such messages with a newline as the server will do so if necessary.
 
 =head3 2.2.4 Application Call
 
@@ -827,6 +832,8 @@ The application server SHOULD reject any object other than a L<Blob> sent as par
 =head1 Changes
 
 =head2 0.9.Draft
+
+=item The error stream is now defined to be a C<Supplierish> object, defined in Section 1.1.
 
 =item Section 2.2.0.0 has been changed to forbid runtime routines from having a C<Callable> return type.
 
