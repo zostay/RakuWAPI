@@ -174,15 +174,15 @@ After the application has been defined, it will be called each time the applicat
 
 These requirements, however, are in held in common regardless of protocol, the application server requirements are as follows:
 
-  * The application server MUST check the return value of the application. If the application return value is [Callable](http://doc.perl6.org/type/Callable), the application has returned a configuration routine. Otherwise, the application has returned a runtime routine.
+  * The application server MUST check the type of the return value of the application routine. If the application return value is [Callable](http://doc.perl6.org/type/Callable), the application has returned a configuration routine. Otherwise, the application has returned a runtime routine.
 
-  * If the application returned a configuration routine, as detected in the previous step, the application server MUST call this routine and pass the configuration environment in a hash as the first argument to the routine. The return value of this routine is the runtime routine for the application.
+  * If the application returned a configuration routine, as detected by the previous requirement, the application server MUST call this routine and pass the configuration environment in a hash as the first argument to the routine. The return value of this routine is the runtime routine for the application.
 
   * Prior to each call to runtime routine, the application server MUST set the `wapi.protocol` variable to the name of the protocol the server will use to communicate with the application.
 
-  * The server MUST pass the merger of the configuration and runtime environments in a hash as the first argument to the runtime routine.
+  * The server MUST receive the return value of runtime routine and process it according to the application protocol in use for this call, the protocol matching the one set in the previous requirement.
 
-  * The server MUST receive the return value of runtime routine and process it according to the application protocol in use for this call, the one matching the protocol set in step 3.
+  * The server MUST pass a [Hash](http://doc.perl6.org/type/Hash) containing all variables of both the configuration environment and runtime environments as the first argument to the runtime routine.
 
 The server MUST NOT call the application with `wapi.protocol` set to a protocol that has been previously disabled by the application via the `wapi.protocol.enabled` setting.
 
