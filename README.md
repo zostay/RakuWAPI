@@ -513,13 +513,13 @@ One goal of RakuWAPI application servers is to allow the application to focus on
 
 These protocols may have different interfaces that do not lend themselves to the request-response pattern specifed by PSGI. Therefore, we provide a means by which servers and applications may implement these alternate protocols, which each may have different requirements. These protocols are called application protocols to differentiate them from network protocols. For example, rather than providing a protocol for HTTP, we provide the "request-response" protocol. The underlying network protocol may be HTTP/1.0, HTTP/1.1, HTTP/2 or it may be something else that operates according to a similar pattern.
 
-The application and application server SHOULD communicate according to the application protocol used for the current application call. Otherwise, they will be unable to communicate. For many applications, just implementing the basic protocol request-response protocol is enough. However, to allow for more complete applications, RakuWAPI provides additional tools to help application and application server to communicate through a variety of situations. This is handled primarily via the `wapi.protocol`, `wapi.protocol.support`, and `wapi.protocol.enabled` values in the environment.
+The application and application server MUST communicate according to the application protocol used for the current application call. For many applications, just implementing the basic request-response protocol is enough. However, to allow for more complete applications, RakuWAPI provides additional tools to help application and application server to communicate through a variety of situations. This is handled primarily via the `wapi.protocol`, `wapi.protocol.support`, and `wapi.protocol.enabled` values in the environment.
 
-The application SHOULD check the value in `wapi.protocol`. The application SHOULD NOT make assumptions about the network protocol based upon the `wapi.protocol` value for the current request. If the application needs to make a decision based upon the network protocol, the application SHOULD check the `SERVER_PROTOCOL`.
+The application SHOULD check the value in `wapi.protocol`. If the application needs to make a decision based upon the network protocol, the application SHOULD check the `SERVER_PROTOCOL`.
 
 The application SHOULD check `wapi.protocol.support` to discover which protocols are supported by the application server. An application that is not able to support all supported protocols SHOULD modify `wapi.protocol.enabled` to only include protocols supported by the application as early as possible.
 
-The application server MUST provide the `wapi.protocol.support` and `wapi.protocol.enabled` values as part of the configuration environment. The application server MUST NOT use any protocol that is not a member of the `wapi.protocol.enabled` set. If a protocol becomes disabled in the middle of a request, the request MUST continue, but subsequent requests MUST NOT use that protocol unless it is later enabled.
+The application server MUST provide the `wapi.protocol.support` and `wapi.protocol.enabled` values as part of the configuration environment. The application server MUST NOT use any protocol that is not a member of the `wapi.protocol.enabled` set.
 
 This specification defines the following protocols:
 
@@ -554,15 +554,15 @@ Here is an example application that implements the "request-response" protocol:
     }
 ```
 
-An application MUST return a [Promise](http://doc.perl6.org/type/Promise). This Promise MUST be kept with a [Capture](http://doc.perl6.org/type/Capture) (or something that becomes one on return) or MAY be broken. The Capture MUST contain 3 positional elements, which are the status code, the list of headers, and the response payload.
+The runtime routine for the application MUST return a [Promise](http://doc.perl6.org/type/Promise). This Promise MUST be kept with a [Capture](http://doc.perl6.org/type/Capture) (or something that becomes one on return) and MAY be broken. The Capture MUST contain 3 positional elements, which are the status code, the list of headers, and the response payload.
 
-  * The status code MUST be an [Int](http://doc.perl6.org/type/Int) or object that coerces to an Int. It MUST be a valid status code for the [SERVER_PROTOCOL](http://doc.perl6.org/type/SERVER_PROTOCOL).
+  * The status code MUST be an [Int](http://doc.perl6.org/type/Int) or an object that coerces to an Int. It MUST be a valid status code for the [SERVER_PROTOCOL](http://doc.perl6.org/type/SERVER_PROTOCOL).
 
   * The headers MUST be a [List](http://doc.perl6.org/type/List) of [Pair](http://doc.perl6.org/type/Pair)s or an object that when coerced into a List becomes a List of Pairs. These pairs name the headers to return with the response. Header names MAY be repeated.
 
   * The message payload MUST be a *sane* [Supply](http://doc.perl6.org/type/Supply) or an object that coerces into a *sane* Supply, such as a [List](http://doc.perl6.org/type/List).
 
-Here is a more interesting example application demonstrating some of the power of this interface:
+Here is a more interesting example application of this interface:
 
 ```perl6
     sub app(%env) {
@@ -581,9 +581,9 @@ Here is a more interesting example application demonstrating some of the power o
     }
 ```
 
-The example application above will print out all the values of factorial from 1 to N where N is given in the query string. The header is returned immediately, but the lines of the body are returned as the values of factorial are calculated. The asynchronous interface is concise and efficient.
+The example application above will print out all the values of factorial from 1 to N where N is given in the query string. The header may be returned immediately and the lines of the body may be returned as the values of factorial are calculated by the application server.
 
-And here is an example demonstrating a couple ways in which coercion can be used by an application to improve readability:
+And here is an example demonstrating a couple ways in which coercion can be used by an application to simplify the result:
 
 ```perl6
     sub app(%env) {
@@ -596,7 +596,7 @@ And here is an example demonstrating a couple ways in which coercion can be used
 
 In this example, the status is returned using an enumeration which coerces to an appropriate integer value. The payload is returned as a list, which is automatically coerced into a Supply.
 
-Applications SHOULD return a Promise as soon as possible. It is recommended that applications wrap all operations within a `start {}` block to make this automatic.
+Applications SHOULD return a Promise as soon as possible. It is recommended that applications wrap all operations within a `start` block to make this automatic.
 
 Application servers SHOULD NOT assume that the returned [Promise](http://doc.perl6.org/type/Promise) will be kept. It SHOULD assume that the Promise has been vowed and MUST NOT try to keep or break the Promise from the application.
 
@@ -612,15 +612,27 @@ For any other request, the application MAY emit zero or more messages in the ret
 
   * [Associative](http://doc.perl6.org/type/Associative). Any Associative object emitted should be treated as a message to communicate between layers of the application, middleware, and server. These should be ignored and passed on by middleware to the next layer unless consumed by the current middleware. Any message that reaches the application server but is not consumed by the application server MAY result in a warning being reported, but SHOULD otherwise be ignored. These objects MUST NOT be transmitted to the origin.
 
-  * [Mu](http://doc.perl6.org/type/Mu). Any other Mu SHOULD be stringified, if possible, and encoded by the application server. If an object given cannot be stringified, the server SHOULD report a warning.
+  * [Mu](http://doc.perl6.org/type/Mu). Any other Mu SHOULD be stringified with the `Str` method and encoded by the application server. If an object given cannot be stringified, the server SHOULD report a warning.
 
 ### 4.0.2 Encoding
 
-The application server SHOULD handle encoding of strings or stringified objects emitted to it. When performing encoding, the application server SHOULD honor the `charset` set within the `Content-Type` header, if given. If it does not honor the `charset`, it MUST encode any strings in the response payload according to the encoding named in `wapi.body.encoding`.
+The application server SHOULD handle encoding of strings or stringified objects emitted to it. When performing encoding, the application server SHOULD honor the `charset` set within the `Content-Type` header, if given. If it does not honor the `charset` or no `charset` is set by the application, it MUST encode any strings in the response payload according to the encoding named in `wapi.body.encoding`.
 
 ### 4.0.3 Request-Response Lifecycle
 
-The server processes requests from an origin, passes the partially processed request information to the application by calling the application, waits for the application's response, and then returns the response to the origin. In the simplest example this means handling an HTTP roundtrip. Yet, it may also mean implementing a related protocol like CGI or FastCGI or SCGI or something else entirely.
+The application server performs the following during a single request-response interaction:
+
+  * Receive a request from an origin and begin parsing the request according to the network protocol.
+
+  * Construct a runtime environment and combine it with the configuration environment. The `wapi.input` part of the environment should continue reading data from the origin as it arrives until the request has been completely read.
+
+  * Call the application runtime routine with the constructed environment and await a value from the returned [Promise](http://doc.perl6.org/type/Promise).
+
+  * Return the start of the response using the HTTP status code and headers provided, formatted according to the protocol requirements.
+
+  * Tap the supply part of the response and return data to the origin, formatted in ways appropriate for the environment settings and the network protocol in place.
+
+The server processes requests from an origin, passes the processed request information to the application by calling the application, waits for the application's response, and then returns the response to the origin. In the simplest example this means handling an HTTP roundtrip. Yet, it may also mean implementing a related protocol like CGI or FastCGI or SCGI or something else entirely.
 
 In the modern web, an application may want to implement a variety of complex HTTP interactions. These use-cases are not described by the typical HTTP request-response roundtrip with which most web developers are familiar. For example, an interactive Accept-Continue response or a data stream to or from the origin or an upgrade request to switch protocols. As such, application servers SHOULD make a best effort to be implemented in such a way as to make this variety applications possible.
 

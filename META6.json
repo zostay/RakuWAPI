@@ -8,7 +8,7 @@
     ],
     "perl" : "6.c",
     "provides" : {
-        "P6W": "P6W.pod"
+        "P6W": "RakuWAPI.pod"
     },
     "depends" : [ ],
     "source-url" : "git://github.com/zostay/RakuWAPI.git"
